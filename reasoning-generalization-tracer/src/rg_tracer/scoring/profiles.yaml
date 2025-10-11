@@ -1,0 +1,41 @@
+profiles:
+  proof_math:
+    logical_validity: 0.25
+    rigor: 0.20
+    numerical_accuracy: 0.15
+    abstraction_generalization: 0.10
+    efficiency: 0.10
+    completeness: 0.05
+    explanatory_power: 0.05
+    conceptual_clarity: 0.05
+    self_consistency: 0.03
+    heuristic_creativity: 0.02
+  scientific:
+    logical_validity: 0.18
+    rigor: 0.16
+    numerical_accuracy: 0.14
+    explanatory_power: 0.12
+    abstraction_generalization: 0.10
+    completeness: 0.08
+    self_consistency: 0.08
+    conceptual_clarity: 0.07
+    efficiency: 0.04
+    heuristic_creativity: 0.03
+  heuristic:
+    logical_validity: 0.18
+    heuristic_creativity: 0.22
+    self_consistency: 0.12
+    explanatory_power: 0.12
+    abstraction_generalization: 0.10
+    efficiency: 0.08
+    conceptual_clarity: 0.07
+    cognitive_efficiency: 0.06
+    numerical_accuracy: 0.05
+  efficiency:
+    logical_validity: 0.20
+    efficiency: 0.30
+    cognitive_efficiency: 0.20
+    numerical_accuracy: 0.10
+    rigor: 0.10
+    completeness: 0.05
+    self_consistency: 0.05

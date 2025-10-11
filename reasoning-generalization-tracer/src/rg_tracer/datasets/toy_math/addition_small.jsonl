@@ -1,0 +1,2 @@
+{"id": "add_1", "prompt": "What is 1 + 2?", "numbers": [1, 2], "answer": 3}
+{"id": "add_2", "prompt": "What is 4 + 3?", "numbers": [4, 3], "answer": 7}

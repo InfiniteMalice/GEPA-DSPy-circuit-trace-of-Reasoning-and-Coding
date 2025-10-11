@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rg-tracer"
+version = "0.1.0"
+description = "Reasoning and generalization tracing toolkit with concept rewards and abstention."
+authors = [{name = "OpenAI", email = "opensource@openai.com"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "circuit-tracer @ git+https://github.com/openai/circuit-tracer.git@8b2e5d4b8b9dd4f01df7500cfa30f61fa8bf0b21"
+]
+
+[project.optional-dependencies]
+llm = [
+    "transformers>=4.35",
+    "accelerate>=0.23"
+]
+
+[project.urls]
+Homepage = "https://github.com/openai/rg-tracer"
+
+[project.scripts]
+"rg-tracer" = "rg_tracer.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = [
+    "rg_tracer",
+    "rg_tracer.scoring",
+    "rg_tracer.runners",
+    "rg_tracer.concepts",
+    "rg_tracer.abstention",
+    "rg_tracer.trm_baseline",
+    "rg_tracer.datasets",
+]
+
+[tool.setuptools.package-data]
+"rg_tracer.scoring" = ["profiles.yaml"]
+"rg_tracer.datasets" = ["**/*.jsonl", "README.md"]
