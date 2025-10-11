@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e .[llm]
+          pip install pytest
+        working-directory: reasoning-generalization-tracer
+      - name: Lint
+        run: python -m compileall src
+        working-directory: reasoning-generalization-tracer
+      - name: Unit tests
+        run: pytest -q
+        working-directory: reasoning-generalization-tracer
+      - name: Smoke self-play
+        run: |
+          OUTPUT=$(rg-tracer self-play --profile proof_math --k 3 \
+            --problem src/rg_tracer/datasets/toy_math/addition_small.jsonl \
+            --concept parity --sampler trm)
+          echo "Self-play output: $OUTPUT"
+          RUN_DIR=$(python -c 'import json,sys; print(json.loads(sys.argv[1])["run_dir"])' "$OUTPUT")
+          test -f "$RUN_DIR/summary.md"
+        working-directory: reasoning-generalization-tracer
+      - name: Concept reward smoke
+        run: |
+          python - <<'PY'
+          from rg_tracer.concepts import ConceptSpec, compute_concept_reward
+          trace = {"features": [{"id": "F1", "layer": 1, "importance": 0.7, "tags": ["parity"]}],
+                   "edges": [], "path_lengths": {"mean": 1.0}}
+          spec = ConceptSpec(name="parity", definition="", expected_substructures=["parity"])
+          reward = compute_concept_reward(trace, spec, task_metrics={"concept_reuse": 1.0, "supporting_tasks": 1})
+          assert reward > 0.3, reward
+          PY
+        working-directory: reasoning-generalization-tracer
+      - name: Upload runs artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: runs
+          path: reasoning-generalization-tracer/runs
+          if-no-files-found: ignore
