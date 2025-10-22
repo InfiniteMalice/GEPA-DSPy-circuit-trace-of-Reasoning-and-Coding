@@ -1,4 +1,5 @@
 """Profile-aware aggregation utilities for reasoning scores."""
+
 from __future__ import annotations
 
 import math

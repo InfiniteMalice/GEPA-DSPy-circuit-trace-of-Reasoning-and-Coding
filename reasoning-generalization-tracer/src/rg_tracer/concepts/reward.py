@@ -1,4 +1,5 @@
 """Concept reward computation utilities."""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -18,11 +19,7 @@ def _compute_match(trace_json: Mapping[str, Any], concept: ConceptSpec) -> float
     expected = set(concept.expected_substructures)
     if not expected:
         return 1.0
-    tags = {
-        tag
-        for feature in trace_json.get("features", [])
-        for tag in feature.get("tags", [])
-    }
+    tags = {tag for feature in trace_json.get("features", []) for tag in feature.get("tags", [])}
     if not tags:
         return 0.0
     return len(tags & expected) / len(expected)

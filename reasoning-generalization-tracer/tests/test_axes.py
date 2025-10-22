@@ -12,5 +12,10 @@ def test_numerical_accuracy_boundary():
 
 
 def test_abstraction_generalization_bonus():
-    metrics = {"transfer_accuracy": 0.9, "compression_gain": 0.2, "variable_lifts": 2, "theorem_induced": 3}
+    metrics = {
+        "transfer_accuracy": 0.9,
+        "compression_gain": 0.2,
+        "variable_lifts": 2,
+        "theorem_induced": 3,
+    }
     assert axes.abstraction_generalization(metrics) == 4

@@ -6,9 +6,20 @@ from rg_tracer.runners.self_play import run_self_play
 
 
 def test_self_play_creates_artifacts(tmp_path):
-    problem_path = Path(__file__).resolve().parents[1] / "src" / "rg_tracer" / "datasets" / "toy_math" / "addition_small.jsonl"
-    concept = ConceptSpec(name="parity", definition="Parity detector", expected_substructures=["parity"])
-    result = run_self_play(problem_path, profile="proof_math", k=3, concept=concept, output_dir=tmp_path)
+    problem_path = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "rg_tracer"
+        / "datasets"
+        / "toy_math"
+        / "addition_small.jsonl"
+    )
+    concept = ConceptSpec(
+        name="parity", definition="Parity detector", expected_substructures=["parity"]
+    )
+    result = run_self_play(
+        problem_path, profile="proof_math", k=3, concept=concept, output_dir=tmp_path
+    )
     run_dir = Path(result["run_dir"])
     assert (run_dir / "scores.jsonl").exists()
     assert (run_dir / "summary.md").exists()

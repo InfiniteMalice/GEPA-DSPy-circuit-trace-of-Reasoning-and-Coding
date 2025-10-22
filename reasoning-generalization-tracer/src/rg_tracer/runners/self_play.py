@@ -1,4 +1,5 @@
 """Self-play orchestration for reasoning candidates."""
+
 from __future__ import annotations
 
 import json
@@ -95,7 +96,11 @@ def _dominates(a: Mapping[str, int], b: Mapping[str, int]) -> bool:
 def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
     frontier: List[Candidate] = []
     for candidate in candidates:
-        if any(_dominates(other.axis_scores, candidate.axis_scores) for other in candidates if other is not candidate):
+        if any(
+            _dominates(other.axis_scores, candidate.axis_scores)
+            for other in candidates
+            if other is not candidate
+        ):
             continue
         frontier.append(candidate)
     return frontier
@@ -148,7 +153,9 @@ def run_self_play(
         abstention = apply_abstention(raw["text"], raw.get("confidence", 0.0))
         concept_reward = 0.0
         if concept is not None and raw.get("trace"):
-            concept_reward = compute_concept_reward(raw["trace"], concept, task_metrics={"concept_reuse": 1.0})
+            concept_reward = compute_concept_reward(
+                raw["trace"], concept, task_metrics={"concept_reuse": 1.0}
+            )
         candidate = Candidate(
             text=abstention.text,
             confidence=raw.get("confidence", 0.0),

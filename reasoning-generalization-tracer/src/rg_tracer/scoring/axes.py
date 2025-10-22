@@ -30,6 +30,7 @@ present, they are respected if already within the 0–4 range.  Otherwise the
 helper functions compute interpretable defaults based on the auxiliary
 metrics.
 """
+
 from __future__ import annotations
 
 from math import isfinite

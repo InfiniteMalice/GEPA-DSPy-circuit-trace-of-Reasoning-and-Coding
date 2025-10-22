@@ -23,7 +23,9 @@ def test_apply_hard_gates_enforces_threshold():
 
 
 def test_evaluate_profile_respects_profile_weights():
-    profile = Profile(name="demo", weights={"logical_validity": 1.0, "rigor": 1.0, "numerical_accuracy": 1.0})
+    profile = Profile(
+        name="demo", weights={"logical_validity": 1.0, "rigor": 1.0, "numerical_accuracy": 1.0}
+    )
     scores = {"logical_validity": 4, "rigor": 4, "numerical_accuracy": 3}
     result = evaluate_profile(scores, profile)
     assert result["passes_gates"]

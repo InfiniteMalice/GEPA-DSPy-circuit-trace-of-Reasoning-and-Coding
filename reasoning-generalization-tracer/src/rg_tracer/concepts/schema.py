@@ -1,4 +1,5 @@
 """Concept specification data structures."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -42,9 +43,7 @@ class ConceptSpec:
         return {
             "name": self.name,
             "definition": self.definition,
-            "tests": [
-                {"input": test.input, "expected": test.expected} for test in self.tests
-            ],
+            "tests": [{"input": test.input, "expected": test.expected} for test in self.tests],
             "expected_substructures": list(self.expected_substructures),
         }
 
