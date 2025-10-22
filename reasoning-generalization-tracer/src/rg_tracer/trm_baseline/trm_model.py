@@ -1,4 +1,5 @@
 """Tiny Recursion Model (TRM) implementation."""
+
 from __future__ import annotations
 
 import math
@@ -22,7 +23,9 @@ class TinyRecursionModel:
             return 0.0, [0.0]
         head, *rest = seq
         rest_value, rest_trace = self._recurse(rest)
-        activation = math.tanh(self.hidden_scale * head + self.recurse_scale * rest_value + self.bias)
+        activation = math.tanh(
+            self.hidden_scale * head + self.recurse_scale * rest_value + self.bias
+        )
         if self.trace_states:
             return activation, [activation] + rest_trace
         return activation, []
@@ -42,10 +45,12 @@ class TinyRecursionModel:
             return error, 0.0, 0.0
         head, *rest = seq
         rest_value, rest_trace = self._recurse(rest)
-        activation = math.tanh(self.hidden_scale * head + self.recurse_scale * rest_value + self.bias)
+        activation = math.tanh(
+            self.hidden_scale * head + self.recurse_scale * rest_value + self.bias
+        )
         pred = (activation + 1) / 2
         error = pred - target
-        sech2 = 1 - activation ** 2
+        sech2 = 1 - activation**2
         d_hidden = error * 0.5 * sech2 * head
         d_recurse = error * 0.5 * sech2 * rest_value
         d_bias = error * 0.5 * sech2

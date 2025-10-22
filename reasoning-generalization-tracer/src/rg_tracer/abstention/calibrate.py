@@ -1,4 +1,5 @@
 """Confidence calibration helpers using only the standard library."""
+
 from __future__ import annotations
 
 import math
@@ -9,9 +10,11 @@ def _clip(prob: float) -> float:
     return min(max(prob, 1e-6), 1 - 1e-6)
 
 
-def temperature_scale(confidences: Iterable[float], labels: Iterable[int]) -> Callable[[float], float]:
+def temperature_scale(
+    confidences: Iterable[float], labels: Iterable[int]
+) -> Callable[[float], float]:
     """Fit a temperature scaling function on binary confidences."""
-    confidences = [ _clip(float(c)) for c in confidences ]
+    confidences = [_clip(float(c)) for c in confidences]
     labels = [int(l) for l in labels]
     logits = [math.log(c / (1 - c)) for c in confidences]
     temps = [0.5 + i * 0.05 for i in range(1, 101)]
@@ -36,7 +39,9 @@ def temperature_scale(confidences: Iterable[float], labels: Iterable[int]) -> Ca
     return calibrate
 
 
-def isotonic_calibration(confidences: Iterable[float], labels: Iterable[int]) -> Callable[[float], float]:
+def isotonic_calibration(
+    confidences: Iterable[float], labels: Iterable[int]
+) -> Callable[[float], float]:
     """Fit an isotonic regression calibrator using the PAV algorithm."""
     pairs = sorted((float(c), float(l)) for c, l in zip(confidences, labels))
     if not pairs:
