@@ -1,4 +1,5 @@
 """Command line interface for rg-tracer."""
+
 from __future__ import annotations
 
 import argparse
@@ -13,7 +14,9 @@ from .runners.self_play import run_self_play
 def _make_concept(name: str | None) -> ConceptSpec | None:
     if name is None:
         return None
-    return ConceptSpec(name=name, definition=f"Auto-generated concept for {name}", expected_substructures=[name])
+    return ConceptSpec(
+        name=name, definition=f"Auto-generated concept for {name}", expected_substructures=[name]
+    )
 
 
 def _cmd_self_play(args: argparse.Namespace) -> None:
@@ -25,10 +28,14 @@ def _cmd_self_play(args: argparse.Namespace) -> None:
         sampler=args.sampler,
         concept=concept,
     )
-    print(json.dumps({
-        "run_dir": result["run_dir"],
-        "best_composite": result["best"].composite,
-    }))
+    print(
+        json.dumps(
+            {
+                "run_dir": result["run_dir"],
+                "best_composite": result["best"].composite,
+            }
+        )
+    )
 
 
 def _cmd_eval(args: argparse.Namespace) -> None:
@@ -48,7 +55,9 @@ def _cmd_trace(args: argparse.Namespace) -> None:
     with trace_path.open("w", encoding="utf8") as handle:
         json.dump(trace.to_json(), handle, indent=2)
     if concept is not None:
-        reward = compute_concept_reward(trace.to_json(), concept, task_metrics={"concept_reuse": 1.0})
+        reward = compute_concept_reward(
+            trace.to_json(), concept, task_metrics={"concept_reuse": 1.0}
+        )
         print(json.dumps({"trace": str(trace_path), "concept_reward": reward}))
     else:
         print(json.dumps({"trace": str(trace_path)}))

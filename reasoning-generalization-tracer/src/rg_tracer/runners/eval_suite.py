@@ -1,4 +1,5 @@
 """Batch evaluation utilities for datasets."""
+
 from __future__ import annotations
 
 import csv
@@ -52,7 +53,9 @@ def evaluate_dataset(
         record_axis_scores.append(scores)
 
     summary = {
-        "axis_means": {axis: mean(values) if values else 0.0 for axis, values in per_axis_scores.items()},
+        "axis_means": {
+            axis: mean(values) if values else 0.0 for axis, values in per_axis_scores.items()
+        },
         "composite_mean": mean(composites) if composites else 0.0,
         "gate_pass_rate": gate_passes / len(records) if records else 0.0,
         "count": len(records),
