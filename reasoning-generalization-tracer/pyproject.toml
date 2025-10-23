@@ -35,9 +35,8 @@ packages = [
     "rg_tracer.concepts",
     "rg_tracer.abstention",
     "rg_tracer.trm_baseline",
-    "rg_tracer.datasets",
+    "rg_tracer.semantics",
 ]
 
 [tool.setuptools.package-data]
 "rg_tracer.scoring" = ["profiles.yaml"]
-"rg_tracer.datasets" = ["**/*.jsonl", "README.md"]

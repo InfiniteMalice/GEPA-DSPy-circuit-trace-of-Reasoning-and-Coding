@@ -1,0 +1,2 @@
+{"id": "mod_shift_0", "task": "modular_addition", "prompt": "(7 + 5) mod 6", "numbers": [7, 5], "mod": 6, "answer": 0, "concept": "modular_reduction", "units": "mod"}
+{"id": "mod_shift_1", "task": "modular_addition", "prompt": "(3 + 9) mod 5", "numbers": [3, 9], "mod": 5, "answer": 2, "concept": "modular_reduction", "units": "mod"}

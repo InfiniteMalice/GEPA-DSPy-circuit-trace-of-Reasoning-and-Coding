@@ -1,48 +1,73 @@
-"""Scoring axes for reasoning fitness.
-
-Each scoring function is deterministic, pure, and maps a metrics dictionary to
-an integer score between 0 and 4 inclusive.  The expected metrics schema is
-summarised below and corresponds to the design brief.
+"""Deterministic scoring axes for reasoning fitness.
 
 Schema::
-
-    {
-      "reasoning_axes": {
-        "logical_validity": {"score": 0, "contradictions": 0, "formal_proof": false},
-        "conceptual_clarity": {"score": 0, "undefined_symbols": 0},
-        "completeness": {"score": 0, "edge_cases": 0},
-        "rigor": {"score": 0, "checked_steps": 0},
-        "efficiency": {"score": 0, "steps": 0},
-        "heuristic_creativity": {"score": 0, "distinct_paths": 0},
-        "numerical_accuracy": {"score": 0, "error_tolerance": 0},
-        "cognitive_efficiency": {"score": 0, "token_count": 0, "time_ms": 0},
-        "explanatory_power": {"score": 0, "causal_links": 0},
-        "self_consistency": {"score": 0, "self_corrections": 0},
-        "abstraction_generalization": {
-          "score": 0, "transfer_accuracy": 0.0, "compression_gain": 0.0,
-          "variable_lifts": 0, "theorem_induced": 0
-        }
-      }
+{
+  "reasoning_axes": {
+    "logical_validity": {
+      "score": 0,
+      "contradictions": 0,
+      "formal_proof": false
+    },
+    "conceptual_clarity": {
+      "score": 0,
+      "undefined_symbols": 0
+    },
+    "completeness": {
+      "score": 0,
+      "edge_cases": 0
+    },
+    "rigor": {
+      "score": 0,
+      "checked_steps": 0
+    },
+    "efficiency": {
+      "score": 0,
+      "steps": 0
+    },
+    "heuristic_creativity": {
+      "score": 0,
+      "distinct_paths": 0
+    },
+    "numerical_accuracy": {
+      "score": 0,
+      "error_tolerance": 0
+    },
+    "cognitive_efficiency": {
+      "score": 0,
+      "token_count": 0,
+      "time_ms": 0
+    },
+    "explanatory_power": {
+      "score": 0,
+      "causal_links": 0
+    },
+    "self_consistency": {
+      "score": 0,
+      "self_corrections": 0
+    },
+    "abstraction_generalization": {
+      "score": 0,
+      "transfer_accuracy": 0.0,
+      "compression_gain": 0.0,
+      "variable_lifts": 0,
+      "theorem_induced": 0
     }
-
-The ``score`` fields are optional inputs from an upstream system; when
-present, they are respected if already within the 0–4 range.  Otherwise the
-helper functions compute interpretable defaults based on the auxiliary
-metrics.
+  }
+}
 """
 
 from __future__ import annotations
 
 from math import isfinite
-from typing import Mapping, Any
+from typing import Any, Mapping
 
 
 def _as_int(score: Any) -> int | None:
-    """Return an integer score if ``score`` is a valid 0–4 integer."""
+    """Return the integer override when ``score`` already sits in the 0–4 range."""
     if isinstance(score, bool):
         return None
-    if isinstance(score, (int,)) and 0 <= score <= 4:
-        return int(score)
+    if isinstance(score, int) and 0 <= score <= 4:
+        return score
     return None
 
 
@@ -51,7 +76,7 @@ def _bounded(value: float, minimum: int = 0, maximum: int = 4) -> int:
 
 
 def logical_validity(metrics: Mapping[str, Any]) -> int:
-    """Score logical validity based on contradictions and proof guarantees."""
+    """Anchor: 0 = contradiction; 4 = contradiction-free formal proof."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -69,6 +94,7 @@ def logical_validity(metrics: Mapping[str, Any]) -> int:
 
 
 def conceptual_clarity(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = undefined symbols everywhere; 4 = fully typed and consistent."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -84,6 +110,7 @@ def conceptual_clarity(metrics: Mapping[str, Any]) -> int:
 
 
 def completeness(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = ignores boundaries; 4 = exhaustive coverage with edge checks."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -101,6 +128,7 @@ def completeness(metrics: Mapping[str, Any]) -> int:
 
 
 def rigor(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = unchecked; 4 = ≥95% steps justified with symbolic checks."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -119,7 +147,7 @@ def rigor(metrics: Mapping[str, Any]) -> int:
 
 
 def efficiency(metrics: Mapping[str, Any], baseline_steps: int | None = None) -> int:
-    """Efficiency compares steps to a baseline; fewer steps score higher."""
+    """Anchor: 0 = bloated; 4 = ≤50% of baseline steps."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -128,9 +156,9 @@ def efficiency(metrics: Mapping[str, Any], baseline_steps: int | None = None) ->
         baseline_steps = int(metrics.get("baseline_steps", steps or 1) or 1)
     if baseline_steps <= 0:
         baseline_steps = 1
-    ratio = steps / baseline_steps
     if steps == 0:
         return 0
+    ratio = steps / baseline_steps
     if ratio <= 0.5:
         return 4
     if ratio <= 0.8:
@@ -143,6 +171,7 @@ def efficiency(metrics: Mapping[str, Any], baseline_steps: int | None = None) ->
 
 
 def heuristic_creativity(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = rote path; 4 = ≥3 distinct, novel strategies."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -160,6 +189,7 @@ def heuristic_creativity(metrics: Mapping[str, Any]) -> int:
 
 
 def numerical_accuracy(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = ≥50% error; 4 = within half tolerance of true value."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -179,6 +209,7 @@ def numerical_accuracy(metrics: Mapping[str, Any]) -> int:
 
 
 def cognitive_efficiency(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = blows budgets; 4 = well within token/time/memory limits."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -198,6 +229,7 @@ def cognitive_efficiency(metrics: Mapping[str, Any]) -> int:
 
 
 def explanatory_power(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = opaque; 4 = multi-causal explanation with examples."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -213,15 +245,16 @@ def explanatory_power(metrics: Mapping[str, Any]) -> int:
 
 
 def self_consistency(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = self-contradictory; 4 = high agreement with self-repair."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
-    contradictions = int(metrics.get("self_corrections", 0) or 0)
-    if contradictions > 3:
+    corrections = int(metrics.get("self_corrections", 0) or 0)
+    if corrections > 3:
         return 0
-    if contradictions > 1:
+    if corrections > 1:
         return 1
-    if contradictions == 1:
+    if corrections == 1:
         return 2
     agreement = metrics.get("agreement_rate", 1.0) or 1.0
     if agreement >= 0.95:
@@ -232,6 +265,7 @@ def self_consistency(metrics: Mapping[str, Any]) -> int:
 
 
 def abstraction_generalization(metrics: Mapping[str, Any]) -> int:
+    """Anchor: 0 = no transfer; 4 = high transfer, compression, and induced lemmas."""
     override = _as_int(metrics.get("score"))
     if override is not None:
         return override
@@ -250,7 +284,6 @@ def abstraction_generalization(metrics: Mapping[str, Any]) -> int:
         score = 1
     else:
         score = 0
-    # bonus for induced theorems
     if score >= 2 and theorems >= 2:
         score = min(4, score + 1)
     return score
