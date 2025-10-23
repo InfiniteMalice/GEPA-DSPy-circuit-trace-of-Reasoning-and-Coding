@@ -1,4 +1,4 @@
-"""Lightweight semantic verifier detecting common reasoning pathologies."""
+"""Lightweight semantic verifier detecting reasoning pathologies."""
 
 from __future__ import annotations
 
@@ -17,10 +17,11 @@ class SemanticReport:
     unit_check_pass: bool
     symbol_binding_errors: int
     schema_consistency_pct: float
+    humanities_metrics: Dict[str, float]
     tags: List[Dict[str, Iterable[str]]] = field(default_factory=list)
 
     def as_dict(self) -> Dict[str, object]:
-        return {
+        payload = {
             "score": self.score,
             "contradiction_rate": self.contradiction_rate,
             "entailed_steps_pct": self.entailed_steps_pct,
@@ -30,6 +31,8 @@ class SemanticReport:
             "schema_consistency_pct": self.schema_consistency_pct,
             "tags": self.tags,
         }
+        payload.update(self.humanities_metrics)
+        return payload
 
 
 _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
@@ -47,9 +50,13 @@ def _normalise_chain(chain: object) -> List[str]:
     return steps or [""]
 
 
+def _detect_tag(step: str, substrings: Iterable[str]) -> bool:
+    lowered = step.lower()
+    return any(token in lowered for token in substrings)
+
+
 def _detect_contradiction(step: str) -> bool:
-    tokens = step.lower()
-    return "contradict" in tokens or "impossible" in tokens or "cannot" in tokens
+    return _detect_tag(step, {"contradict", "impossible", "cannot"})
 
 
 def _detect_fact_free(step: str) -> bool:
@@ -64,10 +71,11 @@ def _detect_units(step: str, expected: str | None) -> bool:
         return True
     lowered = step.lower()
     alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
-    mismatched = any(unit in lowered and unit != expected.lower() for unit in alt_units)
+    expected_lower = expected.lower()
+    mismatched = any(unit in lowered and unit != expected_lower for unit in alt_units)
     if mismatched:
         return False
-    if expected.lower() in lowered:
+    if expected_lower in lowered:
         return True
     return True
 
@@ -84,12 +92,31 @@ def _detect_variable_drift(step: str, allowed: set[str]) -> bool:
     return bool(unexpected)
 
 
+def _detect_humanities_tags(step: str, tags: List[str]) -> None:
+    lowered = step.lower()
+    if '"' in step and "(" not in step:
+        tags.append(SemanticTag.MISQUOTE.value)
+    if "according" in lowered and "(" not in step and "[" not in step:
+        tags.append(SemanticTag.UNCITED_CLAIM.value)
+    if "out of context" in lowered:
+        tags.append(SemanticTag.QUOTE_OOC.value)
+    if "therefore" in lowered and "because" not in lowered:
+        tags.append(SemanticTag.ILLEGAL_INFERENCE.value)
+    if "circular" in lowered or "same assumption" in lowered:
+        tags.append(SemanticTag.CIRCULARITY.value)
+    if "causes" in lowered and "control" not in lowered:
+        tags.append(SemanticTag.OVERCLAIMED_CAUSALITY.value)
+    if "should" in lowered and "evidence" in lowered:
+        tags.append(SemanticTag.IS_OUGHT_SLIP.value)
+
+
 def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticReport:
     steps = _normalise_chain(chain)
     tags: List[Dict[str, List[str]]] = [{"tags": []} for _ in steps]
     expected_units = str(problem_spec.get("units", "")) or None
-    allowed_vars = set(str(var) for var in problem_spec.get("variables", []))
+    allowed_vars = {str(var) for var in problem_spec.get("variables", [])}
     concept = str(problem_spec.get("concept", "")) or None
+    humanities_domain = problem_spec.get("domain") == "humanities"
 
     contradiction_count = 0
     unsupported_count = 0
@@ -117,6 +144,9 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         if allowed_vars and _detect_variable_drift(step, allowed_vars):
             step_tags.append(SemanticTag.VARIABLE_DRIFT.value)
             variable_drift += 1
+        _detect_humanities_tags(step, step_tags)
+        if humanities_domain and "definition" in step.lower():
+            step_tags.append(SemanticTag.DEFINITION_DRIFT.value)
         if not fact_free and SemanticTag.CONTRADICTION.value not in step_tags:
             step_tags.append(SemanticTag.ENTAILED.value)
             entailed_count += 1
@@ -142,6 +172,32 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
     if schema_consistency_pct < 0.5:
         score = min(score, 2)
 
+    if humanities_domain:
+        from ..humanities.signals import analyse_humanities_chain
+
+        signals = analyse_humanities_chain(steps)
+        humanities_metrics = {
+            "citation_coverage": signals.citation_coverage,
+            "quote_integrity": signals.quote_integrity,
+            "counterevidence_ratio": signals.counterevidence_ratio,
+            "hedge_rate": signals.hedge_rate,
+            "fallacy_flags": signals.fallacy_flags,
+            "neutrality_balance": signals.neutrality_balance,
+        }
+        if signals.tags:
+            for idx, entry in enumerate(signals.tags):
+                if idx < len(tags):
+                    tags[idx]["tags"].extend(entry.get("tags", []))
+    else:
+        humanities_metrics = {
+            "citation_coverage": 0.0,
+            "quote_integrity": 0.0,
+            "counterevidence_ratio": 0.0,
+            "hedge_rate": 0.0,
+            "fallacy_flags": 0,
+            "neutrality_balance": 0.0,
+        }
+
     return SemanticReport(
         score=score,
         contradiction_rate=contradiction_rate,
@@ -150,6 +206,7 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         unit_check_pass=unit_check_pass,
         symbol_binding_errors=variable_drift,
         schema_consistency_pct=schema_consistency_pct,
+        humanities_metrics=humanities_metrics,
         tags=tags,
     )
 

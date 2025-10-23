@@ -1,4 +1,4 @@
-"""Self-play orchestration for reasoning candidates with semantic repair."""
+"""Self-play runner producing Pareto-selected reasoning chains."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Dict, List, Mapping, Sequence
 
 from ..abstention import apply_abstention
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
-from ..scoring import axes, aggregator
+from ..scoring import aggregator, axes
 from ..semantics import SemanticTag, repair_once, verify_chain
 from ..trm_baseline import TinyRecursionModel
 
@@ -60,8 +60,14 @@ class TRMSampler:
                     "error_rate": 0.0 if prediction == answer else 0.5,
                     "error_tolerance": 0.1,
                 },
-                "rigor": {"checked_steps": len(numbers) or 1, "total_steps": len(numbers) or 1},
-                "efficiency": {"steps": len(numbers) or 1, "baseline_steps": max(len(numbers), 1)},
+                "rigor": {
+                    "checked_steps": len(numbers) or 1,
+                    "total_steps": len(numbers) or 1,
+                },
+                "efficiency": {
+                    "steps": len(numbers) or 1,
+                    "baseline_steps": max(len(numbers), 1),
+                },
                 "abstraction_generalization": {
                     "transfer_accuracy": 0.9,
                     "compression_gain": 0.1,
@@ -146,7 +152,11 @@ def _map_semantics_to_features(
         feature_id = str(feature.get("id", ""))
         if any(tag.lower() in step.lower() for step in entailed_steps for tag in feature_tags):
             entailed_ids.append(feature_id)
-        if any(tag.lower() in step.lower() for step in contradictory_steps for tag in feature_tags):
+        if any(
+            tag.lower() in step.lower()
+            for step in contradictory_steps
+            for tag in feature_tags
+        ):
             contradictory_ids.append(feature_id)
     return {
         "entailed_feature_ids": entailed_ids,
@@ -270,9 +280,7 @@ def run_self_play(
 
     summary_path = run_dir / "summary.md"
     with summary_path.open("w", encoding="utf8") as handle:
-        handle.write(
-            "| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n"
-        )
+        handle.write("| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n")
         handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):
             handle.write(

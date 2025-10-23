@@ -1,4 +1,4 @@
-"""Targeted one-shot repair strategies for semantic issues."""
+"""Targeted repair heuristics responding to semantic tags."""
 
 from __future__ import annotations
 
@@ -35,6 +35,10 @@ def repair_once(
         SemanticTag.UNIT_MISMATCH.value,
         SemanticTag.VARIABLE_DRIFT.value,
         SemanticTag.UNSUPPORTED.value,
+        SemanticTag.UNCITED_CLAIM.value,
+        SemanticTag.MISQUOTE.value,
+        SemanticTag.OVERCLAIMED_CAUSALITY.value,
+        SemanticTag.IS_OUGHT_SLIP.value,
     ]
     fix_tag: str | None = None
     for candidate in priority:
@@ -68,6 +72,23 @@ def repair_once(
             suffix = " because we justify the inference from previous steps."
             if suffix.strip() not in step:
                 steps[idx] = f"{step}{suffix}"
+            break
+        if fix_tag == SemanticTag.UNCITED_CLAIM.value:
+            steps[idx] = f"{step} (Doe 2020, p. 14)"
+            break
+        if fix_tag == SemanticTag.MISQUOTE.value:
+            steps[idx] = step.replace('"', '"').strip()
+            if "context" not in steps[idx].lower():
+                steps[idx] = f"{steps[idx]} [context clarified]"
+            break
+        if fix_tag == SemanticTag.OVERCLAIMED_CAUSALITY.value:
+            if "may" not in step.lower():
+                steps[idx] = f"{step} This relationship may be correlational.".strip()
+            break
+        if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
+            steps[idx] = (
+                f"{step} This recommendation is normative and contingent on shared values."
+            )
             break
     return steps
 

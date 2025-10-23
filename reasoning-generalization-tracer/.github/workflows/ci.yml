@@ -60,6 +60,32 @@ jobs:
           assert reward > 0.3, reward
           PY
         working-directory: reasoning-generalization-tracer
+      - name: Smoke humanities CLI
+        run: |
+          rg-tracer humanities --dataset datasets/humanities/sample_claims.jsonl \
+            --profile humanities > humanities.json
+          test -s humanities.json
+          python - <<'PY'
+          import json
+          data = json.load(open("humanities.json", "r", encoding="utf8"))
+          assert data["records"], data
+          assert any(record["abstained"] for record in data["records"])
+          PY
+        working-directory: reasoning-generalization-tracer
+      - name: Smoke fallback pipeline
+        run: |
+          python - <<'PY'
+          from rg_tracer.fallback import run_academic_pipeline
+
+          output = run_academic_pipeline("datasets/humanities/sample_claims.jsonl")
+          assert output["summary"]["count"] >= 2
+          assert any(not rec["abstained"] for rec in output["records"])
+          assert any(rec["abstained"] for rec in output["records"])
+          for record in output["records"]:
+              if not record["abstained"]:
+                  assert "posterior" in record
+          PY
+        working-directory: reasoning-generalization-tracer
       - name: Upload runs artifact
         if: always()
         uses: actions/upload-artifact@v3
