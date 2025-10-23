@@ -8,3 +8,5 @@ def test_trm_training_improves_accuracy():
     train(model, data, epochs=8)
     improved = evaluate(model, data)
     assert improved.accuracy >= baseline.accuracy
+    assert len(improved.semantic_scores) == len(data)
+    assert all(score >= 0 for score in improved.semantic_scores)

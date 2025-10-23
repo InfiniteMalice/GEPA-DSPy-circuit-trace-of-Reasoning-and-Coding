@@ -1,0 +1,3 @@
+{"id": "parity_0", "task": "parity", "prompt": "Is [1,0,1,0] even parity?", "sequence": [1, 0, 1, 0], "answer": 0, "concept": "parity", "units": "binary"}
+{"id": "parity_1", "task": "parity", "prompt": "Is [1,1,1] even parity?", "sequence": [1, 1, 1], "answer": 1, "concept": "parity", "units": "binary"}
+{"id": "parity_2", "task": "parity", "prompt": "Is [0,0,0,1] even parity?", "sequence": [0, 0, 0, 1], "answer": 1, "concept": "parity", "units": "binary"}

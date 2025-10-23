@@ -1,0 +1,3 @@
+{"id": "carry_0", "task": "carry", "prompt": "Will adding [1,1,1] produce a carry?", "sequence": [1, 1, 1], "answer": 1, "concept": "carry", "units": "binary"}
+{"id": "carry_1", "task": "carry", "prompt": "Will adding [0,1,0] produce a carry?", "sequence": [0, 1, 0], "answer": 0, "concept": "carry", "units": "binary"}
+{"id": "carry_2", "task": "carry", "prompt": "Will adding [1,1,0,0] produce a carry?", "sequence": [1, 1, 0, 0], "answer": 1, "concept": "carry", "units": "binary"}

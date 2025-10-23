@@ -1,4 +1,4 @@
-"""Self-play orchestration for reasoning candidates."""
+"""Self-play orchestration for reasoning candidates with semantic repair."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from typing import Dict, List, Mapping, Sequence
 from ..abstention import apply_abstention
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
 from ..scoring import axes, aggregator
+from ..semantics import SemanticTag, repair_once, verify_chain
 from ..trm_baseline import TinyRecursionModel
 
 AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
@@ -20,7 +21,7 @@ AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
 class Candidate:
     text: str
     confidence: float
-    metrics: Dict[str, Mapping]
+    metrics: Dict[str, Mapping[str, object]]
     axis_scores: Dict[str, int]
     composite: float
     passes_gates: bool
@@ -29,6 +30,7 @@ class Candidate:
     abstained: bool
     trace: Dict[str, object] | None
     problem_id: str
+    semantic_report: Mapping[str, object]
 
 
 class TRMSampler:
@@ -66,7 +68,8 @@ class TRMSampler:
                     "variable_lifts": 1,
                 },
             }
-            text = f"Computed answer: {prediction}."
+            steps = [f"Add {numbers} to get {prediction}."]
+            text = "\n".join(steps)
             trace = trace_model("trm", str(problem.get("id", "unknown"))).to_json()
             candidates.append(
                 {
@@ -79,7 +82,7 @@ class TRMSampler:
         return candidates
 
 
-def _compute_axis_scores(metrics: Mapping[str, Mapping]) -> Dict[str, int]:
+def _compute_axis_scores(metrics: Mapping[str, Mapping[str, object]]) -> Dict[str, int]:
     scores = {}
     for axis_name, func in AXIS_FUNCTIONS.items():
         axis_metrics = metrics.get(axis_name, {})
@@ -114,13 +117,41 @@ def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
 
 
 def _load_problem(path: str | Path) -> Mapping[str, object]:
-    import json
-
     with open(path, "r", encoding="utf8") as handle:
         first_line = handle.readline()
         if not first_line:
             raise ValueError("Problem file is empty")
         return json.loads(first_line)
+
+
+def _map_semantics_to_features(
+    trace: Mapping[str, object],
+    report: Mapping[str, object],
+) -> Dict[str, List[str]]:
+    features = trace.get("features", []) if trace else []
+    entailed_steps = [
+        entry.get("step", "")
+        for entry in report.get("tags", [])
+        if SemanticTag.ENTAILED.value in entry.get("tags", [])
+    ]
+    contradictory_steps = [
+        entry.get("step", "")
+        for entry in report.get("tags", [])
+        if SemanticTag.CONTRADICTION.value in entry.get("tags", [])
+    ]
+    entailed_ids: List[str] = []
+    contradictory_ids: List[str] = []
+    for feature in features:
+        feature_tags = set(feature.get("tags", []))
+        feature_id = str(feature.get("id", ""))
+        if any(tag.lower() in step.lower() for step in entailed_steps for tag in feature_tags):
+            entailed_ids.append(feature_id)
+        if any(tag.lower() in step.lower() for step in contradictory_steps for tag in feature_tags):
+            contradictory_ids.append(feature_id)
+    return {
+        "entailed_feature_ids": entailed_ids,
+        "contradictory_feature_ids": contradictory_ids,
+    }
 
 
 def run_self_play(
@@ -145,16 +176,53 @@ def run_self_play(
     run_dir = _prepare_output_dir(output_dir)
 
     results: List[Candidate] = []
+    semantics_logs: List[Dict[str, object]] = []
     problem_id = str(problem.get("id", "task"))
+    expected_units = str(problem.get("units", "")) or None
+    preferred_vars = problem.get("variables", [])
 
     for raw in raw_candidates:
         axis_scores = _compute_axis_scores(raw.get("metrics", {}))
         eval_result = aggregator.evaluate_profile(axis_scores, profile_obj)
-        abstention = apply_abstention(raw["text"], raw.get("confidence", 0.0))
+        initial_text = raw.get("text", "")
+        report = verify_chain(initial_text, problem)
+        repairs_attempted = 0
+        text_after_repair = initial_text
+        if raw.get("confidence", 0.0) < 0.75 or report.score < 2:
+            repairs_attempted = 1
+            repaired_steps = repair_once(
+                text_after_repair,
+                report.tags,
+                expected_units=expected_units,
+                preferred_variables=preferred_vars,
+            )
+            text_after_repair = "\n".join(repaired_steps)
+            report = verify_chain(text_after_repair, problem)
+        gates_pass = bool(eval_result["passes_gates"])
+        abstention = apply_abstention(
+            text_after_repair,
+            raw.get("confidence", 0.0),
+            report.score,
+            gates_pass,
+        )
+        semantic_dict = report.as_dict()
+        semantic_dict["repairs_attempted"] = repairs_attempted
+        semantic_dict["abstained"] = abstention.abstained
+        semantics_logs.append(semantic_dict)
+
         concept_reward = 0.0
-        if concept is not None and raw.get("trace"):
+        trace_obj = raw.get("trace")
+        trace_json = trace_obj.to_json() if hasattr(trace_obj, "to_json") else trace_obj
+        if concept is not None and trace_json:
+            semantics_map = _map_semantics_to_features(trace_json, semantic_dict)
             concept_reward = compute_concept_reward(
-                raw["trace"], concept, task_metrics={"concept_reuse": 1.0}
+                trace_json,
+                concept,
+                task_metrics={
+                    **semantics_map,
+                    "concept_reuse": 1.0,
+                    "supporting_tasks": 1.0,
+                },
             )
         candidate = Candidate(
             text=abstention.text,
@@ -162,16 +230,16 @@ def run_self_play(
             metrics=raw.get("metrics", {}),
             axis_scores=axis_scores,
             composite=float(eval_result["composite"]),
-            passes_gates=bool(eval_result["passes_gates"]),
+            passes_gates=gates_pass,
             failed_gates=dict(eval_result["failed_gates"]),
             concept_reward=float(concept_reward),
             abstained=abstention.abstained,
-            trace=raw.get("trace"),
+            trace=trace_json,
             problem_id=problem_id,
+            semantic_report=semantic_dict,
         )
         results.append(candidate)
 
-    # Pareto frontier for diagnostics
     frontier = pareto_frontier(results)
     best = max(results, key=lambda c: c.composite)
 
@@ -195,14 +263,28 @@ def run_self_play(
                 + "\n"
             )
 
+    semantics_path = run_dir / "semantics.jsonl"
+    with semantics_path.open("w", encoding="utf8") as handle:
+        for entry in semantics_logs:
+            handle.write(json.dumps(entry) + "\n")
+
     summary_path = run_dir / "summary.md"
     with summary_path.open("w", encoding="utf8") as handle:
-        handle.write("| # | Composite | Passes Gates | Concept Reward | Abstained |\n")
-        handle.write("| - | --------- | ------------ | -------------- | --------- |\n")
+        handle.write(
+            "| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n"
+        )
+        handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):
             handle.write(
-                f"| {idx} | {candidate.composite:.3f} | {candidate.passes_gates} | "
-                f"{candidate.concept_reward:.3f} | {candidate.abstained} |\n"
+                "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | {repair} |\n".format(
+                    idx=idx,
+                    comp=candidate.composite,
+                    gates=candidate.passes_gates,
+                    reward=candidate.concept_reward,
+                    abst=candidate.abstained,
+                    sem=candidate.semantic_report.get("score", 0),
+                    repair=candidate.semantic_report.get("repairs_attempted", 0),
+                )
             )
 
     best_path = run_dir / "best.json"
