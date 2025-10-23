@@ -1,4 +1,4 @@
-"""Concept reward computation utilities integrating semantic signals."""
+"""Concept reward computation integrating semantic hooks."""
 
 from __future__ import annotations
 

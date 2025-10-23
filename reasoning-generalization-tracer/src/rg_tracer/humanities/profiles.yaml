@@ -1,0 +1,27 @@
+profiles:
+  humanities:
+    source_handling: 0.18
+    interpretive_fidelity: 0.16
+    historiography_context: 0.10
+    causal_discipline: 0.10
+    triangulation: 0.08
+    normative_positive_sep: 0.08
+    uncertainty_calibration: 0.08
+    intellectual_charity: 0.07
+    rhetorical_hygiene: 0.07
+    reproducibility_transparency: 0.04
+    synthesis_generalization: 0.02
+    epistemic_neutrality: 0.02
+  policy_analysis:
+    source_handling: 0.20
+    interpretive_fidelity: 0.15
+    causal_discipline: 0.15
+    triangulation: 0.10
+    uncertainty_calibration: 0.10
+    normative_positive_sep: 0.08
+    intellectual_charity: 0.07
+    historiography_context: 0.05
+    rhetorical_hygiene: 0.05
+    reproducibility_transparency: 0.03
+    synthesis_generalization: 0.01
+    epistemic_neutrality: 0.01

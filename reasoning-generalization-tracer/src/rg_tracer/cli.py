@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .concepts import ConceptSpec, compute_concept_reward, trace_model
+from .fallback import run_academic_pipeline
 from .runners.eval_suite import evaluate_dataset
 from .runners.self_play import run_self_play
 
@@ -15,7 +16,9 @@ def _make_concept(name: str | None) -> ConceptSpec | None:
     if name is None:
         return None
     return ConceptSpec(
-        name=name, definition=f"Auto-generated concept for {name}", expected_substructures=[name]
+        name=name,
+        definition=f"Auto-generated concept for {name}",
+        expected_substructures=[name],
     )
 
 
@@ -56,11 +59,35 @@ def _cmd_trace(args: argparse.Namespace) -> None:
         json.dump(trace.to_json(), handle, indent=2)
     if concept is not None:
         reward = compute_concept_reward(
-            trace.to_json(), concept, task_metrics={"concept_reuse": 1.0}
+            trace.to_json(),
+            concept,
+            task_metrics={"concept_reuse": 1.0},
         )
         print(json.dumps({"trace": str(trace_path), "concept_reward": reward}))
     else:
         print(json.dumps({"trace": str(trace_path)}))
+
+
+def _cmd_humanities(args: argparse.Namespace) -> None:
+    output = run_academic_pipeline(args.dataset, profile=args.profile)
+    trimmed = {
+        "summary": output["summary"],
+        "records": [
+            {
+                "id": record.get("id"),
+                "abstained": record.get("abstained"),
+                "confidence": record.get("confidence"),
+                "humanities": record.get("humanities"),
+            }
+            for record in output["records"]
+        ],
+    }
+    print(json.dumps(trimmed, indent=2))
+
+
+def _cmd_fallback(args: argparse.Namespace) -> None:
+    output = run_academic_pipeline(args.problem, profile=args.profile)
+    print(json.dumps(output, indent=2))
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -87,6 +114,16 @@ def main(argv: list[str] | None = None) -> None:
     tr.add_argument("--concept")
     tr.add_argument("--model-ref", default="trm")
     tr.set_defaults(func=_cmd_trace)
+
+    hum = sub.add_parser("humanities", help="Score humanities datasets")
+    hum.add_argument("--dataset", required=True)
+    hum.add_argument("--profile", default="humanities")
+    hum.set_defaults(func=_cmd_humanities)
+
+    fb = sub.add_parser("fallback", help="Run academic fallback pipeline")
+    fb.add_argument("--problem", required=True)
+    fb.add_argument("--profile", default="humanities")
+    fb.set_defaults(func=_cmd_fallback)
 
     args = parser.parse_args(argv)
     args.func(args)

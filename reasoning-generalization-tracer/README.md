@@ -3,8 +3,10 @@
 Reasoning Generalization Tracer (RG-Tracer) is a research toolkit for studying
 reasoning, abstraction, and concept reuse through self-play. The project
 combines a deterministic multi-axis rubric, circuit-level concept rewards,
-confidence-aware abstention, a Tiny Recursion Model (TRM) baseline, and a
-semantic verifier with targeted repair. All components are lightweight,
+confidence-aware abstention, a Tiny Recursion Model (TRM) baseline, a humanities
+rigor module, and a semantic verifier with targeted repair. When problems lack
+verifiable reward signals, RG-Tracer falls back to an academic three-step
+pipeline culminating in a Bayesian position. All components are lightweight,
 CPU-friendly, and designed for reproducible experimentation.
 
 ## Rubric Axes
@@ -38,7 +40,9 @@ adapter) are normalised before computing a reward:
 * **Transfer** – reuse across supporting tasks.
 
 Semantic reports inform the reward by filtering for entailed/supported features
-and penalising contradictory reuse.
+and penalising contradictory reuse. Circuit traces are produced via
+`circuit-tracer` (pinned) or the bundled stub; the adapter raises a clear error
+if the dependency is absent.
 
 ## Abstention at 0.75 Confidence
 
@@ -50,14 +54,27 @@ separate “honesty” metric can be layered on in downstream analysis.
 ## Semantic Verifier and Repair
 
 `verify_chain` flags contradictions, unsupported claims, unit mismatches,
-variable drift, and definition drift. It returns per-step tags plus a 0–4 score.
-When the score falls below 2 (or confidence < 0.75) the pipeline applies a
-single `repair_once` pass to add missing units, relabel drifting variables, or
-justify steps. If the repaired chain still fails, the system abstains.
+variable drift, definition drift, rhetorical excess, misquotes, uncited claims,
+over-claimed causality, and is-ought slips. It returns per-step tags plus a
+0–4 score. When the score falls below 2 (or confidence < 0.75) the pipeline
+applies a single `repair_once` pass to add missing units, relabel drifting
+variables, insert citations, hedge causal claims, or note normative statements.
+If the repaired chain still fails, the system abstains.
 
 Metrics are logged to `runs/<timestamp>/semantics.jsonl` alongside summary
 artifacts, enabling downstream auditing of contradiction rates, entailed steps,
 and repair success.
+
+## Humanities Rigor Scoring
+
+Humanities problems are scored along twelve axes covering source handling,
+interpretive fidelity, historiography, causal discipline, triangulation,
+normative/positive separation, uncertainty calibration, intellectual charity,
+rhetorical hygiene, reproducibility, synthesis, and epistemic neutrality. Hard
+gates enforce minimum thresholds on source handling, interpretive fidelity, and
+normative clarity before any reward is granted. Signals include citation
+coverage, quote integrity, counterevidence ratios, hedging, fallacy flags, and
+neutrality balance.
 
 ## Tiny Recursion Model Baseline
 
@@ -74,8 +91,8 @@ pip install -e .
 ```
 
 Python 3.10+ is required. Circuit tracing depends on the
-[`circuit-tracer`](https://github.com/safety-research/circuit-tracer) project
-pinned in `pyproject.toml`.
+[`circuit-tracer`](https://github.com/openai/circuit-tracer) project pinned in
+`pyproject.toml`.
 
 ## Quickstart
 
@@ -103,12 +120,21 @@ rg-tracer eval --dataset "datasets/transfer_tests/*.jsonl" --profile proof_math 
   --output transfer_eval.csv
 ```
 
+Run humanities scoring or the fallback pipeline:
+
+```bash
+rg-tracer humanities --dataset datasets/humanities/sample_claims.jsonl \
+  --profile humanities
+
+rg-tracer fallback --problem datasets/humanities/sample_claims.jsonl
+```
+
 ## Expected Outputs
 
 Each self-play run emits:
 
 * `scores.jsonl` – per-candidate rubric scores and rewards.
-* `semantics.jsonl` – semantic report with contradiction rates, unit checks, repairs.
+* `semantics.jsonl` – semantic report with contradiction rates, humanities metrics, repairs.
 * `summary.md` – table covering composite, concept reward, abstentions.
 * `best.json` – best-performing candidate under the chosen profile.
 
@@ -120,11 +146,16 @@ Each self-play run emits:
 * **Abstention:** calibrate model confidences using `abstention/calibrate.py`.
 * **Semantic Repair:** customise behaviour by editing `semantics/repair.py` and
   `semantics/verifier.py` heuristics.
+* **Humanities Profiles:** adjust humanities weights in
+  `humanities/profiles.yaml`.
+* **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
 
 ## Limitations
 
-* Circuit tracing falls back to a stub if the external dependency is missing.
+* Circuit tracing uses a local stub when the external dependency is missing.
 * Semantic checks rely on lightweight heuristics rather than full NLI models.
+* The humanities module encourages citations but does not fetch external
+  sources automatically.
 * The TRM sampler is tuned for small parity/carry tasks and will not scale to
   complex domains without additional training.
 
