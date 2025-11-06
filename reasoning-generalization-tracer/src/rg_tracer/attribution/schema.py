@@ -174,10 +174,10 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
 
 
 __all__ = [
-    "GraphNode",
+    "AttributionGraph",
     "GraphEdge",
     "GraphMeta",
-    "AttributionGraph",
-    "normalise_graph",
+    "GraphNode",
     "merge_graphs",
+    "normalise_graph",
 ]

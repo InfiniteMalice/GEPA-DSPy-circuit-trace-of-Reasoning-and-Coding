@@ -49,6 +49,6 @@ profiles:
       self_consistency: 0.05
 config:
   attr:
-    probe_size: 2
+    probe_size: 4
     topk: 2
     backend: null

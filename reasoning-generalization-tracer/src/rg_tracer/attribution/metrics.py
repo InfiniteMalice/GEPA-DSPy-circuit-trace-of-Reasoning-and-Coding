@@ -30,7 +30,11 @@ def path_sparsity(
     *,
     eps: float = 1e-9,
 ) -> float:
-    """Return mean ``HHI = Σ p_i^2`` for normalised edge attributions."""
+    """Return mean ``HHI = Σ p_i^2`` for normalised edge attributions.
+
+    ``eps`` is applied only when the attribution mass is extremely small to keep
+    the denominator numerically stable without biasing typical totals.
+    """
 
     graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
     if not graphs_seq:
@@ -42,7 +46,8 @@ def path_sparsity(
         if total <= 0:
             scores.append(0.0)
             continue
-        normed = [abs(weight) / (total + eps) for weight in weights]
+        denom = total if total > eps else total + eps
+        normed = [abs(weight) / denom for weight in weights]
         scores.append(sum(value * value for value in normed))
     return float(sum(scores) / len(scores))
 
@@ -81,6 +86,8 @@ def average_branching_factor(
 ) -> float:
     """Return mean branching factor ``Σ_k out_degree_k * w_k / Σ_k w_k``."""
 
+    if top_k is not None and top_k <= 0:
+        raise ValueError("top_k must be positive when provided")
     graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
     if not graphs_seq:
         return 0.0
@@ -117,6 +124,8 @@ def repeatability(
 ) -> float:
     """Return mean weighted Jaccard overlap over edge attributions."""
 
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
     graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
     if len(graphs_seq) <= 1:
         return 1.0
@@ -146,6 +155,8 @@ def concept_alignment(
 ) -> float:
     """Return overlap@k combining node matches and edge attribution mass."""
 
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
     if not concept_features:
         return 0.0
     graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
@@ -203,6 +214,8 @@ def delta_alignment(
 ) -> float:
     """Return ``Δ = alignment_post - alignment_overfit``."""
 
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
     overfit_graphs = _filter_by_phase(graphs, overfit_phase)
     post_graphs = _filter_by_phase(graphs, post_phase)
     if not overfit_graphs or not post_graphs:
@@ -221,6 +234,8 @@ def delta_repeatability(
 ) -> float:
     """Return ``Δ = repeat_post - repeat_overfit``."""
 
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
     overfit_graphs = _filter_by_phase(graphs, overfit_phase)
     post_graphs = _filter_by_phase(graphs, post_phase)
     if not overfit_graphs or not post_graphs:
@@ -248,12 +263,16 @@ def _filter_by_phase(
 
 
 def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
     ranked = sorted(graph.nodes, key=lambda n: abs(float(n.activation)), reverse=True)
     ranked = ranked[:top_k]
     return {node.id for node in ranked}
 
 
 def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[str, float]:
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
     ranked = sorted(graph.edges, key=lambda e: abs(float(e.attr)), reverse=True)
     ranked = ranked[:top_k]
     total = sum(abs(float(edge.attr)) for edge in ranked)
@@ -263,12 +282,12 @@ def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[str, float]
 
 
 __all__ = [
-    "path_sparsity",
-    "average_path_length",
     "average_branching_factor",
-    "repeatability",
+    "average_path_length",
     "concept_alignment",
-    "delta_sparsity",
     "delta_alignment",
     "delta_repeatability",
+    "delta_sparsity",
+    "path_sparsity",
+    "repeatability",
 ]

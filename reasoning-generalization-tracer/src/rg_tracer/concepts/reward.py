@@ -132,6 +132,10 @@ def compute_concept_reward(
             raise ValueError("alignment must be a finite float") from exc
         if not math.isfinite(alignment_value):
             raise ValueError("alignment must be a finite float")
+        # Allow alignment to modulate reward asymmetrically: the admissible range
+        # is open to ensure extreme sentinels are rejected, while the scale range
+        # includes zero so alignment can be disabled via configuration. The upper
+        # bound remains inclusive to cap modulation at a reasonable 10x multiplier.
         if not -1_000_000.0 < alignment_value < 1_000_000.0:
             raise ValueError("alignment must fall within (-1e6, 1e6)")
         try:

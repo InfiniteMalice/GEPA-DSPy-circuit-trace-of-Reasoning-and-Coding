@@ -110,7 +110,7 @@ class BackendNull(AttributionBackend):
 
 
 class BackendHookedTransformer(AttributionBackend):
-    """PyTorch backend using gradient × activation hooks."""
+    "PyTorch backend using gradient x activation hooks."
 
     def __init__(self, *, reduce: str = "mean") -> None:
         self.reduce = reduce
@@ -193,10 +193,10 @@ def _coerce_sequence(
 
 __all__ = [
     "AttributionBackend",
-    "BackendNull",
-    "BackendHookedTransformer",
     "BackendExternal",
-    "register_backend",
-    "get_backend",
+    "BackendHookedTransformer",
+    "BackendNull",
     "extract_graph",
+    "get_backend",
+    "register_backend",
 ]
