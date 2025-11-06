@@ -86,9 +86,7 @@ def repair_once(
                 steps[idx] = f"{step} This relationship may be correlational.".strip()
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            steps[idx] = (
-                f"{step} This recommendation is normative and contingent on shared values."
-            )
+            steps[idx] = f"{step} This recommendation is normative and contingent on shared values."
             break
     return steps
 
