@@ -110,7 +110,7 @@ class BackendNull(AttributionBackend):
 
 
 class BackendHookedTransformer(AttributionBackend):
-    """PyTorch backend using gradient x activation hooks."""
+    "PyTorch backend using gradient x activation hooks."
 
     def __init__(self, *, reduce: str = "mean") -> None:
         self.reduce = reduce
