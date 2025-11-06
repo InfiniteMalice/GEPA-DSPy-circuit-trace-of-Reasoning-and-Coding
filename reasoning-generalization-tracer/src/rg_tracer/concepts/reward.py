@@ -37,11 +37,7 @@ def _compute_match(
     expected = set(concept.expected_substructures)
     if not expected:
         return 1.0
-    tags = {
-        tag
-        for feature in features
-        for tag in feature.get("tags", [])
-    }
+    tags = {tag for feature in features for tag in feature.get("tags", [])}
     if not tags:
         return 0.0
     return len(tags & expected) / len(expected)
@@ -99,20 +95,16 @@ def compute_concept_reward(
     task_metrics: Mapping[str, Any] | None = None,
     *,
     weights: Mapping[str, float] | None = None,
+    alignment: float | None = None,
+    alignment_scale: float = 0.25,
 ) -> float:
-    """Return concept reward combining match, selectivity, parsimony, and transfer."""
+    """Return concept reward combining match, selectivity, parsimony, transfer, and alignment."""
     if task_metrics is None:
         task_metrics = {}
     if weights is None:
         weights = DEFAULT_WEIGHTS
-    entailed_ids = {
-        str(value)
-        for value in task_metrics.get("entailed_feature_ids", [])
-    }
-    contradictory_ids = {
-        str(value)
-        for value in task_metrics.get("contradictory_feature_ids", [])
-    }
+    entailed_ids = {str(value) for value in task_metrics.get("entailed_feature_ids", [])}
+    contradictory_ids = {str(value) for value in task_metrics.get("contradictory_feature_ids", [])}
     features = _filter_features(trace_json.get("features", []), entailed_ids, contradictory_ids)
     target_tags = set(concept_spec.expected_substructures)
     match = _compute_match(features, concept_spec)
@@ -128,6 +120,8 @@ def compute_concept_reward(
     if contradictory_ids:
         penalty = min(1.0, len(contradictory_ids) / (len(features) + 1.0))
         reward -= 0.2 * penalty
+    if alignment is not None:
+        reward *= 1.0 + alignment_scale * max(0.0, float(alignment))
     return float(max(0.0, reward))
 
 

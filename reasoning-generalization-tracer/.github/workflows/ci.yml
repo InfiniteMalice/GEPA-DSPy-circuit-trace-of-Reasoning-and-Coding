@@ -34,6 +34,10 @@ jobs:
           RUN_DIR=$(python -c 'import json,sys; print(json.loads(sys.argv[1])["run_dir"])' "$OUTPUT")
           test -f "$RUN_DIR/summary.md"
           test -f "$RUN_DIR/semantics.jsonl"
+          test -f "$RUN_DIR/attr_metrics.jsonl"
+          test -d "$RUN_DIR/attr"
+          ls "$RUN_DIR/attr"
+          grep -q "Attribution Metrics" "$RUN_DIR/summary.md"
         working-directory: reasoning-generalization-tracer
       - name: Concept reward smoke
         run: |
