@@ -118,7 +118,8 @@ def run_matrix(
         if limit is not None and idx >= limit:
             break
         name = _combo_name(combo)
-        seed = hash(name) % 10_000
+        digest = hashlib.sha256(name.encode("utf8")).hexdigest()
+        seed = int(digest, 16) % 10_000
         graphs = _extract_phase_graphs(backend, seed)
         metrics = _summarise_metrics(graphs)
         cell_dir = root / name

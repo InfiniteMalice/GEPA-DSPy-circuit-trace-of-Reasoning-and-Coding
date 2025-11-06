@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any, Iterable, Mapping
 
 from .schema import ConceptSpec
@@ -98,14 +99,18 @@ def compute_concept_reward(
     alignment: float | None = None,
     alignment_scale: float = 0.25,
 ) -> float:
-    """Return concept reward combining match, selectivity, parsimony, transfer, and alignment."""
+    "Aggregate core concept scores additively, then scale the sum by alignment."
     if task_metrics is None:
         task_metrics = {}
     if weights is None:
         weights = DEFAULT_WEIGHTS
     entailed_ids = {str(value) for value in task_metrics.get("entailed_feature_ids", [])}
     contradictory_ids = {str(value) for value in task_metrics.get("contradictory_feature_ids", [])}
-    features = _filter_features(trace_json.get("features", []), entailed_ids, contradictory_ids)
+    features = _filter_features(
+        trace_json.get("features", []),
+        entailed_ids,
+        contradictory_ids,
+    )
     target_tags = set(concept_spec.expected_substructures)
     match = _compute_match(features, concept_spec)
     selectivity = _compute_selectivity(features, target_tags)
@@ -121,7 +126,23 @@ def compute_concept_reward(
         penalty = min(1.0, len(contradictory_ids) / (len(features) + 1.0))
         reward -= 0.2 * penalty
     if alignment is not None:
-        reward *= 1.0 + alignment_scale * max(0.0, float(alignment))
+        try:
+            alignment_value = float(alignment)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("alignment must be a finite float") from exc
+        if not math.isfinite(alignment_value):
+            raise ValueError("alignment must be a finite float")
+        if not -1_000_000.0 < alignment_value < 1_000_000.0:
+            raise ValueError("alignment must fall within (-1e6, 1e6)")
+        try:
+            scale_value = float(alignment_scale)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("alignment_scale must be a finite float") from exc
+        if not math.isfinite(scale_value):
+            raise ValueError("alignment_scale must be a finite float")
+        if not 0.0 <= scale_value <= 10.0:
+            raise ValueError("alignment_scale must be within [0, 10]")
+        reward *= 1.0 + scale_value * max(0.0, alignment_value)
     return float(max(0.0, reward))
 
 

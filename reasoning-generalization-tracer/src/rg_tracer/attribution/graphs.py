@@ -70,6 +70,9 @@ class BackendNull(AttributionBackend):
                     activation=base_activation + 0.1,
                 ),
             ]
+            if layers is not None:
+                nodes = [node for node in nodes if node.layer in layers]
+            node_ids = {node.id for node in nodes}
             edges = [
                 GraphEdge(
                     src="n_input",
@@ -82,6 +85,8 @@ class BackendNull(AttributionBackend):
                     attr=0.3 + rng.random() * self.noise,
                 ),
             ]
+            if layers is not None:
+                edges = [edge for edge in edges if edge.src in node_ids and edge.dst in node_ids]
             meta = GraphMeta(
                 token_positions=list(range(len(sample.get("tokens", [0])))),
                 logits_scale=1.0 + 0.1 * index,
