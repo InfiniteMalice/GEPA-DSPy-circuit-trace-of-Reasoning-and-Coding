@@ -43,3 +43,20 @@ def test_concept_reward_increases_with_semantic_matches():
     )
     assert high_reward > low_reward
     assert penalised < high_reward
+
+
+def test_alignment_boost_scales_reward():
+    spec = ConceptSpec(name="demo", definition="", expected_substructures=["edge"])
+    trace = {
+        "features": [{"id": "edge", "layer": 0, "importance": 0.5, "tags": ["edge"]}],
+        "edges": [],
+        "path_lengths": {"mean": 1.0},
+    }
+    base = compute_concept_reward(trace, spec, task_metrics={})
+    boosted = compute_concept_reward(
+        trace,
+        spec,
+        task_metrics={},
+        alignment=0.8,
+    )
+    assert boosted > base

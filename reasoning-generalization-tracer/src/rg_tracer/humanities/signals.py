@@ -59,10 +59,12 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
             hedge_hits += 1
         if any(term in lowered for term in _FALLACY_TERMS):
             fallacy_flags += 1
-            tags.append({
-                "step": step,
-                "tags": [SemanticTag.RHETORICAL_EXCESS.value],
-            })
+            tags.append(
+                {
+                    "step": step,
+                    "tags": [SemanticTag.RHETORICAL_EXCESS.value],
+                }
+            )
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
     total = len(steps)

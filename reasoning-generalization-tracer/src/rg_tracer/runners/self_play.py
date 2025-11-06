@@ -3,18 +3,27 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Mapping, Sequence
 
 from ..abstention import apply_abstention
+from ..attribution import graphs as attr_graphs
+from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
 from ..scoring import aggregator, axes
 from ..semantics import SemanticTag, repair_once, verify_chain
 from ..trm_baseline import TinyRecursionModel
 
 AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
+DEFAULT_ATTR_CONFIG = {"probe_size": 2, "topk": 2, "backend": "null"}
+DEFAULT_ATTR_BONUSES = {
+    "alignment_gain": 0.01,
+    "repeatability_gain": 0.01,
+    "sparsity_drop": 0.005,
+}
+ATTR_PHASES = ["pre_overfit", "overfit", "pre_grok", "post_grok"]
 
 
 @dataclass
@@ -31,6 +40,9 @@ class Candidate:
     trace: Dict[str, object] | None
     problem_id: str
     semantic_report: Mapping[str, object]
+    semantics_map: Dict[str, List[str]] = field(default_factory=dict)
+    attr_metrics: Dict[str, float] | None = None
+    attr_bonus: float = 0.0
 
 
 class TRMSampler:
@@ -122,6 +134,133 @@ def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
     return base
 
 
+def _build_probe_inputs(
+    problem: Mapping[str, object],
+    probe_size: int,
+) -> List[Dict[str, object]]:
+    if probe_size <= 0:
+        return []
+    base_tokens = list(problem.get("sequence", []) or problem.get("numbers", []))
+    if not base_tokens:
+        prompt = str(problem.get("prompt", "")) or str(problem.get("statement", ""))
+        base_tokens = [ord(ch) % 10 for ch in prompt[:8]] or [0]
+    task_id = str(problem.get("id", "task"))
+    probes: List[Dict[str, object]] = []
+    for index in range(probe_size):
+        phase = ATTR_PHASES[index % len(ATTR_PHASES)]
+        probes.append(
+            {
+                "task_id": f"{task_id}_probe_{index}",
+                "tokens": list(base_tokens),
+                "phase": phase,
+                "probe_index": index,
+            }
+        )
+    return probes
+
+
+def _compute_attr_metrics(
+    candidate: Candidate,
+    graphs: List[Mapping[str, object]],
+    bonuses: Mapping[str, float],
+    concept: ConceptSpec | None,
+) -> Dict[str, float]:
+    trace_features = []
+    if candidate.trace:
+        trace_features = candidate.trace.get("features", [])
+    concept_features = trace_features if concept is not None else []
+    metrics = {
+        "sparsity": attr_metrics.path_sparsity(graphs),
+        "avg_path_length": attr_metrics.average_path_length(graphs),
+        "branching_factor": attr_metrics.average_branching_factor(graphs),
+        "repeatability": attr_metrics.repeatability(graphs),
+        "alignment": attr_metrics.concept_alignment(graphs, concept_features),
+        "delta_sparsity": attr_metrics.delta_sparsity(graphs),
+        "delta_alignment": attr_metrics.delta_alignment(graphs, concept_features),
+        "delta_repeatability": attr_metrics.delta_repeatability(graphs),
+    }
+    bonus = 0.0
+    if metrics["delta_alignment"] > 0:
+        bonus += bonuses.get("alignment_gain", 0.0)
+    if metrics["delta_repeatability"] > 0:
+        bonus += bonuses.get("repeatability_gain", 0.0)
+    if metrics["delta_sparsity"] > 0:
+        bonus += bonuses.get("sparsity_drop", 0.0)
+    candidate.attr_metrics = metrics
+    candidate.attr_bonus = bonus
+    candidate.composite += bonus
+    alignment_now = metrics.get("alignment", 0.0)
+    if concept is not None and candidate.trace:
+        task_metrics = {
+            **candidate.semantics_map,
+            "concept_reuse": 1.0,
+            "supporting_tasks": 1.0,
+        }
+        candidate.concept_reward = compute_concept_reward(
+            candidate.trace,
+            concept,
+            task_metrics=task_metrics,
+            alignment=alignment_now,
+        )
+    return {**metrics, "bonus": bonus}
+
+
+def _apply_attribution_rewards(
+    candidates: List[Candidate],
+    *,
+    model: object,
+    problem: Mapping[str, object],
+    run_dir: Path,
+    profile_bonuses: Mapping[str, float],
+    attr_config: Mapping[str, object],
+    concept: ConceptSpec | None,
+) -> None:
+    if not candidates:
+        return
+    probe_size = int(attr_config.get("probe_size", DEFAULT_ATTR_CONFIG["probe_size"]))
+    topk = int(attr_config.get("topk", DEFAULT_ATTR_CONFIG["topk"]))
+    backend_value = attr_config.get("backend", DEFAULT_ATTR_CONFIG["backend"])
+    backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"])
+    if probe_size <= 0 or topk <= 0:
+        return
+    probes = _build_probe_inputs(problem, probe_size)
+    if not probes:
+        return
+    attr_dir = run_dir / "attr"
+    attr_dir.mkdir(parents=True, exist_ok=True)
+    metrics_path = run_dir / "attr_metrics.jsonl"
+    backend = attr_graphs.get_backend(backend_name)
+    bonuses = {**DEFAULT_ATTR_BONUSES, **dict(profile_bonuses)}
+    top_pairs = sorted(
+        enumerate(candidates),
+        key=lambda item: item[1].composite,
+        reverse=True,
+    )[:topk]
+    with metrics_path.open("w", encoding="utf8") as handle:
+        for idx, candidate in top_pairs:
+            graphs: List[Mapping[str, object]] = []
+            for probe in probes:
+                payload = dict(probe)
+                seed = idx * 997 + int(payload.get("probe_index", 0))
+                graph = attr_graphs.extract_graph(
+                    model,
+                    payload,
+                    backend=backend,
+                    seed=seed,
+                )
+                graphs.append(graph)
+                attr_path = attr_dir / f"candidate{idx}_probe{payload['probe_index']}.json"
+                with attr_path.open("w", encoding="utf8") as graph_handle:
+                    json.dump(graph, graph_handle, indent=2)
+            metrics = _compute_attr_metrics(candidate, graphs, bonuses, concept)
+            record = {
+                "candidate_index": idx,
+                "problem_id": candidate.problem_id,
+                **metrics,
+            }
+            handle.write(json.dumps(record) + "\n")
+
+
 def _load_problem(path: str | Path) -> Mapping[str, object]:
     with open(path, "r", encoding="utf8") as handle:
         first_line = handle.readline()
@@ -152,11 +291,7 @@ def _map_semantics_to_features(
         feature_id = str(feature.get("id", ""))
         if any(tag.lower() in step.lower() for step in entailed_steps for tag in feature_tags):
             entailed_ids.append(feature_id)
-        if any(
-            tag.lower() in step.lower()
-            for step in contradictory_steps
-            for tag in feature_tags
-        ):
+        if any(tag.lower() in step.lower() for step in contradictory_steps for tag in feature_tags):
             contradictory_ids.append(feature_id)
     return {
         "entailed_feature_ids": entailed_ids,
@@ -180,6 +315,8 @@ def run_self_play(
     raw_candidates = sampler_impl.generate(problem, k)
 
     profiles = aggregator.load_profiles()
+    profile_config = aggregator.get_last_config()
+    attr_config = profile_config.get("attr", {}) if profile_config else {}
     if profile not in profiles:
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]
@@ -220,11 +357,11 @@ def run_self_play(
         semantic_dict["abstained"] = abstention.abstained
         semantics_logs.append(semantic_dict)
 
-        concept_reward = 0.0
         trace_obj = raw.get("trace")
         trace_json = trace_obj.to_json() if hasattr(trace_obj, "to_json") else trace_obj
+        semantics_map = _map_semantics_to_features(trace_json, semantic_dict) if trace_json else {}
+        concept_reward = 0.0
         if concept is not None and trace_json:
-            semantics_map = _map_semantics_to_features(trace_json, semantic_dict)
             concept_reward = compute_concept_reward(
                 trace_json,
                 concept,
@@ -247,8 +384,19 @@ def run_self_play(
             trace=trace_json,
             problem_id=problem_id,
             semantic_report=semantic_dict,
+            semantics_map=semantics_map,
         )
         results.append(candidate)
+
+    _apply_attribution_rewards(
+        results,
+        model=sampler_impl.model,
+        problem=problem,
+        run_dir=run_dir,
+        profile_bonuses=profile_obj.bonuses,
+        attr_config=attr_config,
+        concept=concept,
+    )
 
     frontier = pareto_frontier(results)
     best = max(results, key=lambda c: c.composite)
@@ -268,6 +416,8 @@ def run_self_play(
                         "concept_reward": candidate.concept_reward,
                         "abstained": candidate.abstained,
                         "problem_id": candidate.problem_id,
+                        "attr_bonus": candidate.attr_bonus,
+                        "attr_metrics": candidate.attr_metrics,
                     }
                 )
                 + "\n"
@@ -292,6 +442,19 @@ def run_self_play(
                     abst=candidate.abstained,
                     sem=candidate.semantic_report.get("score", 0),
                     repair=candidate.semantic_report.get("repairs_attempted", 0),
+                )
+            )
+        handle.write("\n### Attribution Metrics\n")
+        for idx, candidate in enumerate(results, start=1):
+            if not candidate.attr_metrics:
+                continue
+            metrics = candidate.attr_metrics
+            handle.write(
+                "- #{idx} Δalign={align:.3f}, Δrepeat={repeat:.3f}, Δsparsity={sparsity:.3f}\n".format(
+                    idx=idx,
+                    align=metrics.get("delta_alignment", 0.0),
+                    repeat=metrics.get("delta_repeatability", 0.0),
+                    sparsity=metrics.get("delta_sparsity", 0.0),
                 )
             )
 

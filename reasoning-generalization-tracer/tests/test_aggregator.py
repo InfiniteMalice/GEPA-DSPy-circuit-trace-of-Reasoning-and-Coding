@@ -1,12 +1,12 @@
 import pytest
 
-import pytest
-
 from rg_tracer.scoring.aggregator import (
     DEFAULT_GATES,
     Profile,
     apply_hard_gates,
     evaluate_profile,
+    get_last_config,
+    load_profiles,
     weighted_geometric_mean,
 )
 
@@ -19,9 +19,7 @@ def test_weighted_geometric_mean_basic():
 
 
 def test_apply_hard_gates_enforces_threshold():
-    passes, failed = apply_hard_gates(
-        {"logical_validity": 4, "rigor": 2, "numerical_accuracy": 3}
-    )
+    passes, failed = apply_hard_gates({"logical_validity": 4, "rigor": 2, "numerical_accuracy": 3})
     assert not passes
     assert failed["rigor"] == 2
 
@@ -34,3 +32,26 @@ def test_evaluate_profile_respects_profile_weights():
     result = evaluate_profile(scores, profile)
     assert result["passes_gates"]
     assert result["composite"] > 3.5
+
+
+def test_load_profiles_exposes_config(tmp_path):
+    yaml_text = (
+        "profiles:\n"
+        "  demo:\n"
+        "    weights:\n"
+        "      logical_validity: 1.0\n"
+        "    bonuses:\n"
+        "      alignment_gain: 0.02\n"
+        "config:\n"
+        "  attr:\n"
+        "    probe_size: 3\n"
+        "    topk: 1\n"
+        "    backend: null\n"
+    )
+    path = tmp_path / "profiles.yaml"
+    path.write_text(yaml_text, encoding="utf8")
+    profiles = load_profiles(path)
+    profile = profiles["demo"]
+    assert profile.bonuses["alignment_gain"] == 0.02
+    config = get_last_config()
+    assert config["attr"]["probe_size"] == 3
