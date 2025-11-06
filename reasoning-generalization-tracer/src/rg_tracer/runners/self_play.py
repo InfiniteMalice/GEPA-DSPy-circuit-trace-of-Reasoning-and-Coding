@@ -28,6 +28,7 @@ DEFAULT_ATTR_BONUSES = {
     "repeatability_gain": 0.01,
     "sparsity_drop": 0.005,
 }
+ATTR_PHASES = ["pre_overfit", "overfit", "pre_grok", "post_grok"]
 
 
 @dataclass
