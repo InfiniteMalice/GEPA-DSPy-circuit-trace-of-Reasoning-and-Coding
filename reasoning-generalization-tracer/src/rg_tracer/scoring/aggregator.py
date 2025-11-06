@@ -129,9 +129,10 @@ def _split_profile_payload(
         bonuses_raw = {}
         weights_source = raw
     weights = {axis: float(value) for axis, value in weights_source}
-    bonuses = {
-        str(axis): float(value) for axis, value in getattr(bonuses_raw, "items", lambda: [])()
-    }
+    if isinstance(bonuses_raw, Mapping):
+        bonuses = {str(axis): float(value) for axis, value in bonuses_raw.items()}
+    else:
+        bonuses = {}
     return weights, bonuses
 
 

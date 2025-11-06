@@ -162,7 +162,12 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
         GraphEdge(src=src, dst=dst, attr=sum(values) / len(values))
         for (src, dst), values in edge_attrs.items()
     ]
-    meta = base.meta
+    meta = GraphMeta(
+        token_positions=list(base.meta.token_positions),
+        logits_scale=base.meta.logits_scale,
+        phase=base.meta.phase,
+        extras=dict(base.meta.extras),
+    )
     meta.extras["merged_count"] = len(normalised)
     return AttributionGraph(
         model_ref=base.model_ref,

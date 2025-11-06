@@ -192,7 +192,7 @@ Each self-play run emits:
 ## Grokking Matrix Experiments
 
 Use `scripts/run_grokking_matrix.py` to sweep weight decay, stability methods,
-gradient orthogonalisation, and supervised reasoning curricula. The script
+gradient orthogonalization, and supervised reasoning curricula. The script
 invokes attribution backends for each phase and writes per-cell metrics:
 
 ```bash

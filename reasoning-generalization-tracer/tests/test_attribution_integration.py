@@ -70,7 +70,7 @@ def test_concept_reward_scales_with_alignment():
         composite=0.5,
         passes_gates=True,
         failed_gates={},
-        concept_reward=0.0,
+        concept_reward=0.2,
         abstained=False,
         trace={
             "features": [{"id": "n2", "layer": 2, "importance": 1.0, "tags": ["n2"]}],
@@ -94,5 +94,4 @@ def test_concept_reward_scales_with_alignment():
     }
     base_reward = candidate.concept_reward
     _compute_attr_metrics(candidate, graphs, bonuses, concept=concept)
-    assert candidate.concept_reward >= base_reward
-    assert candidate.concept_reward > 0
+    assert candidate.concept_reward > base_reward
