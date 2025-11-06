@@ -17,7 +17,12 @@ from ..semantics import SemanticTag, repair_once, verify_chain
 from ..trm_baseline import TinyRecursionModel
 
 AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
-DEFAULT_ATTR_CONFIG = {"probe_size": 2, "topk": 2, "backend": "null"}
+ATTR_PHASES = ["pre_overfit", "overfit", "pre_grok", "post_grok"]
+DEFAULT_ATTR_CONFIG = {
+    "probe_size": len(ATTR_PHASES),
+    "topk": 2,
+    "backend": "null",
+}
 DEFAULT_ATTR_BONUSES = {
     "alignment_gain": 0.01,
     "repeatability_gain": 0.01,

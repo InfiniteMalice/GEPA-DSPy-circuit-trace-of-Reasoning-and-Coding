@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Union
 
 from ..semantics import SemanticTag
 
@@ -16,7 +16,7 @@ class HumanitiesSignals:
     hedge_rate: float
     fallacy_flags: int
     neutrality_balance: float
-    tags: List[Mapping[str, Iterable[str]]]
+    tags: List[Mapping[str, Union[str, Iterable[str]]]]
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -46,7 +46,7 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     hedge_hits = 0
     fallacy_flags = 0
     neutrality_hits = 0
-    tags: List[Mapping[str, Iterable[str]]] = []
+    tags: List[Mapping[str, Union[str, Iterable[str]]]] = []
     for step in steps:
         lowered = step.lower()
         if any(marker in step for marker in _CITATION_MARKERS):

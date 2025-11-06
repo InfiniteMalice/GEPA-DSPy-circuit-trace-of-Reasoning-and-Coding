@@ -1,3 +1,5 @@
+import pytest
+
 from rg_tracer.concepts import ConceptSpec, compute_concept_reward
 
 
@@ -60,3 +62,25 @@ def test_alignment_boost_scales_reward():
         alignment=0.8,
     )
     assert boosted > base
+
+
+def test_alignment_zero_and_negative_do_not_change_reward():
+    spec = ConceptSpec(name="edge", definition="", expected_substructures=["edge"])
+    trace = {
+        "features": [{"id": "edge", "layer": 0, "importance": 0.5, "tags": ["edge"]}],
+        "edges": [],
+        "path_lengths": {"mean": 1.0},
+    }
+    base = compute_concept_reward(trace, spec, task_metrics={})
+    zero = compute_concept_reward(trace, spec, task_metrics={}, alignment=0.0)
+    negative = compute_concept_reward(trace, spec, task_metrics={}, alignment=-0.3)
+    scaled = compute_concept_reward(
+        trace,
+        spec,
+        task_metrics={},
+        alignment=1.0,
+        alignment_scale=0.5,
+    )
+    assert zero == pytest.approx(base)
+    assert negative == pytest.approx(base)
+    assert scaled == pytest.approx(base * 1.5)

@@ -186,6 +186,8 @@ def delta_sparsity(
 
     overfit_graphs = _filter_by_phase(graphs, overfit_phase)
     post_graphs = _filter_by_phase(graphs, post_phase)
+    if not overfit_graphs or not post_graphs:
+        return 0.0
     overfit = path_sparsity(overfit_graphs)
     post = path_sparsity(post_graphs)
     return float(overfit - post)
@@ -203,6 +205,8 @@ def delta_alignment(
 
     overfit_graphs = _filter_by_phase(graphs, overfit_phase)
     post_graphs = _filter_by_phase(graphs, post_phase)
+    if not overfit_graphs or not post_graphs:
+        return 0.0
     overfit = concept_alignment(overfit_graphs, concept_features, top_k=top_k)
     post = concept_alignment(post_graphs, concept_features, top_k=top_k)
     return float(post - overfit)
@@ -219,6 +223,8 @@ def delta_repeatability(
 
     overfit_graphs = _filter_by_phase(graphs, overfit_phase)
     post_graphs = _filter_by_phase(graphs, post_phase)
+    if not overfit_graphs or not post_graphs:
+        return 0.0
     overfit = repeatability(overfit_graphs, top_k=top_k)
     post = repeatability(post_graphs, top_k=top_k)
     return float(post - overfit)

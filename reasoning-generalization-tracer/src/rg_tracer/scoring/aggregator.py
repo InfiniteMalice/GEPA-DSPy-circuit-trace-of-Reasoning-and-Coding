@@ -95,11 +95,19 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             current_subsection = line[:-1]
             result.setdefault("config", {})[current_subsection] = {}
             continue
+        if (
+            section == "config"
+            and indent == 2
+            and ":" in line
+            and not line.endswith(":")
+        ):
+            key, value = line.split(":", 1)
+            result.setdefault("config", {})[key.strip()] = _parse_scalar_value(value)
+            continue
         if section == "config" and indent == 4 and ":" in line and current_subsection:
             key, value = line.split(":", 1)
-            result.setdefault("config", {}).setdefault(current_subsection, {})[key.strip()] = (
-                _parse_scalar_value(value)
-            )
+            config_section = result.setdefault("config", {}).setdefault(current_subsection, {})
+            config_section[key.strip()] = _parse_scalar_value(value)
             continue
         raise ValueError(f"Unable to parse line: {raw_line}")
     return result
