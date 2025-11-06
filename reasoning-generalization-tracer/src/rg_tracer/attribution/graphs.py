@@ -105,7 +105,6 @@ class BackendNull(AttributionBackend):
         if len(graphs) == 1:
             return graphs[0].to_dict()
         merged = merge_graphs(graph.to_dict() for graph in graphs)
-        merged.meta.extras.setdefault("batched", len(graphs))
         return merged.to_dict()
 
 
@@ -129,7 +128,7 @@ class BackendHookedTransformer(AttributionBackend):
 
 
 class BackendExternal(AttributionBackend):
-    """Placeholder backend for external attribution tooling."""
+    "Placeholder backend for external attribution tooling."
 
     def __init__(self, *, endpoint: str | None = None) -> None:
         self.endpoint = endpoint or ""
@@ -155,7 +154,7 @@ _BACKENDS: MutableMapping[str, Callable[..., AttributionBackend]] = {
 
 
 def register_backend(name: str, factory: Callable[..., AttributionBackend]) -> None:
-    """Register a backend factory under ``name``."""
+    "Register a backend factory under ``name``."
 
     _BACKENDS[name] = factory
 
@@ -177,7 +176,7 @@ def extract_graph(
     layers: Sequence[int] | None = None,
     seed: int | None = None,
 ) -> Mapping[str, object]:
-    """Extract an attribution graph using the configured backend."""
+    "Extract an attribution graph using the configured backend."
 
     backend = backend or get_backend(backend_name)
     return backend.extract_graph(model, inputs, layers=layers, seed=seed)

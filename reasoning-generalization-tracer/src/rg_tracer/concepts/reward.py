@@ -15,6 +15,40 @@ DEFAULT_WEIGHTS = {
 }
 
 
+def _validate_float_param(
+    value: Any,
+    name: str,
+    min_val: float | None = None,
+    max_val: float | None = None,
+    *,
+    min_inclusive: bool = True,
+    max_inclusive: bool = True,
+) -> float:
+    """Return ``value`` as float while enforcing finite bounds."""
+
+    try:
+        float_value = float(value)
+    except (TypeError, ValueError) as exc:  # pragma: no cover - validation helper
+        raise ValueError(f"{name} must be a finite float") from exc
+    if not math.isfinite(float_value):
+        raise ValueError(f"{name} must be a finite float")
+    if min_val is not None:
+        if min_inclusive:
+            if float_value < min_val:
+                raise ValueError(f"{name} must be >= {min_val}")
+        else:
+            if float_value <= min_val:
+                raise ValueError(f"{name} must be > {min_val}")
+    if max_val is not None:
+        if max_inclusive:
+            if float_value > max_val:
+                raise ValueError(f"{name} must be <= {max_val}")
+        else:
+            if float_value >= max_val:
+                raise ValueError(f"{name} must be < {max_val}")
+    return float_value
+
+
 def _filter_features(
     features: Iterable[Mapping[str, Any]],
     entailed_ids: set[str],
@@ -126,27 +160,28 @@ def compute_concept_reward(
         penalty = min(1.0, len(contradictory_ids) / (len(features) + 1.0))
         reward -= 0.2 * penalty
     if alignment is not None:
-        try:
-            alignment_value = float(alignment)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("alignment must be a finite float") from exc
-        if not math.isfinite(alignment_value):
-            raise ValueError("alignment must be a finite float")
         # Allow alignment to modulate reward asymmetrically: the admissible range
-        # is open to ensure extreme sentinels are rejected, while the scale range
-        # includes zero so alignment can be disabled via configuration. The upper
-        # bound remains inclusive to cap modulation at a reasonable 10x multiplier.
-        if not -1_000_000.0 < alignment_value < 1_000_000.0:
-            raise ValueError("alignment must fall within (-1e6, 1e6)")
-        try:
-            scale_value = float(alignment_scale)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("alignment_scale must be a finite float") from exc
-        if not math.isfinite(scale_value):
-            raise ValueError("alignment_scale must be a finite float")
-        if not 0.0 <= scale_value <= 10.0:
-            raise ValueError("alignment_scale must be within [0, 10]")
-        reward *= 1.0 + scale_value * max(0.0, alignment_value)
+        # is open so sentinel extremes are rejected, while the scale range is
+        # closed on zero to let configurations disable modulation. Negative
+        # alignment is neutralised so the reward is never penalised by concept
+        # disagreement; callers should encode penalties elsewhere if desired.
+        alignment_value = _validate_float_param(
+            alignment,
+            "alignment",
+            -1_000_000.0,
+            1_000_000.0,
+            min_inclusive=False,
+            max_inclusive=False,
+        )
+        scale_value = _validate_float_param(
+            alignment_scale,
+            "alignment_scale",
+            0.0,
+            10.0,
+        )
+        positive_alignment = max(0.0, alignment_value)
+        multiplier = 1.0 + scale_value * positive_alignment
+        reward *= max(0.0, multiplier)
     return float(max(0.0, reward))
 
 

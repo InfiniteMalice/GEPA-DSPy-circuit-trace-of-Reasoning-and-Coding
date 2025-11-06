@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import copy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, Mapping
@@ -161,14 +162,14 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, Profile]:
         path = Path(path)
     profiles, config = _parse_profiles(path.read_text())
     global _LAST_CONFIG
-    _LAST_CONFIG = dict(config)
+    _LAST_CONFIG = copy.deepcopy(config)
     return profiles
 
 
 def get_last_config() -> Dict[str, object]:
     """Return the configuration parsed during :func:`load_profiles`."""
 
-    return dict(_LAST_CONFIG)
+    return copy.deepcopy(_LAST_CONFIG)
 
 
 def apply_hard_gates(

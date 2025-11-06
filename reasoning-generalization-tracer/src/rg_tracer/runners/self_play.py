@@ -170,7 +170,7 @@ def _compute_attr_metrics(
     concept: ConceptSpec | None,
 ) -> Dict[str, float]:
     trace_features = []
-    if candidate.trace:
+    if isinstance(candidate.trace, Mapping):
         trace_features = candidate.trace.get("features", [])
     concept_features = trace_features if concept is not None else []
     metrics = {

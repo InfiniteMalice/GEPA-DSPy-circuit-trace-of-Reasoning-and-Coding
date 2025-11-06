@@ -163,7 +163,7 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
         for (src, dst), values in edge_attrs.items()
     ]
     meta = base.meta
-    meta.extras.setdefault("merged_count", len(normalised))
+    meta.extras["merged_count"] = len(normalised)
     return AttributionGraph(
         model_ref=base.model_ref,
         task_id=base.task_id,

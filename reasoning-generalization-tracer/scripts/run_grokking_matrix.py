@@ -57,23 +57,28 @@ def _extract_phase_graphs(
 
 def _summarise_metrics(
     graphs: List[Mapping[str, object]],
-) -> Dict[str, float]:
+) -> Dict[str, object]:
     metrics = {
         "sparsity": attr_metrics.path_sparsity(graphs),
         "avg_path_length": attr_metrics.average_path_length(graphs),
         "branching_factor": attr_metrics.average_branching_factor(graphs),
         "repeatability": attr_metrics.repeatability(graphs),
         "delta_sparsity": attr_metrics.delta_sparsity(graphs),
-        "delta_alignment": attr_metrics.delta_alignment(graphs, concept_features=None),
         "delta_repeatability": attr_metrics.delta_repeatability(graphs),
     }
-    return {key: float(value) for key, value in metrics.items()}
+    # Concept annotations are not part of the matrix sweep, so mark alignment
+    # deltas as unavailable rather than returning a wall of zeros.
+    metrics["delta_alignment"] = None
+    return {
+        key: (float(value) if isinstance(value, (int, float)) else value)
+        for key, value in metrics.items()
+    }
 
 
 def _write_cell_artifacts(
     cell_dir: Path,
     graphs: List[Mapping[str, object]],
-    metrics: Mapping[str, float],
+    metrics: Mapping[str, object],
 ) -> None:
     cell_dir.mkdir(parents=True, exist_ok=True)
     for graph, phase in zip(graphs, PHASES, strict=True):
@@ -85,16 +90,29 @@ def _write_cell_artifacts(
 
 def _write_summary(
     summary_path: Path,
-    rows: List[Tuple[str, Mapping[str, float]]],
+    rows: List[Tuple[str, Mapping[str, object]]],
 ) -> None:
     with summary_path.open("w", encoding="utf8") as handle:
-        handle.write("| Setting | ΔAlign | ΔRepeat | ΔSparsity | Path | Branch | Repeat |\n")
-        handle.write("| ------- | ------ | -------- | ---------- | ---- | ------ | ------ |\n")
+        header = (
+            "| Setting | ΔAlign (if available) | ΔRepeat | ΔSparsity | "
+            "Path | Branch | Repeat |\n"
+        )
+        separator = (
+            "| ------- | --------------------- | -------- | ---------- | "
+            "---- | ------ | ------ |\n"
+        )
+        handle.write(header)
+        handle.write(separator)
         for name, metrics in rows:
+            align_value = metrics.get("delta_alignment")
+            align_display = (
+                f"{align_value:.3f}" if isinstance(align_value, (int, float)) else "n/a"
+            )
             handle.write(
-                "| {name} | {align:.3f} | {repeat:.3f} | {sparsity:.3f} | {path:.3f} | {branch:.3f} | {rep:.3f} |\n".format(
+                "| {name} | {align} | {repeat:.3f} | {sparsity:.3f} | "
+                "{path:.3f} | {branch:.3f} | {rep:.3f} |\n".format(
                     name=name,
-                    align=metrics.get("delta_alignment", 0.0),
+                    align=align_display,
                     repeat=metrics.get("delta_repeatability", 0.0),
                     sparsity=metrics.get("delta_sparsity", 0.0),
                     path=metrics.get("avg_path_length", 0.0),
@@ -113,7 +131,7 @@ def run_matrix(
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     root = output_dir / f"grokking_matrix_{timestamp}"
     root.mkdir(parents=True, exist_ok=True)
-    rows: List[Tuple[str, Mapping[str, float]]] = []
+    rows: List[Tuple[str, Mapping[str, object]]] = []
     for idx, combo in enumerate(_build_combo_grid()):
         if limit is not None and idx >= limit:
             break
