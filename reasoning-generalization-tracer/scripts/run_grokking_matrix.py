@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 from datetime import datetime
@@ -117,7 +118,7 @@ def run_matrix(
         if limit is not None and idx >= limit:
             break
         name = _combo_name(combo)
-        seed = hash(name) % 10_000
+        seed = int(hashlib.sha256(name.encode("utf-8")).hexdigest(), 16) % 10_000
         graphs = _extract_phase_graphs(backend, seed)
         metrics = _summarise_metrics(graphs)
         cell_dir = root / name
