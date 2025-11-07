@@ -104,7 +104,21 @@ class BackendNull(AttributionBackend):
             )
         if len(graphs) == 1:
             return graphs[0].to_dict()
-        merged = merge_graphs(graph.to_dict() for graph in graphs)
+        serialised: list[Mapping[str, object]] = []
+        for graph in graphs:
+            graph_dict: dict[str, object] = dict(graph.to_dict())
+            meta_dict = graph_dict.get("meta")
+            if isinstance(meta_dict, Mapping):
+                meta_copy: dict[str, object] = dict(meta_dict)
+                meta_copy.pop("sample_index", None)
+                extras = meta_copy.get("extras")
+                if isinstance(extras, Mapping):
+                    extras_copy: dict[str, object] = dict(extras)
+                    extras_copy.pop("sample_index", None)
+                    meta_copy["extras"] = extras_copy
+                graph_dict["meta"] = meta_copy
+            serialised.append(graph_dict)
+        merged = merge_graphs(serialised)
         return merged.to_dict()
 
 
