@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import math
 import copy
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, Mapping

@@ -1,3 +1,5 @@
+import pytest
+
 from rg_tracer.attribution import metrics
 
 BASE_NODES = [
@@ -73,3 +75,37 @@ def test_repeatability_recognises_divergence():
     identical = metrics.repeatability([g1, g1])
     divergent = metrics.repeatability([g1, g2])
     assert divergent < identical
+
+
+def test_delta_alignment_missing_phase_returns_zero():
+    overfit_only = [_graph(
+        [
+            {"src": "n0", "dst": "n1", "attr": 0.5},
+            {"src": "n1", "dst": "n2", "attr": 0.4},
+        ],
+        phase="overfit",
+    )]
+    delta = metrics.delta_alignment(overfit_only, concept_features=[{"id": "n2"}])
+    assert delta == 0.0
+
+
+def test_repeatability_single_graph_is_one():
+    graph = _graph(
+        [
+            {"src": "n0", "dst": "n1", "attr": 0.5},
+            {"src": "n1", "dst": "n2", "attr": 0.5},
+        ],
+        phase="post_grok",
+    )
+    assert metrics.repeatability([graph]) == pytest.approx(1.0)
+
+
+def test_concept_alignment_rejects_invalid_topk():
+    graph = _graph(
+        [
+            {"src": "n0", "dst": "n1", "attr": 0.5},
+        ],
+        phase="post_grok",
+    )
+    with pytest.raises(ValueError):
+        metrics.concept_alignment([graph], [{"id": "n1"}], top_k=0)

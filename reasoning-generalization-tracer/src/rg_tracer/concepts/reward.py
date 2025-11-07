@@ -24,28 +24,28 @@ def _validate_float_param(
     min_inclusive: bool = True,
     max_inclusive: bool = True,
 ) -> float:
-    """Return ``value`` as float while enforcing finite bounds."""
+    "Return ``value`` as float while enforcing finite bounds."
 
     try:
         float_value = float(value)
     except (TypeError, ValueError) as exc:  # pragma: no cover - validation helper
-        raise ValueError(f"{name} must be a finite float") from exc
+        raise ValueError(f"{name}: finite float required") from exc
     if not math.isfinite(float_value):
-        raise ValueError(f"{name} must be a finite float")
+        raise ValueError(f"{name}: finite float required")
     if min_val is not None:
         if min_inclusive:
             if float_value < min_val:
-                raise ValueError(f"{name} must be >= {min_val}")
+                raise ValueError(f"{name} >= {min_val} required")
         else:
             if float_value <= min_val:
-                raise ValueError(f"{name} must be > {min_val}")
+                raise ValueError(f"{name} > {min_val} required")
     if max_val is not None:
         if max_inclusive:
             if float_value > max_val:
-                raise ValueError(f"{name} must be <= {max_val}")
+                raise ValueError(f"{name} <= {max_val} required")
         else:
             if float_value >= max_val:
-                raise ValueError(f"{name} must be < {max_val}")
+                raise ValueError(f"{name} < {max_val} required")
     return float_value
 
 
@@ -165,6 +165,7 @@ def compute_concept_reward(
         # closed on zero to let configurations disable modulation. Negative
         # alignment is neutralised so the reward is never penalised by concept
         # disagreement; callers should encode penalties elsewhere if desired.
+        # Positive alignment is clamped to 1.0 to avoid runaway multipliers.
         alignment_value = _validate_float_param(
             alignment,
             "alignment",
@@ -179,7 +180,7 @@ def compute_concept_reward(
             0.0,
             10.0,
         )
-        positive_alignment = max(0.0, alignment_value)
+        positive_alignment = min(1.0, max(0.0, alignment_value))
         multiplier = 1.0 + scale_value * positive_alignment
         reward *= max(0.0, multiplier)
     return float(max(0.0, reward))

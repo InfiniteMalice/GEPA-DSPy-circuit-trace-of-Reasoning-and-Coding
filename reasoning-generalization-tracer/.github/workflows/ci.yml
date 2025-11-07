@@ -27,11 +27,17 @@ jobs:
         working-directory: reasoning-generalization-tracer
       - name: Smoke self-play
         run: |
-          OUTPUT=$(rg-tracer self-play --profile proof_math --k 3 \
+          set -euo pipefail
+          RUN_DIR=$(rg-tracer self-play --profile proof_math --k 3 \
             --problem datasets/toy_math/addition_small.jsonl \
-            --concept parity --sampler trm)
-          echo "Self-play output: $OUTPUT"
-          RUN_DIR=$(python -c 'import json,sys; print(json.loads(sys.argv[1])["run_dir"])' "$OUTPUT")
+            --concept parity --sampler trm \
+            | python - <<'PY'
+import json
+import sys
+
+print(json.loads(sys.stdin.read())["run_dir"])
+PY
+          )
           export RUN_DIR
           test -f "$RUN_DIR/summary.md"
           test -f "$RUN_DIR/semantics.jsonl"

@@ -58,9 +58,9 @@ target Tiny Recursion Models and small transformers. Each run logs:
 * **Δ Metrics** – sparsity drop, alignment gain, and repeatability gain
   comparing `overfit` and `post_grok` phases.
 
-Soft bonuses (+0.01 for alignment/repeat gains, +0.005 for sparsity drops by
-default) are added to composite scores after hard gates. Concept rewards are
-scaled by `(1 + 0.25 * alignment)` when semantic entailment holds. All metrics
+Soft bonuses (configurable; e.g., +0.01 for alignment/repeat gains, +0.005 for
+sparsity drops) are added to composite scores after hard gates. Concept rewards
+are scaled by `(1 + 0.25 * alignment)` when semantic entailment holds. All metrics
 are written to `runs/<timestamp>/attr_metrics.jsonl` alongside per-probe graph
 JSON in `runs/<timestamp>/attr/`.
 
@@ -172,6 +172,20 @@ Each self-play run emits:
 * **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
 * **Attribution:** tweak probe size, top-k, and backend via `config.attr` in
   `scoring/profiles.yaml`. Per-profile bonuses live under `profiles.*.bonuses`.
+  Example:
+  ```yaml
+  config:
+    attr:
+      probe_size: 3
+      topk: 1
+      backend: null
+  profiles:
+    demo:
+      bonuses:
+        alignment_gain: 0.02
+        repeatability_gain: 0.01
+        sparsity_drop: 0.005
+  ```
 
 ## Limitations
 
@@ -201,6 +215,8 @@ python scripts/run_grokking_matrix.py --limit 2
 
 The resulting directory includes one folder per configuration with
 `pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
-alignment, and repeatability deltas. Compare `softmax` vs `stablemax` or
+alignment, and repeatability deltas. The ΔAlignment column prints `n/a` because
+the matrix runs omit concept feature catalogs by default. Compare `softmax` vs
+`stablemax` or
 `sft_only` vs `srl_pretrain_then_sft` to inspect how interventions shift
 attribution structure before accuracy moves.

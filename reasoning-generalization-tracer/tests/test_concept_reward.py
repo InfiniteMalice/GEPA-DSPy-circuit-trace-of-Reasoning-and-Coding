@@ -81,6 +81,16 @@ def test_alignment_zero_and_negative_do_not_change_reward():
         alignment=1.0,
         alignment_scale=0.5,
     )
+    clamped = compute_concept_reward(
+        trace,
+        spec,
+        task_metrics={},
+        alignment=5.0,
+        alignment_scale=0.5,
+    )
+    none_value = compute_concept_reward(trace, spec, task_metrics={}, alignment=None)
     assert zero == pytest.approx(base)
     assert negative == pytest.approx(base)
     assert scaled == pytest.approx(base * 1.5)
+    assert clamped == pytest.approx(base * 1.5)
+    assert none_value == pytest.approx(base)

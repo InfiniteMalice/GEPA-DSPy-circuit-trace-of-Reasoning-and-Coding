@@ -54,6 +54,12 @@ def test_attr_bonus_applies_when_alignment_grows():
     assert result["delta_alignment"] > 0
     assert candidate.attr_bonus == pytest.approx(0.05)
     assert candidate.composite == pytest.approx(0.55)
+    assert {
+        "delta_alignment",
+        "delta_repeatability",
+        "delta_sparsity",
+    }.issubset(candidate.attr_metrics.keys())
+    assert all(isinstance(value, float) for value in candidate.attr_metrics.values())
 
 
 def test_concept_reward_scales_with_alignment():

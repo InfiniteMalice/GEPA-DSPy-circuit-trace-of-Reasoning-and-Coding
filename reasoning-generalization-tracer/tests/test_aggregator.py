@@ -55,6 +55,8 @@ def test_load_profiles_exposes_config(tmp_path):
     assert profile.bonuses["alignment_gain"] == 0.02
     config = get_last_config()
     assert config["attr"]["probe_size"] == 3
+    config["attr"]["probe_size"] = 99
+    assert get_last_config()["attr"]["probe_size"] == 3
 
 
 def test_fallback_parser_handles_top_level_scalars(tmp_path, monkeypatch):

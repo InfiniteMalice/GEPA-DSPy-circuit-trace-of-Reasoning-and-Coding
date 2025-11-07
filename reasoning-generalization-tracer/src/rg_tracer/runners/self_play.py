@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from collections.abc import Iterable
 from typing import Dict, List, Mapping, Sequence
 
 from ..abstention import apply_abstention
@@ -163,16 +164,45 @@ def _build_probe_inputs(
     return probes
 
 
+def _concept_feature_descriptors(concept: ConceptSpec | None) -> List[Mapping[str, object]]:
+    "Return concept feature descriptors suitable for attribution metrics."
+
+    if concept is None:
+        return []
+    if concept.feature_catalog:
+        descriptors: List[Mapping[str, object]] = []
+        for entry in concept.feature_catalog:
+            if not isinstance(entry, Mapping):
+                continue
+            identifier = entry.get("id")
+            if not identifier:
+                continue
+            descriptor: Dict[str, object] = {"id": str(identifier)}
+            tags = entry.get("tags")
+            if isinstance(tags, Iterable) and not isinstance(tags, (str, bytes)):
+                descriptor["tags"] = [str(tag) for tag in tags]
+            for key in ("layer", "type"):
+                if key in entry:
+                    descriptor[key] = entry[key]
+            descriptors.append(descriptor)
+        if descriptors:
+            return descriptors
+    fallback: List[Mapping[str, object]] = []
+    for item in concept.expected_substructures:
+        if not item:
+            continue
+        fallback.append({"id": str(item), "tags": [str(item)]})
+    return fallback
+
+
 def _compute_attr_metrics(
     candidate: Candidate,
     graphs: List[Mapping[str, object]],
     bonuses: Mapping[str, float],
     concept: ConceptSpec | None,
 ) -> Dict[str, float]:
-    trace_features = []
-    if isinstance(candidate.trace, Mapping):
-        trace_features = candidate.trace.get("features", [])
-    concept_features = trace_features if concept is not None else []
+    "Populate candidate attribution fields and return the computed metrics."
+    concept_features = _concept_feature_descriptors(concept)
     metrics = {
         "sparsity": attr_metrics.path_sparsity(graphs),
         "avg_path_length": attr_metrics.average_path_length(graphs),
