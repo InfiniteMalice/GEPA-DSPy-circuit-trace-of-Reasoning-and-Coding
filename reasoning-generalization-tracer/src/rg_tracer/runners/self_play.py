@@ -364,17 +364,6 @@ def run_self_play(
         trace_obj = raw.get("trace")
         trace_json = trace_obj.to_json() if hasattr(trace_obj, "to_json") else trace_obj
         semantics_map = _map_semantics_to_features(trace_json, semantic_dict) if trace_json else {}
-        concept_reward = 0.0
-        if concept is not None and trace_json:
-            concept_reward = compute_concept_reward(
-                trace_json,
-                concept,
-                task_metrics={
-                    **semantics_map,
-                    "concept_reuse": 1.0,
-                    "supporting_tasks": 1.0,
-                },
-            )
         candidate = Candidate(
             text=abstention.text,
             confidence=raw.get("confidence", 0.0),
@@ -383,7 +372,7 @@ def run_self_play(
             composite=float(eval_result["composite"]),
             passes_gates=gates_pass,
             failed_gates=dict(eval_result["failed_gates"]),
-            concept_reward=float(concept_reward),
+            concept_reward=0.0,
             abstained=abstention.abstained,
             trace=trace_json,
             problem_id=problem_id,
@@ -401,6 +390,23 @@ def run_self_play(
         attr_config=attr_config,
         concept=concept,
     )
+
+    if concept is not None:
+        for candidate in results:
+            if candidate.concept_reward != 0.0:
+                continue
+            if not candidate.trace:
+                continue
+            task_metrics = {
+                **candidate.semantics_map,
+                "concept_reuse": 1.0,
+                "supporting_tasks": 1.0,
+            }
+            candidate.concept_reward = compute_concept_reward(
+                candidate.trace,
+                concept,
+                task_metrics=task_metrics,
+            )
 
     frontier = pareto_frontier(results)
     best = max(results, key=lambda c: c.composite)
@@ -448,19 +454,23 @@ def run_self_play(
                     repair=candidate.semantic_report.get("repairs_attempted", 0),
                 )
             )
-        handle.write("\n### Attribution Metrics\n")
-        for idx, candidate in enumerate(results, start=1):
-            if not candidate.attr_metrics:
-                continue
-            metrics = candidate.attr_metrics
-            handle.write(
-                "- #{idx} Δalign={align:.3f}, Δrepeat={repeat:.3f}, Δsparsity={sparsity:.3f}\n".format(
-                    idx=idx,
-                    align=metrics.get("delta_alignment", 0.0),
-                    repeat=metrics.get("delta_repeatability", 0.0),
-                    sparsity=metrics.get("delta_sparsity", 0.0),
+        metrics_to_write = [
+            (idx, candidate)
+            for idx, candidate in enumerate(results, start=1)
+            if candidate.attr_metrics
+        ]
+        if metrics_to_write:
+            handle.write("\n### Attribution Metrics\n")
+            for idx, candidate in metrics_to_write:
+                metrics = candidate.attr_metrics or {}
+                handle.write(
+                    "- #{idx} Δalign={align:.3f}, Δrepeat={repeat:.3f}, Δsparsity={sparsity:.3f}\n".format(
+                        idx=idx,
+                        align=metrics.get("delta_alignment", 0.0),
+                        repeat=metrics.get("delta_repeatability", 0.0),
+                        sparsity=metrics.get("delta_sparsity", 0.0),
+                    )
                 )
-            )
 
     best_path = run_dir / "best.json"
     with best_path.open("w", encoding="utf8") as handle:
