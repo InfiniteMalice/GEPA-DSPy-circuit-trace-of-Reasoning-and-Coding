@@ -24,7 +24,7 @@ def _validate_float_param(
     min_inclusive: bool = True,
     max_inclusive: bool = True,
 ) -> float:
-    """Return ``value`` as float while enforcing finite bounds."""
+    "Return ``value`` as float while enforcing finite bounds."
 
     try:
         float_value = float(value)
@@ -133,7 +133,7 @@ def compute_concept_reward(
     alignment: float | None = None,
     alignment_scale: float = 0.25,
 ) -> float:
-    """Aggregate core concept scores additively, then scale the sum by alignment."""
+    "Aggregate core concept scores additively, then scale the sum by alignment."
     if task_metrics is None:
         task_metrics = {}
     if weights is None:
