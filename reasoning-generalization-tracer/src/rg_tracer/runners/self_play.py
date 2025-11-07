@@ -321,7 +321,14 @@ def _map_semantics_to_features(
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
     for feature in features:
-        feature_tags = {str(tag) for tag in feature.get("tags", [])}
+        raw_tags = feature.get("tags")
+        if raw_tags is None:
+            tags_iter = []
+        elif isinstance(raw_tags, (list, tuple, set)):
+            tags_iter = raw_tags
+        else:
+            tags_iter = [raw_tags]
+        feature_tags = {str(tag) for tag in tags_iter}
         feature_id = str(feature.get("id", ""))
         if any(tag.lower() in step.lower() for step in entailed_steps for tag in feature_tags):
             entailed_ids.append(feature_id)

@@ -162,7 +162,11 @@ def concept_alignment(
     graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
     if not graphs_seq:
         return 0.0
-    concept_ids = {str(feature.get("id", "")) for feature in concept_features if feature.get("id")}
+    concept_ids = {
+        str(feature["id"])
+        for feature in concept_features
+        if "id" in feature and feature["id"] is not None
+    }
     if not concept_ids:
         return 0.0
     scores: List[float] = []
