@@ -169,7 +169,6 @@ def _compute_attr_metrics(
     bonuses: Mapping[str, float],
     concept: ConceptSpec | None,
 ) -> Dict[str, float]:
-    """Populate candidate attribution fields and return the computed metrics."""
     trace_features = []
     if isinstance(candidate.trace, Mapping):
         trace_features = candidate.trace.get("features", [])
