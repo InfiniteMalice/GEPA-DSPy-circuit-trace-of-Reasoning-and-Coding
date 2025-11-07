@@ -165,7 +165,7 @@ def _build_probe_inputs(
 
 
 def _concept_feature_descriptors(concept: ConceptSpec | None) -> List[Mapping[str, object]]:
-    """Return concept feature descriptors suitable for attribution metrics."""
+    "Return concept feature descriptors suitable for attribution metrics."
 
     if concept is None:
         return []
@@ -201,7 +201,7 @@ def _compute_attr_metrics(
     bonuses: Mapping[str, float],
     concept: ConceptSpec | None,
 ) -> Dict[str, float]:
-    """Populate candidate attribution fields and return the computed metrics."""
+    "Populate candidate attribution fields and return the computed metrics."
     concept_features = _concept_feature_descriptors(concept)
     metrics = {
         "sparsity": attr_metrics.path_sparsity(graphs),

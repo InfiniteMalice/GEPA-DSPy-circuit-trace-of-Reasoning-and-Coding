@@ -123,7 +123,7 @@ class BackendNull(AttributionBackend):
 
 
 class BackendHookedTransformer(AttributionBackend):
-    """PyTorch backend using gradient x activation hooks."""
+    "PyTorch backend using gradient x activation hooks."
 
     def __init__(self, *, reduce: str = "mean") -> None:
         self.reduce = reduce
@@ -142,7 +142,7 @@ class BackendHookedTransformer(AttributionBackend):
 
 
 class BackendExternal(AttributionBackend):
-    """Placeholder backend for external attribution tooling."""
+    "Placeholder backend for external attribution tooling."
 
     def __init__(self, *, endpoint: str | None = None) -> None:
         self.endpoint = endpoint or ""
@@ -168,7 +168,7 @@ _BACKENDS: MutableMapping[str, Callable[..., AttributionBackend]] = {
 
 
 def register_backend(name: str, factory: Callable[..., AttributionBackend]) -> None:
-    """Register a backend factory under ``name``."""
+    "Register a backend factory under ``name``."
 
     _BACKENDS[name] = factory
 
@@ -190,7 +190,7 @@ def extract_graph(
     layers: Sequence[int] | None = None,
     seed: int | None = None,
 ) -> Mapping[str, object]:
-    """Extract an attribution graph using the configured backend."""
+    "Extract an attribution graph using the configured backend."
 
     backend = backend or get_backend(backend_name)
     return backend.extract_graph(model, inputs, layers=layers, seed=seed)
