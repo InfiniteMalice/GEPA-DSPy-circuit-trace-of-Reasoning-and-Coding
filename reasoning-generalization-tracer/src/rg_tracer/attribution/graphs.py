@@ -7,7 +7,7 @@ from typing import Callable, Iterable, Mapping, MutableMapping, Sequence
 
 try:  # pragma: no cover - torch optional for CI
     import torch
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     torch = None
 
 from .schema import AttributionGraph, GraphEdge, GraphMeta, GraphNode, merge_graphs

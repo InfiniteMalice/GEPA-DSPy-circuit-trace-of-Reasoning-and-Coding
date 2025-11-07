@@ -60,13 +60,29 @@ def repair_once(
             steps[idx] = re.sub(r"\by\b", replacement_var, step)
             break
         if fix_tag == SemanticTag.UNIT_MISMATCH.value and expected_units:
-            replacements = {"meters", "meter", "seconds", "second", "kg", "kilogram"}
+            incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
             new_step = step
-            for token in replacements:
-                if token in new_step:
-                    new_step = new_step.replace(token, expected_units)
-            if expected_units not in new_step:
-                new_step = f"{new_step} ({expected_units})"
+            if incorrect_unit:
+                pattern = re.compile(rf"\b{re.escape(incorrect_unit)}\b")
+                new_step, count = pattern.subn(expected_units, new_step, count=1)
+                if count == 0:
+                    new_step = f"{new_step} ({expected_units})"
+            else:
+                replacements = {
+                    "meters",
+                    "meter",
+                    "seconds",
+                    "second",
+                    "kg",
+                    "kilogram",
+                }
+                for token in replacements:
+                    pattern = re.compile(rf"\b{re.escape(token)}\b")
+                    if pattern.search(new_step):
+                        new_step = pattern.sub(expected_units, new_step, count=1)
+                        break
+                if expected_units not in new_step:
+                    new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
             break
         if fix_tag == SemanticTag.UNSUPPORTED.value:
