@@ -74,7 +74,7 @@ def _detect_units(step: str, expected: str | None) -> bool:
     expected_lower = expected.lower()
     if re.search(rf"\b{re.escape(expected_lower)}\b", lowered):
         return True
-    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
+    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
     mismatched = any(
         re.search(rf"\b{re.escape(unit)}\b", lowered) and unit != expected_lower
         for unit in alt_units

@@ -62,11 +62,9 @@ def repair_once(
         if fix_tag == SemanticTag.UNIT_MISMATCH.value and expected_units:
             incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
             new_step = step
-            replaced = False
             if incorrect_unit:
                 pattern = re.compile(rf"\b{re.escape(incorrect_unit)}\b")
-                new_step, count = pattern.subn(expected_units, new_step, count=1)
-                replaced = count > 0
+                new_step, _ = pattern.subn(expected_units, new_step, count=1)
             if expected_units not in new_step:
                 new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
@@ -100,8 +98,19 @@ def repair_once(
                 " This recommendation is normative and contingent on shared values."
             )
             if normative_suffix.strip().lower() not in step.lower():
-                prefix = step.rstrip().rstrip(".")
-                steps[idx] = f"{prefix}. {normative_suffix.strip()}"
+                trimmed = step.rstrip()
+                suffix_text = normative_suffix.strip()
+                terminal = trimmed[-1:] if trimmed else ""
+                if terminal in {".", "?", "!"}:
+                    prefix = trimmed
+                    separator = " "
+                else:
+                    prefix = trimmed.rstrip(".")
+                    separator = ". " if prefix else ""
+                if not prefix:
+                    steps[idx] = suffix_text
+                else:
+                    steps[idx] = f"{prefix}{separator}{suffix_text}"
             break
     return steps
 

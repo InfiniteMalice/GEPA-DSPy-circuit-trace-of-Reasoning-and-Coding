@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping as MappingABC
 from typing import Dict, List, Mapping, Sequence
 
 from ..abstention import apply_abstention
@@ -363,7 +363,11 @@ def run_self_play(
 
     profiles = aggregator.load_profiles()
     profile_config = aggregator.get_last_config()
-    attr_config = profile_config.get("attr", {}) if profile_config else {}
+    raw_attr_config = profile_config.get("attr") if profile_config else {}
+    if isinstance(raw_attr_config, MappingABC):
+        attr_config: Mapping[str, object] = dict(raw_attr_config)
+    else:
+        attr_config = {}
     if profile not in profiles:
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]

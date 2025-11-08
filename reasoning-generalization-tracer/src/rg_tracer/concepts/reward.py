@@ -138,8 +138,12 @@ def compute_concept_reward(
         task_metrics = {}
     if weights is None:
         weights = DEFAULT_WEIGHTS
-    entailed_ids = {str(value) for value in task_metrics.get("entailed_feature_ids", [])}
-    contradictory_ids = {str(value) for value in task_metrics.get("contradictory_feature_ids", [])}
+    raw_entailed = task_metrics.get("entailed_feature_ids") if task_metrics else []
+    raw_contradictory = task_metrics.get("contradictory_feature_ids") if task_metrics else []
+    entailed_iter = raw_entailed or []
+    contradictory_iter = raw_contradictory or []
+    entailed_ids = {str(value) for value in entailed_iter}
+    contradictory_ids = {str(value) for value in contradictory_iter}
     features = _filter_features(
         trace_json.get("features", []),
         entailed_ids,

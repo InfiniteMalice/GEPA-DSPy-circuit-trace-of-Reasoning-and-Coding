@@ -37,6 +37,11 @@ def _extract_phase_graphs(
     seed_offset: int,
 ) -> List[Mapping[str, object]]:
     backend = attr_graphs.get_backend(backend_name)
+    if backend_name != "null":
+        raise ValueError(
+            "Backend '%s' requires a real model; use --backend null for the matrix sweep"
+            % backend_name
+        )
     graphs: List[Mapping[str, object]] = []
     for index, phase in enumerate(PHASES):
         payload = {

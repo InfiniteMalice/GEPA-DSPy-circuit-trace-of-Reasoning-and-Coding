@@ -147,16 +147,17 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
     base = normalised[0]
     node_attrs: MutableMapping[str, List[float]] = {}
     edge_attrs: MutableMapping[tuple[str, str], List[float]] = {}
+    node_templates: Dict[str, GraphNode] = {}
     for graph in normalised:
         for node in graph.nodes:
             node_attrs.setdefault(node.id, []).append(node.activation)
+            node_templates.setdefault(node.id, node)
         for edge in graph.edges:
             key = (edge.src, edge.dst)
             edge_attrs.setdefault(key, []).append(edge.attr)
-    node_lookup = {node.id: node for node in base.nodes}
     merged_nodes = []
     for node_id, values in node_attrs.items():
-        template = node_lookup.get(node_id)
+        template = node_templates.get(node_id)
         layer = template.layer if template is not None else 0
         node_type = template.type if template is not None else "unknown"
         merged_nodes.append(
