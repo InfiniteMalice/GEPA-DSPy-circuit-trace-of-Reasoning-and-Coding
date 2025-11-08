@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any, Iterable, Mapping
 
 from .schema import ConceptSpec
@@ -12,6 +13,40 @@ DEFAULT_WEIGHTS = {
     "parsimony": 0.2,
     "transfer": 0.1,
 }
+
+
+def _validate_float_param(
+    value: Any,
+    name: str,
+    min_val: float | None = None,
+    max_val: float | None = None,
+    *,
+    min_inclusive: bool = True,
+    max_inclusive: bool = True,
+) -> float:
+    """Return ``value`` as float while enforcing finite bounds."""
+
+    try:
+        float_value = float(value)
+    except (TypeError, ValueError) as exc:  # pragma: no cover - validation helper
+        raise ValueError(f"{name}: finite float required") from exc
+    if not math.isfinite(float_value):
+        raise ValueError(f"{name}: finite float required")
+    if min_val is not None:
+        if min_inclusive:
+            if float_value < min_val:
+                raise ValueError(f"{name} >= {min_val} required")
+        else:
+            if float_value <= min_val:
+                raise ValueError(f"{name} > {min_val} required")
+    if max_val is not None:
+        if max_inclusive:
+            if float_value > max_val:
+                raise ValueError(f"{name} <= {max_val} required")
+        else:
+            if float_value >= max_val:
+                raise ValueError(f"{name} < {max_val} required")
+    return float_value
 
 
 def _filter_features(
@@ -37,11 +72,7 @@ def _compute_match(
     expected = set(concept.expected_substructures)
     if not expected:
         return 1.0
-    tags = {
-        tag
-        for feature in features
-        for tag in feature.get("tags", [])
-    }
+    tags = {tag for feature in features for tag in feature.get("tags", [])}
     if not tags:
         return 0.0
     return len(tags & expected) / len(expected)
@@ -99,21 +130,25 @@ def compute_concept_reward(
     task_metrics: Mapping[str, Any] | None = None,
     *,
     weights: Mapping[str, float] | None = None,
+    alignment: float | None = None,
+    alignment_scale: float = 0.25,
 ) -> float:
-    """Return concept reward combining match, selectivity, parsimony, and transfer."""
+    """Aggregate core concept scores additively, then scale the sum by alignment."""
     if task_metrics is None:
         task_metrics = {}
     if weights is None:
         weights = DEFAULT_WEIGHTS
-    entailed_ids = {
-        str(value)
-        for value in task_metrics.get("entailed_feature_ids", [])
-    }
-    contradictory_ids = {
-        str(value)
-        for value in task_metrics.get("contradictory_feature_ids", [])
-    }
-    features = _filter_features(trace_json.get("features", []), entailed_ids, contradictory_ids)
+    raw_entailed = task_metrics.get("entailed_feature_ids") if task_metrics else []
+    raw_contradictory = task_metrics.get("contradictory_feature_ids") if task_metrics else []
+    entailed_iter = raw_entailed or []
+    contradictory_iter = raw_contradictory or []
+    entailed_ids = {str(value) for value in entailed_iter}
+    contradictory_ids = {str(value) for value in contradictory_iter}
+    features = _filter_features(
+        trace_json.get("features", []),
+        entailed_ids,
+        contradictory_ids,
+    )
     target_tags = set(concept_spec.expected_substructures)
     match = _compute_match(features, concept_spec)
     selectivity = _compute_selectivity(features, target_tags)
@@ -128,6 +163,30 @@ def compute_concept_reward(
     if contradictory_ids:
         penalty = min(1.0, len(contradictory_ids) / (len(features) + 1.0))
         reward -= 0.2 * penalty
+    if alignment is not None:
+        # Allow alignment to modulate reward asymmetrically: the admissible range
+        # is open so sentinel extremes are rejected, while the scale range is
+        # closed on zero to let configurations disable modulation. Negative
+        # alignment is neutralised so the reward is never penalised by concept
+        # disagreement; callers should encode penalties elsewhere if desired.
+        # Positive alignment is clamped to 1.0 to avoid runaway multipliers.
+        alignment_value = _validate_float_param(
+            alignment,
+            "alignment",
+            -1_000_000.0,
+            1_000_000.0,
+            min_inclusive=False,
+            max_inclusive=False,
+        )
+        scale_value = _validate_float_param(
+            alignment_scale,
+            "alignment_scale",
+            0.0,
+            10.0,
+        )
+        positive_alignment = min(1.0, max(0.0, alignment_value))
+        multiplier = 1.0 + scale_value * positive_alignment
+        reward *= multiplier
     return float(max(0.0, reward))
 
 

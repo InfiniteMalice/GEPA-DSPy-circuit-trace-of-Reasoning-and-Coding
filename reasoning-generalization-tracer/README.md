@@ -44,6 +44,26 @@ and penalising contradictory reuse. Circuit traces are produced via
 `circuit-tracer` (pinned) or the bundled stub; the adapter raises a clear error
 if the dependency is absent.
 
+## Attribution Graphs
+
+The attribution module extracts per-input graphs using pluggable adapters. The
+bundled `BackendNull` provides deterministic stubs for CI, while future hooks
+target Tiny Recursion Models and small transformers. Each run logs:
+
+* **Sparsity (HHI)** – how concentrated the attribution mass is over edges.
+* **Average Path Length** – attribution-weighted layer hops.
+* **Branching Factor** – effective fan-out of attribution flow.
+* **Repeatability** – Jaccard overlap of top edges across probes.
+* **Concept Alignment** – overlap@k with concept features from circuit traces.
+* **Δ Metrics** – sparsity drop, alignment gain, and repeatability gain
+  comparing `overfit` and `post_grok` phases.
+
+Soft bonuses (configurable; e.g., +0.01 for alignment/repeat gains, +0.005 for
+sparsity drops) are added to composite scores after hard gates. Concept rewards
+are scaled by `(1 + 0.25 * alignment)` when semantic entailment holds. All metrics
+are written to `runs/<timestamp>/attr_metrics.jsonl` alongside per-probe graph
+JSON in `runs/<timestamp>/attr/`.
+
 ## Abstention at 0.75 Confidence
 
 The abstention policy enforces a calibrated threshold of `0.75`. Any candidate
@@ -137,6 +157,9 @@ Each self-play run emits:
 * `semantics.jsonl` – semantic report with contradiction rates, humanities metrics, repairs.
 * `summary.md` – table covering composite, concept reward, abstentions.
 * `best.json` – best-performing candidate under the chosen profile.
+* `attr/` – attribution graphs for top candidates (one JSON per probe).
+* `attr_metrics.jsonl` – attribution metric records stored alongside `attr/` in the
+  run directory root (not inside the folder).
 
 ## Configuration
 
@@ -149,6 +172,22 @@ Each self-play run emits:
 * **Humanities Profiles:** adjust humanities weights in
   `humanities/profiles.yaml`.
 * **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
+* **Attribution:** tweak probe size, top-k, and backend via `config.attr` in
+  `scoring/profiles.yaml`. Per-profile bonuses live under `profiles.*.bonuses`.
+  Example:
+  ```yaml
+  config:
+    attr:
+      probe_size: 3
+      topk: 1
+      backend: null
+  profiles:
+    demo:
+      bonuses:
+        alignment_gain: 0.02
+        repeatability_gain: 0.01
+        sparsity_drop: 0.005
+  ```
 
 ## Limitations
 
@@ -165,3 +204,27 @@ Each self-play run emits:
 2. Expand semantic verifier with learned contradiction detectors.
 3. Add richer datasets covering physics and program synthesis tasks.
 4. Expose a web dashboard for inspecting run artifacts.
+
+## Grokking Matrix Experiments
+
+Use `scripts/run_grokking_matrix.py` to sweep weight decay, stability methods,
+gradient orthogonalization, and supervised reasoning curricula. The script
+invokes attribution backends for each phase and writes per-cell metrics:
+
+```bash
+python scripts/run_grokking_matrix.py --limit 2
+```
+
+The resulting directory includes one folder per configuration with
+`pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
+alignment, and repeatability deltas. The ΔAlignment column prints `n/a` because
+the matrix sweep uses the mock backend without concept feature catalogs: the
+lightweight smoke path only measures structural changes unless you pass
+descriptors via `--concept-features` (or edit the script stub). Provide catalogs
+whenever you want alignment deltas—the default keeps CI runs quick while making
+the omission explicit in the table. Look for stabilising trends across
+interventions—for example, compare `softmax` vs `stablemax` for the impact of
+numerically safe attention, inspect `sft_only` vs `srl_pretrain_then_sft` to see
+how supervised reasoning raises repeatability before accuracy improves, and
+toggle weight decay to confirm the shift from spiky memorisers to broader rule
+circuits.
