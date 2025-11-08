@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Iterable, List, Mapping
 
 from .taxonomy import SemanticTag
@@ -50,22 +51,38 @@ def repair_once(
     for entry in tags_list:
         if fix_tag not in entry.get("tags", []):
             continue
-        step = str(entry.get("step", ""))
+        step = str(entry.get("step", "")).strip()
         try:
             idx = steps.index(step)
         except ValueError:
             continue
         if fix_tag == SemanticTag.VARIABLE_DRIFT.value:
-            steps[idx] = step.replace("y", replacement_var)
+            steps[idx] = re.sub(r"\by\b", replacement_var, step)
             break
         if fix_tag == SemanticTag.UNIT_MISMATCH.value and expected_units:
-            replacements = {"meters", "meter", "seconds", "second", "kg", "kilogram"}
+            incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
             new_step = step
-            for token in replacements:
-                if token in new_step:
-                    new_step = new_step.replace(token, expected_units)
-            if expected_units not in new_step:
-                new_step = f"{new_step} ({expected_units})"
+            if incorrect_unit:
+                pattern = re.compile(rf"\b{re.escape(incorrect_unit)}\b")
+                new_step, count = pattern.subn(expected_units, new_step, count=1)
+                if count == 0:
+                    new_step = f"{new_step} ({expected_units})"
+            else:
+                replacements = {
+                    "meters",
+                    "meter",
+                    "seconds",
+                    "second",
+                    "kg",
+                    "kilogram",
+                }
+                for token in replacements:
+                    pattern = re.compile(rf"\b{re.escape(token)}\b")
+                    if pattern.search(new_step):
+                        new_step = pattern.sub(expected_units, new_step, count=1)
+                        break
+                if expected_units not in new_step:
+                    new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
             break
         if fix_tag == SemanticTag.UNSUPPORTED.value:
@@ -77,18 +94,28 @@ def repair_once(
             steps[idx] = f"{step} (Doe 2020, p. 14)"
             break
         if fix_tag == SemanticTag.MISQUOTE.value:
-            steps[idx] = step.replace('"', '"').strip()
-            if "context" not in steps[idx].lower():
-                steps[idx] = f"{steps[idx]} [context clarified]"
+            fixed = (
+                step.replace("“", '"')
+                .replace("”", '"')
+                .replace("’", "'")
+                .replace("‘", "'")
+                .strip()
+            )
+            if "[context clarified]" not in fixed.lower():
+                fixed = f"{fixed} [context clarified]"
+            steps[idx] = fixed
             break
         if fix_tag == SemanticTag.OVERCLAIMED_CAUSALITY.value:
             if "may" not in step.lower():
                 steps[idx] = f"{step} This relationship may be correlational.".strip()
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            steps[idx] = (
-                f"{step} This recommendation is normative and contingent on shared values."
+            normative_suffix = (
+                " This recommendation is normative and contingent on shared values."
             )
+            if normative_suffix.strip().lower() not in step.lower():
+                prefix = step.rstrip().rstrip(".")
+                steps[idx] = f"{prefix}. {normative_suffix.strip()}"
             break
     return steps
 
