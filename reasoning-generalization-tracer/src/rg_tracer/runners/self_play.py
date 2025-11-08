@@ -175,7 +175,7 @@ def _concept_feature_descriptors(concept: ConceptSpec | None) -> List[Mapping[st
             if not isinstance(entry, Mapping):
                 continue
             identifier = entry.get("id")
-            if not identifier:
+            if identifier is None:
                 continue
             descriptor: Dict[str, object] = {"id": str(identifier)}
             tags = entry.get("tags")
@@ -318,6 +318,8 @@ def _map_semantics_to_features(
         for entry in report.get("tags", [])
         if SemanticTag.CONTRADICTION.value in entry.get("tags", [])
     ]
+    entailed_lower = [step.lower() for step in entailed_steps]
+    contradictory_lower = [step.lower() for step in contradictory_steps]
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
     for feature in features:
@@ -328,11 +330,11 @@ def _map_semantics_to_features(
             tags_iter = raw_tags
         else:
             tags_iter = [raw_tags]
-        feature_tags = {str(tag) for tag in tags_iter}
+        lower_tags = {str(tag).lower() for tag in tags_iter}
         feature_id = str(feature.get("id", ""))
-        if any(tag.lower() in step.lower() for step in entailed_steps for tag in feature_tags):
+        if any(tag in step for step in entailed_lower for tag in lower_tags):
             entailed_ids.append(feature_id)
-        if any(tag.lower() in step.lower() for step in contradictory_steps for tag in feature_tags):
+        if any(tag in step for step in contradictory_lower for tag in lower_tags):
             contradictory_ids.append(feature_id)
     return {
         "entailed_feature_ids": entailed_ids,
@@ -480,17 +482,19 @@ def run_self_play(
         handle.write("| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n")
         handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):
-            handle.write(
-                "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | {repair} |\n".format(
-                    idx=idx,
-                    comp=candidate.composite,
-                    gates=candidate.passes_gates,
-                    reward=candidate.concept_reward,
-                    abst=candidate.abstained,
-                    sem=candidate.semantic_report.get("score", 0),
-                    repair=candidate.semantic_report.get("repairs_attempted", 0),
-                )
+            summary_row = (
+                "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | "
+                "{repair} |\n"
+            ).format(
+                idx=idx,
+                comp=candidate.composite,
+                gates=candidate.passes_gates,
+                reward=candidate.concept_reward,
+                abst=candidate.abstained,
+                sem=candidate.semantic_report.get("score", 0),
+                repair=candidate.semantic_report.get("repairs_attempted", 0),
             )
+            handle.write(summary_row)
         metrics_to_write = [
             (idx, candidate)
             for idx, candidate in enumerate(results, start=1)
@@ -500,14 +504,16 @@ def run_self_play(
             handle.write("\n### Attribution Metrics\n")
             for idx, candidate in metrics_to_write:
                 metrics = candidate.attr_metrics or {}
-                handle.write(
-                    "- #{idx} Δalign={align:.3f}, Δrepeat={repeat:.3f}, Δsparsity={sparsity:.3f}\n".format(
-                        idx=idx,
-                        align=metrics.get("delta_alignment", 0.0),
-                        repeat=metrics.get("delta_repeatability", 0.0),
-                        sparsity=metrics.get("delta_sparsity", 0.0),
-                    )
+                attr_line = (
+                    "- #{idx} Δalign={align:.3f}, Δrepeat={repeat:.3f}, "
+                    "Δsparsity={sparsity:.3f}\n"
+                ).format(
+                    idx=idx,
+                    align=metrics.get("delta_alignment", 0.0),
+                    repeat=metrics.get("delta_repeatability", 0.0),
+                    sparsity=metrics.get("delta_sparsity", 0.0),
                 )
+                handle.write(attr_line)
 
     best_path = run_dir / "best.json"
     with best_path.open("w", encoding="utf8") as handle:
