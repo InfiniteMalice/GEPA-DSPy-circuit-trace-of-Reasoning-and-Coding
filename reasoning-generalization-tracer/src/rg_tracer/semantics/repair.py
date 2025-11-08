@@ -67,7 +67,7 @@ def repair_once(
                 pattern = re.compile(rf"\b{re.escape(incorrect_unit)}\b")
                 new_step, count = pattern.subn(expected_units, new_step, count=1)
                 replaced = count > 0
-            if not replaced and expected_units not in new_step:
+            if expected_units not in new_step:
                 new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
             break

@@ -131,10 +131,17 @@ def _split_profile_payload(
         bonuses_raw = {}
         weights_source = raw
     weights = {axis: float(value) for axis, value in weights_source}
+    bonuses: Dict[str, float] = {}
     if isinstance(bonuses_raw, Mapping):
-        bonuses = {str(axis): float(value) for axis, value in bonuses_raw.items()}
-    else:
-        bonuses = {}
+        for axis, value in bonuses_raw.items():
+            if value is None:
+                continue
+            if isinstance(value, str) and value.strip().lower() == "null":
+                continue
+            try:
+                bonuses[str(axis)] = float(value)
+            except (TypeError, ValueError):
+                continue
     return weights, bonuses
 
 

@@ -158,7 +158,8 @@ Each self-play run emits:
 * `summary.md` – table covering composite, concept reward, abstentions.
 * `best.json` – best-performing candidate under the chosen profile.
 * `attr/` – attribution graphs for top candidates (one JSON per probe).
-* `attr_metrics.jsonl` – attribution metric records in the run directory root.
+* `attr_metrics.jsonl` – attribution metric records stored alongside `attr/` in the
+  run directory root (not inside the folder).
 
 ## Configuration
 
@@ -217,9 +218,13 @@ python scripts/run_grokking_matrix.py --limit 2
 The resulting directory includes one folder per configuration with
 `pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
 alignment, and repeatability deltas. The ΔAlignment column prints `n/a` because
-the matrix sweep uses the mock backend without concept feature catalogs; supply
-a catalog via `--concept-features` (or edit the script stub) if you need
-alignment deltas. Look for stabilising trends across interventions—for example,
-compare `softmax` vs `stablemax` for the impact of numerically safe attention,
-or inspect `sft_only` vs `srl_pretrain_then_sft` to see how supervised reasoning
-can raise repeatability before accuracy improves.
+the matrix sweep uses the mock backend without concept feature catalogs: the
+lightweight smoke path only measures structural changes unless you pass
+descriptors via `--concept-features` (or edit the script stub). Provide catalogs
+whenever you want alignment deltas—the default keeps CI runs quick while making
+the omission explicit in the table. Look for stabilising trends across
+interventions—for example, compare `softmax` vs `stablemax` for the impact of
+numerically safe attention, inspect `sft_only` vs `srl_pretrain_then_sft` to see
+how supervised reasoning raises repeatability before accuracy improves, and
+toggle weight decay to confirm the shift from spiky memorisers to broader rule
+circuits.

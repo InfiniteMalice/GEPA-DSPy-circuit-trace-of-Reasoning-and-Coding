@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
@@ -71,10 +72,13 @@ def _detect_units(step: str, expected: str | None) -> bool:
         return True
     lowered = step.lower()
     expected_lower = expected.lower()
-    if expected_lower in lowered:
+    if re.search(rf"\b{re.escape(expected_lower)}\b", lowered):
         return True
     alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
-    mismatched = any(unit in lowered and unit != expected_lower for unit in alt_units)
+    mismatched = any(
+        re.search(rf"\b{re.escape(unit)}\b", lowered) and unit != expected_lower
+        for unit in alt_units
+    )
     if mismatched:
         return False
     return True

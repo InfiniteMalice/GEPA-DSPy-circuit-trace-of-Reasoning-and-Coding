@@ -11,6 +11,13 @@ from .schema import AttributionGraph, GraphEdge, normalise_graph
 GraphLike = Mapping[str, object] | AttributionGraph
 
 
+def _safe_float(value: object, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _ensure_graphs(graphs: Iterable[GraphLike]) -> List[AttributionGraph]:
     result: List[AttributionGraph] = []
     for graph in graphs:
@@ -22,7 +29,12 @@ def _ensure_graphs(graphs: Iterable[GraphLike]) -> List[AttributionGraph]:
 
 
 def _edge_weights(graph: AttributionGraph) -> List[float]:
-    return [float(edge.attr) for edge in graph.edges if abs(float(edge.attr)) > 0.0]
+    weights: List[float] = []
+    for edge in graph.edges:
+        weight = _safe_float(edge.attr)
+        if abs(weight) > 0.0:
+            weights.append(weight)
+    return weights
 
 
 def path_sparsity(
@@ -60,15 +72,26 @@ def average_path_length(graphs: Sequence[GraphLike] | GraphLike) -> float:
         return 0.0
     lengths: List[float] = []
     for graph in graphs_seq:
-        layers = {node.id: node.layer for node in graph.nodes}
+        layers: dict[str, int] = {}
+        for node in graph.nodes:
+            raw_layer = getattr(node, "layer", 0)
+            try:
+                layer_value = int(raw_layer)
+            except (TypeError, ValueError):
+                layer_value = 0
+            layers[node.id] = layer_value
         total_weight = 0.0
         weighted_length = 0.0
         for edge in graph.edges:
-            weight = abs(float(edge.attr))
+            weight = abs(_safe_float(edge.attr))
             if weight <= 0:
                 continue
-            src_layer = layers.get(edge.src, 0)
-            dst_layer = layers.get(edge.dst, src_layer + 1)
+            src_layer = layers.get(edge.src)
+            if src_layer is None:
+                src_layer = 0
+            dst_layer = layers.get(edge.dst)
+            if dst_layer is None:
+                dst_layer = src_layer + 1
             hop = max(1, dst_layer - src_layer)
             weighted_length += hop * weight
             total_weight += weight
@@ -102,10 +125,10 @@ def average_branching_factor(
         weighted_sum = 0.0
         total_weight = 0.0
         for edges in outgoing.values():
-            sorted_edges = sorted(edges, key=lambda e: abs(float(e.attr)), reverse=True)
+            sorted_edges = sorted(edges, key=lambda e: abs(_safe_float(e.attr)), reverse=True)
             if top_k is not None:
                 sorted_edges = sorted_edges[:top_k]
-            weight = sum(abs(float(edge.attr)) for edge in sorted_edges)
+            weight = sum(abs(_safe_float(edge.attr)) for edge in sorted_edges)
             if weight <= 0:
                 continue
             weighted_sum += len(sorted_edges) * weight
@@ -269,7 +292,11 @@ def _filter_by_phase(
 def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
-    ranked = sorted(graph.nodes, key=lambda n: abs(float(n.activation)), reverse=True)
+    ranked = sorted(
+        graph.nodes,
+        key=lambda node: abs(_safe_float(getattr(node, "activation", 0.0))),
+        reverse=True,
+    )
     ranked = ranked[:top_k]
     return {node.id for node in ranked}
 
@@ -277,12 +304,12 @@ def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
 def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[str, float]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
-    ranked = sorted(graph.edges, key=lambda e: abs(float(e.attr)), reverse=True)
+    ranked = sorted(graph.edges, key=lambda e: abs(_safe_float(e.attr)), reverse=True)
     ranked = ranked[:top_k]
-    total = sum(abs(float(edge.attr)) for edge in ranked)
+    total = sum(abs(_safe_float(edge.attr)) for edge in ranked)
     if total <= 0:
         return {}
-    return {f"{edge.src}->{edge.dst}": abs(float(edge.attr)) / total for edge in ranked}
+    return {f"{edge.src}->{edge.dst}": abs(_safe_float(edge.attr)) / total for edge in ranked}
 
 
 __all__ = [

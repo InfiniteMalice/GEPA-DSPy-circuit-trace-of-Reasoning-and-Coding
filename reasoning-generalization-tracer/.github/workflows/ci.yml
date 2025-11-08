@@ -31,13 +31,7 @@ jobs:
           RUN_DIR=$(rg-tracer self-play --profile proof_math --k 3 \
             --problem datasets/toy_math/addition_small.jsonl \
             --concept parity --sampler trm \
-            | python - <<'PY'
-              import json
-              import sys
-
-              print(json.loads(sys.stdin.read())["run_dir"])
-          PY
-          )
+            | python -c 'import json, sys; print(json.load(sys.stdin)["run_dir"])')
           export RUN_DIR
           test -f "$RUN_DIR/summary.md"
           test -f "$RUN_DIR/semantics.jsonl"
