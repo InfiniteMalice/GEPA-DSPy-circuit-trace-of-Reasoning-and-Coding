@@ -70,13 +70,13 @@ def _detect_units(step: str, expected: str | None) -> bool:
     if not expected:
         return True
     lowered = step.lower()
-    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
     expected_lower = expected.lower()
+    if expected_lower in lowered:
+        return True
+    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
     mismatched = any(unit in lowered and unit != expected_lower for unit in alt_units)
     if mismatched:
         return False
-    if expected_lower in lowered:
-        return True
     return True
 
 
