@@ -25,11 +25,13 @@ class GraphNode:
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphNode":
+        layer_value = data.get("layer")
+        activation_value = data.get("activation")
         return cls(
             id=str(data.get("id", "")),
-            layer=int(data.get("layer", 0)),
+            layer=int(layer_value) if layer_value is not None else 0,
             type=str(data.get("type", "unknown")),
-            activation=float(data.get("activation", 0.0)),
+            activation=float(activation_value) if activation_value is not None else 0.0,
         )
 
 
@@ -46,10 +48,11 @@ class GraphEdge:
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphEdge":
+        attr_value = data.get("attr")
         return cls(
             src=str(data.get("src", "")),
             dst=str(data.get("dst", "")),
-            attr=float(data.get("attr", 0.0)),
+            attr=float(attr_value) if attr_value is not None else 0.0,
         )
 
 
@@ -74,12 +77,18 @@ class GraphMeta:
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphMeta":
         meta = cls()
-        if "token_positions" in data:
-            meta.token_positions = [int(value) for value in data.get("token_positions", [])]
-        if data.get("logits_scale") is not None:
-            meta.logits_scale = float(data.get("logits_scale"))
-        if data.get("phase") is not None:
-            meta.phase = str(data.get("phase"))
+        positions_value = data.get("token_positions")
+        if positions_value is not None:
+            if isinstance(positions_value, Iterable) and not isinstance(
+                positions_value, (str, bytes)
+            ):
+                meta.token_positions = [int(value) for value in positions_value]
+        logits_value = data.get("logits_scale")
+        if logits_value is not None:
+            meta.logits_scale = float(logits_value)
+        phase_value = data.get("phase")
+        if phase_value is not None:
+            meta.phase = str(phase_value)
         extras = {
             key: value
             for key, value in data.items()

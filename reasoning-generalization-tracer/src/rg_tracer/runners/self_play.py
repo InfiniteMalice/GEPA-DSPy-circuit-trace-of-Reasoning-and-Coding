@@ -251,8 +251,12 @@ def _apply_attribution_rewards(
 ) -> None:
     if not candidates:
         return
-    probe_size = int(attr_config.get("probe_size", DEFAULT_ATTR_CONFIG["probe_size"]))
-    topk = int(attr_config.get("topk", DEFAULT_ATTR_CONFIG["topk"]))
+    raw_probe_size = attr_config.get("probe_size")
+    probe_size = (
+        DEFAULT_ATTR_CONFIG["probe_size"] if raw_probe_size is None else int(raw_probe_size)
+    )
+    raw_topk = attr_config.get("topk")
+    topk = DEFAULT_ATTR_CONFIG["topk"] if raw_topk is None else int(raw_topk)
     backend_value = attr_config.get("backend", DEFAULT_ATTR_CONFIG["backend"])
     backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"])
     if probe_size <= 0 or topk <= 0:

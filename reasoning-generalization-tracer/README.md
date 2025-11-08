@@ -157,7 +157,8 @@ Each self-play run emits:
 * `semantics.jsonl` – semantic report with contradiction rates, humanities metrics, repairs.
 * `summary.md` – table covering composite, concept reward, abstentions.
 * `best.json` – best-performing candidate under the chosen profile.
-* `attr/` – attribution graphs for top candidates plus `attr_metrics.jsonl`.
+* `attr/` – attribution graphs for top candidates (one JSON per probe).
+* `attr_metrics.jsonl` – attribution metric records in the run directory root.
 
 ## Configuration
 
@@ -216,7 +217,9 @@ python scripts/run_grokking_matrix.py --limit 2
 The resulting directory includes one folder per configuration with
 `pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
 alignment, and repeatability deltas. The ΔAlignment column prints `n/a` because
-the matrix runs omit concept feature catalogs by default. Compare `softmax` vs
-`stablemax` or
-`sft_only` vs `srl_pretrain_then_sft` to inspect how interventions shift
-attribution structure before accuracy moves.
+the matrix sweep uses the mock backend without concept feature catalogs; supply
+a catalog via `--concept-features` (or edit the script stub) if you need
+alignment deltas. Look for stabilising trends across interventions—for example,
+compare `softmax` vs `stablemax` for the impact of numerically safe attention,
+or inspect `sft_only` vs `srl_pretrain_then_sft` to see how supervised reasoning
+can raise repeatability before accuracy improves.

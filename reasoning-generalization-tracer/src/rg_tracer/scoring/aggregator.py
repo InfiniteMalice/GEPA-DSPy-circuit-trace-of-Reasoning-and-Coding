@@ -78,11 +78,11 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             result["profiles"][current_profile][current_subsection] = {}
             continue
         if section == "profiles" and indent >= 4 and ":" in line and current_profile:
-            if indent == 4 and not line.endswith(":"):
+            if indent == 4:
                 current_subsection = None
             axis, value = line.split(":", 1)
             target = result["profiles"][current_profile]
-            if current_subsection is not None:
+            if current_subsection is not None and indent > 4:
                 target = target[current_subsection]
             value = value.strip()
             if value:
