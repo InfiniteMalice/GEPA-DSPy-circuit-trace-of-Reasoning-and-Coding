@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
+from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
 
@@ -36,6 +37,14 @@ class SemanticReport:
 
 
 _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
+_ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
+
+
+def _canonical_unit(value: str) -> str:
+    trimmed = value.strip()
+    if len(trimmed) > 1 and trimmed.endswith("s") and trimmed[-2].isalpha():
+        return trimmed[:-1]
+    return trimmed
 
 
 def _normalise_chain(chain: object) -> List[str]:
@@ -66,18 +75,34 @@ def _detect_fact_free(step: str) -> bool:
     return not (has_digit or has_equation or has_support)
 
 
-def _detect_units(step: str, expected: str | None) -> bool:
+def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     if not expected:
-        return True
+        return True, None
     lowered = step.lower()
-    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
-    expected_lower = expected.lower()
-    mismatched = any(unit in lowered and unit != expected_lower for unit in alt_units)
-    if mismatched:
-        return False
-    if expected_lower in lowered:
-        return True
-    return True
+    expected_lower = expected.lower().strip()
+    if not expected_lower:
+        return True, None
+    pattern = build_token_boundary_pattern(expected_lower)
+    matched_expected = bool(pattern and pattern.search(lowered))
+    if matched_expected:
+        return True, None
+    canonical_expected = _canonical_unit(expected_lower)
+    matched_variant = False
+    detected_unit: str | None = None
+    for unit in _ALT_UNITS:
+        variant_pattern = build_token_boundary_pattern(unit)
+        if not variant_pattern:
+            continue
+        if variant_pattern.search(lowered):
+            detected_unit = unit
+            canonical_detected = _canonical_unit(unit)
+            if canonical_detected == canonical_expected:
+                matched_variant = True
+                continue
+            return False, detected_unit
+    if matched_variant:
+        return True, detected_unit
+    return False, detected_unit
 
 
 def _detect_variable_drift(step: str, allowed: set[str]) -> bool:
@@ -136,10 +161,12 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
             unsupported_count += 1
         if concept and concept.lower() in step.lower():
             schema_hits += 1
+        incorrect_unit: str | None = None
         if expected_units:
-            units_ok = _detect_units(step, expected_units)
+            units_ok, detected_unit = _detect_units(step, expected_units)
             if not units_ok:
                 step_tags.append(SemanticTag.UNIT_MISMATCH.value)
+                incorrect_unit = detected_unit
                 unit_check_pass = False
         if allowed_vars and _detect_variable_drift(step, allowed_vars):
             step_tags.append(SemanticTag.VARIABLE_DRIFT.value)
@@ -152,7 +179,10 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
             entailed_count += 1
         if not fact_free:
             step_tags.append(SemanticTag.SUPPORTED.value)
-        tags[idx] = {"step": step, "tags": step_tags}
+        entry = {"step": step, "tags": step_tags}
+        if incorrect_unit:
+            entry["incorrect_unit"] = incorrect_unit
+        tags[idx] = entry
 
     total_steps = len(steps)
     contradiction_rate = contradiction_count / total_steps if total_steps else 0.0
