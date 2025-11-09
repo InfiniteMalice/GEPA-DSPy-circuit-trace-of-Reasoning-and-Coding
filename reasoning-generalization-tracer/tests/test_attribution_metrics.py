@@ -78,13 +78,15 @@ def test_repeatability_recognises_divergence():
 
 
 def test_delta_alignment_missing_phase_returns_zero():
-    overfit_only = [_graph(
-        [
-            {"src": "n0", "dst": "n1", "attr": 0.5},
-            {"src": "n1", "dst": "n2", "attr": 0.4},
-        ],
-        phase="overfit",
-    )]
+    overfit_only = [
+        _graph(
+            [
+                {"src": "n0", "dst": "n1", "attr": 0.5},
+                {"src": "n1", "dst": "n2", "attr": 0.4},
+            ],
+            phase="overfit",
+        )
+    ]
     delta = metrics.delta_alignment(overfit_only, concept_features=[{"id": "n2"}])
     assert delta == 0.0
 

@@ -40,6 +40,14 @@ _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
 _ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
 
 
+def _unit_pattern(token: str) -> re.Pattern[str] | None:
+    stripped = token.strip()
+    if not stripped:
+        return None
+    escaped = re.escape(stripped)
+    return re.compile(rf"(?<![A-Za-z]){escaped}(?![A-Za-z])")
+
+
 def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
         steps = [step.strip() for step in chain.split("\n") if step.strip()]
@@ -72,18 +80,25 @@ def _detect_units(step: str, expected: str | None) -> bool:
     if not expected:
         return True
     lowered = step.lower()
-    expected_lower = expected.lower()
-    if re.search(rf"\b{re.escape(expected_lower)}\b", lowered):
+    expected_lower = expected.lower().strip()
+    if not expected_lower:
+        return True
+    pattern = _unit_pattern(expected_lower)
+    if pattern and pattern.search(lowered):
         return True
     expected_variants = {expected_lower}
     if expected_lower.endswith("s"):
         expected_variants.add(expected_lower.rstrip("s"))
     else:
         expected_variants.add(f"{expected_lower}s")
-    mismatched = any(
-        re.search(rf"\b{re.escape(unit)}\b", lowered) and unit not in expected_variants
-        for unit in _ALT_UNITS
-    )
+    mismatched = False
+    for unit in _ALT_UNITS:
+        variant_pattern = _unit_pattern(unit)
+        if not variant_pattern:
+            continue
+        if variant_pattern.search(lowered) and unit not in expected_variants:
+            mismatched = True
+            break
     if mismatched:
         return False
     return True

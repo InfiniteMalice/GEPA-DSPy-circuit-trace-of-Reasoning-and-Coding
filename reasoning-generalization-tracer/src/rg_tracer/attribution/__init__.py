@@ -19,7 +19,14 @@ from .metrics import (
     path_sparsity,
     repeatability,
 )
-from .schema import AttributionGraph, GraphEdge, GraphMeta, GraphNode
+from .schema import (
+    AttributionGraph,
+    GraphEdge,
+    GraphMeta,
+    GraphNode,
+    merge_graphs,
+    normalise_graph,
+)
 
 __all__ = [
     "AttributionBackend",
@@ -30,6 +37,8 @@ __all__ = [
     "GraphEdge",
     "GraphMeta",
     "GraphNode",
+    "merge_graphs",
+    "normalise_graph",
     "average_branching_factor",
     "average_path_length",
     "concept_alignment",

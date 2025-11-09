@@ -34,9 +34,7 @@ class ConceptSpec:
     def from_dict(cls, data: Mapping[str, Any]) -> "ConceptSpec":
         tests = [ConceptTest(**test) for test in data.get("tests", [])]
         catalog = [
-            dict(entry)
-            for entry in data.get("feature_catalog", [])
-            if isinstance(entry, Mapping)
+            dict(entry) for entry in data.get("feature_catalog", []) if isinstance(entry, Mapping)
         ]
         return cls(
             name=data["name"],

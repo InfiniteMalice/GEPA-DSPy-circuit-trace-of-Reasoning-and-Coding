@@ -165,7 +165,7 @@ def _build_probe_inputs(
 
 
 def _concept_feature_descriptors(concept: ConceptSpec | None) -> List[Mapping[str, object]]:
-    "Return concept feature descriptors suitable for attribution metrics."
+    """Return concept feature descriptors suitable for attribution metrics."""
 
     if concept is None:
         return []
@@ -201,7 +201,7 @@ def _compute_attr_metrics(
     bonuses: Mapping[str, float],
     concept: ConceptSpec | None,
 ) -> Dict[str, float]:
-    "Populate candidate attribution fields and return the computed metrics."
+    """Populate candidate attribution fields and return the computed metrics."""
     concept_features = _concept_feature_descriptors(concept)
     metrics = {
         "sparsity": attr_metrics.path_sparsity(graphs),
@@ -322,12 +322,8 @@ def _map_semantics_to_features(
         for entry in report.get("tags", [])
         if SemanticTag.CONTRADICTION.value in entry.get("tags", [])
     ]
-    entailed_lower = [
-        str(step).lower() for step in entailed_steps if step is not None
-    ]
-    contradictory_lower = [
-        str(step).lower() for step in contradictory_steps if step is not None
-    ]
+    entailed_lower = [str(step).lower() for step in entailed_steps if step is not None]
+    contradictory_lower = [str(step).lower() for step in contradictory_steps if step is not None]
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
     for feature in features:
@@ -495,8 +491,7 @@ def run_self_play(
         handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):
             summary_row = (
-                "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | "
-                "{repair} |\n"
+                "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | " "{repair} |\n"
             ).format(
                 idx=idx,
                 comp=candidate.composite,

@@ -24,7 +24,7 @@ def _validate_float_param(
     min_inclusive: bool = True,
     max_inclusive: bool = True,
 ) -> float:
-    "Return ``value`` as float while enforcing finite bounds."
+    """Return ``value`` as float while enforcing finite bounds."""
 
     try:
         float_value = float(value)
@@ -133,17 +133,27 @@ def compute_concept_reward(
     alignment: float | None = None,
     alignment_scale: float = 0.25,
 ) -> float:
-    "Aggregate core concept scores additively, then scale the sum by alignment."
+    """Aggregate core concept scores additively, then scale the sum by alignment."""
     if task_metrics is None:
         task_metrics = {}
     if weights is None:
         weights = DEFAULT_WEIGHTS
-    raw_entailed = task_metrics.get("entailed_feature_ids") if task_metrics else []
-    raw_contradictory = task_metrics.get("contradictory_feature_ids") if task_metrics else []
-    entailed_iter = raw_entailed or []
-    contradictory_iter = raw_contradictory or []
-    entailed_ids = {str(value) for value in entailed_iter}
-    contradictory_ids = {str(value) for value in contradictory_iter}
+    raw_entailed = task_metrics.get("entailed_feature_ids") if task_metrics else None
+    raw_contradictory = task_metrics.get("contradictory_feature_ids") if task_metrics else None
+
+    def _iter_ids(raw: object) -> Iterable[object]:
+        if raw is None:
+            return ()
+        if isinstance(raw, Mapping):
+            return raw.keys()
+        if isinstance(raw, (str, bytes)):
+            return (raw,)
+        if isinstance(raw, Iterable):
+            return raw
+        return (raw,)
+
+    entailed_ids = {str(value) for value in _iter_ids(raw_entailed)}
+    contradictory_ids = {str(value) for value in _iter_ids(raw_contradictory)}
     features = _filter_features(
         trace_json.get("features", []),
         entailed_ids,

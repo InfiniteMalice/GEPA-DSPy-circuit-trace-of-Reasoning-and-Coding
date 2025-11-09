@@ -101,12 +101,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             current_subsection = line[:-1]
             result.setdefault("config", {})[current_subsection] = {}
             continue
-        if (
-            section == "config"
-            and indent == 2
-            and ":" in line
-            and not line.endswith(":")
-        ):
+        if section == "config" and indent == 2 and ":" in line and not line.endswith(":"):
             key, value = line.split(":", 1)
             result.setdefault("config", {})[key.strip()] = _parse_scalar_value(value)
             continue

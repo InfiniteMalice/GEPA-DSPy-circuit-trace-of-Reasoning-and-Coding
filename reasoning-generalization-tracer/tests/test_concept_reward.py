@@ -64,16 +64,33 @@ def test_alignment_boost_scales_reward():
     assert boosted > base
 
 
-def test_alignment_zero_and_negative_do_not_change_reward():
+def _basic_trace_spec() -> tuple[ConceptSpec, dict[str, object]]:
     spec = ConceptSpec(name="edge", definition="", expected_substructures=["edge"])
     trace = {
         "features": [{"id": "edge", "layer": 0, "importance": 0.5, "tags": ["edge"]}],
         "edges": [],
         "path_lengths": {"mean": 1.0},
     }
+    return spec, trace
+
+
+def test_alignment_zero_leaves_reward_unchanged():
+    spec, trace = _basic_trace_spec()
     base = compute_concept_reward(trace, spec, task_metrics={})
     zero = compute_concept_reward(trace, spec, task_metrics={}, alignment=0.0)
+    assert zero == pytest.approx(base)
+
+
+def test_alignment_negative_is_neutral():
+    spec, trace = _basic_trace_spec()
+    base = compute_concept_reward(trace, spec, task_metrics={})
     negative = compute_concept_reward(trace, spec, task_metrics={}, alignment=-0.3)
+    assert negative == pytest.approx(base)
+
+
+def test_alignment_positive_scales_reward():
+    spec, trace = _basic_trace_spec()
+    base = compute_concept_reward(trace, spec, task_metrics={})
     scaled = compute_concept_reward(
         trace,
         spec,
@@ -81,6 +98,12 @@ def test_alignment_zero_and_negative_do_not_change_reward():
         alignment=1.0,
         alignment_scale=0.5,
     )
+    assert scaled == pytest.approx(base * 1.5)
+
+
+def test_alignment_clamps_to_one():
+    spec, trace = _basic_trace_spec()
+    base = compute_concept_reward(trace, spec, task_metrics={})
     clamped = compute_concept_reward(
         trace,
         spec,
@@ -88,9 +111,11 @@ def test_alignment_zero_and_negative_do_not_change_reward():
         alignment=5.0,
         alignment_scale=0.5,
     )
-    none_value = compute_concept_reward(trace, spec, task_metrics={}, alignment=None)
-    assert zero == pytest.approx(base)
-    assert negative == pytest.approx(base)
-    assert scaled == pytest.approx(base * 1.5)
     assert clamped == pytest.approx(base * 1.5)
+
+
+def test_alignment_none_returns_base_reward():
+    spec, trace = _basic_trace_spec()
+    base = compute_concept_reward(trace, spec, task_metrics={})
+    none_value = compute_concept_reward(trace, spec, task_metrics={}, alignment=None)
     assert none_value == pytest.approx(base)

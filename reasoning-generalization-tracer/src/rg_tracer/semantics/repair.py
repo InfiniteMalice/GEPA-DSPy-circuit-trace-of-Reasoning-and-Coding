@@ -8,6 +8,20 @@ from typing import Iterable, List, Mapping
 from .taxonomy import SemanticTag
 
 
+def _build_unit_pattern(unit_text: str) -> re.Pattern[str] | None:
+    """Return a regex that respects token boundaries for ``unit_text``."""
+
+    trimmed = unit_text.strip()
+    if not trimmed:
+        return None
+    escaped = re.escape(trimmed)
+    leading_alnum = trimmed[0].isalnum()
+    trailing_alnum = trimmed[-1].isalnum()
+    if leading_alnum and trailing_alnum:
+        return re.compile(rf"(?<![A-Za-z]){escaped}(?![A-Za-z])")
+    return re.compile(escaped)
+
+
 def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
         steps = [step.strip() for step in chain.split("\n") if step.strip()]
@@ -63,23 +77,14 @@ def repair_once(
             incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
             new_step = step
             if incorrect_unit:
-                escaped = re.escape(incorrect_unit)
-                leading = incorrect_unit[0].isalnum()
-                trailing = incorrect_unit[-1].isalnum()
-                if leading and trailing:
-                    pattern = re.compile(rf"\b{escaped}\b")
-                else:
-                    pattern = re.compile(escaped)
-                new_step, _ = pattern.subn(expected_units, new_step, count=1)
+                pattern = _build_unit_pattern(incorrect_unit)
+                if pattern:
+                    new_step, _ = pattern.subn(expected_units, new_step, count=1)
             expected_trimmed = expected_units.strip()
             if expected_trimmed:
-                escaped_expected = re.escape(expected_trimmed)
-                leading_expected = expected_trimmed[0].isalnum()
-                trailing_expected = expected_trimmed[-1].isalnum()
-                if leading_expected and trailing_expected:
-                    has_expected = bool(
-                        re.search(rf"\b{escaped_expected}\b", new_step)
-                    )
+                expected_pattern = _build_unit_pattern(expected_trimmed)
+                if expected_pattern:
+                    has_expected = bool(expected_pattern.search(new_step))
                 else:
                     has_expected = expected_trimmed in new_step
                 if not has_expected:
@@ -96,11 +101,7 @@ def repair_once(
             break
         if fix_tag == SemanticTag.MISQUOTE.value:
             fixed = (
-                step.replace("“", '"')
-                .replace("”", '"')
-                .replace("’", "'")
-                .replace("‘", "'")
-                .strip()
+                step.replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'").strip()
             )
             if "[context clarified]" not in fixed.lower():
                 fixed = f"{fixed} [context clarified]"
@@ -111,9 +112,7 @@ def repair_once(
                 steps[idx] = f"{step} This relationship may be correlational.".strip()
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            normative_suffix = (
-                " This recommendation is normative and contingent on shared values."
-            )
+            normative_suffix = " This recommendation is normative and contingent on shared values."
             if normative_suffix.strip().lower() not in step.lower():
                 trimmed = step.rstrip()
                 suffix_text = normative_suffix.strip()

@@ -111,9 +111,7 @@ def _write_summary(
         handle.write(separator)
         for name, metrics in rows:
             align_value = metrics.get("delta_alignment")
-            align_display = (
-                f"{align_value:.3f}" if isinstance(align_value, (int, float)) else "n/a"
-            )
+            align_display = f"{align_value:.3f}" if isinstance(align_value, (int, float)) else "n/a"
             handle.write(
                 "| {name} | {align} | {repeat:.3f} | {sparsity:.3f} | "
                 "{path:.3f} | {branch:.3f} | {rep:.3f} |\n".format(
