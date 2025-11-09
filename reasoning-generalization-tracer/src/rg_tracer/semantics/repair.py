@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Iterable, List, Mapping
 
 from .taxonomy import SemanticTag
@@ -50,22 +51,39 @@ def repair_once(
     for entry in tags_list:
         if fix_tag not in entry.get("tags", []):
             continue
-        step = str(entry.get("step", ""))
+        step = str(entry.get("step", "")).strip()
         try:
             idx = steps.index(step)
         except ValueError:
             continue
         if fix_tag == SemanticTag.VARIABLE_DRIFT.value:
-            steps[idx] = step.replace("y", replacement_var)
+            steps[idx] = re.sub(r"\by\b", replacement_var, step)
             break
         if fix_tag == SemanticTag.UNIT_MISMATCH.value and expected_units:
-            replacements = {"meters", "meter", "seconds", "second", "kg", "kilogram"}
+            incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
             new_step = step
-            for token in replacements:
-                if token in new_step:
-                    new_step = new_step.replace(token, expected_units)
-            if expected_units not in new_step:
-                new_step = f"{new_step} ({expected_units})"
+            if incorrect_unit:
+                escaped = re.escape(incorrect_unit)
+                leading = incorrect_unit[0].isalnum()
+                trailing = incorrect_unit[-1].isalnum()
+                if leading and trailing:
+                    pattern = re.compile(rf"\b{escaped}\b")
+                else:
+                    pattern = re.compile(escaped)
+                new_step, _ = pattern.subn(expected_units, new_step, count=1)
+            expected_trimmed = expected_units.strip()
+            if expected_trimmed:
+                escaped_expected = re.escape(expected_trimmed)
+                leading_expected = expected_trimmed[0].isalnum()
+                trailing_expected = expected_trimmed[-1].isalnum()
+                if leading_expected and trailing_expected:
+                    has_expected = bool(
+                        re.search(rf"\b{escaped_expected}\b", new_step)
+                    )
+                else:
+                    has_expected = expected_trimmed in new_step
+                if not has_expected:
+                    new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
             break
         if fix_tag == SemanticTag.UNSUPPORTED.value:
@@ -77,18 +95,39 @@ def repair_once(
             steps[idx] = f"{step} (Doe 2020, p. 14)"
             break
         if fix_tag == SemanticTag.MISQUOTE.value:
-            steps[idx] = step.replace('"', '"').strip()
-            if "context" not in steps[idx].lower():
-                steps[idx] = f"{steps[idx]} [context clarified]"
+            fixed = (
+                step.replace("“", '"')
+                .replace("”", '"')
+                .replace("’", "'")
+                .replace("‘", "'")
+                .strip()
+            )
+            if "[context clarified]" not in fixed.lower():
+                fixed = f"{fixed} [context clarified]"
+            steps[idx] = fixed
             break
         if fix_tag == SemanticTag.OVERCLAIMED_CAUSALITY.value:
             if "may" not in step.lower():
                 steps[idx] = f"{step} This relationship may be correlational.".strip()
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            steps[idx] = (
-                f"{step} This recommendation is normative and contingent on shared values."
+            normative_suffix = (
+                " This recommendation is normative and contingent on shared values."
             )
+            if normative_suffix.strip().lower() not in step.lower():
+                trimmed = step.rstrip()
+                suffix_text = normative_suffix.strip()
+                terminal = trimmed[-1:] if trimmed else ""
+                if terminal in {".", "?", "!"}:
+                    prefix = trimmed
+                    separator = " "
+                else:
+                    prefix = trimmed.rstrip(".")
+                    separator = ". " if prefix else ""
+                if not prefix:
+                    steps[idx] = suffix_text
+                else:
+                    steps[idx] = f"{prefix}{separator}{suffix_text}"
             break
     return steps
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
@@ -36,6 +37,7 @@ class SemanticReport:
 
 
 _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
+_ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
 
 
 def _normalise_chain(chain: object) -> List[str]:
@@ -70,13 +72,20 @@ def _detect_units(step: str, expected: str | None) -> bool:
     if not expected:
         return True
     lowered = step.lower()
-    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
     expected_lower = expected.lower()
-    mismatched = any(unit in lowered and unit != expected_lower for unit in alt_units)
+    if re.search(rf"\b{re.escape(expected_lower)}\b", lowered):
+        return True
+    expected_variants = {expected_lower}
+    if expected_lower.endswith("s"):
+        expected_variants.add(expected_lower.rstrip("s"))
+    else:
+        expected_variants.add(f"{expected_lower}s")
+    mismatched = any(
+        re.search(rf"\b{re.escape(unit)}\b", lowered) and unit not in expected_variants
+        for unit in _ALT_UNITS
+    )
     if mismatched:
         return False
-    if expected_lower in lowered:
-        return True
     return True
 
 
