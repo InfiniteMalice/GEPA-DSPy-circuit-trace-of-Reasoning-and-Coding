@@ -20,6 +20,9 @@ GRADIENT = ["off", "perpend_grad_on"]
 REASONING = ["sft_only", "srl_pretrain_then_sft"]
 PHASES = ["pre_overfit", "overfit", "pre_grok", "post_grok"]
 BACKEND_CHOICES = ["null", "hooked", "external"]
+_BACKEND_ERROR_MSG = (
+    "Backend '{backend}' requires a real model; use --backend null for the matrix sweep"
+)
 
 
 def _combo_name(combo: Mapping[str, str]) -> str:
@@ -38,10 +41,7 @@ def _extract_phase_graphs(
     seed_offset: int,
 ) -> List[Mapping[str, object]]:
     if backend_name != "null":
-        raise ValueError(
-            f"Backend '{backend_name}' requires a real model; use --backend null for the matrix "
-            "sweep"
-        )
+        raise ValueError(_BACKEND_ERROR_MSG.format(backend=backend_name))
     backend = attr_graphs.get_backend(backend_name)
     graphs: List[Mapping[str, object]] = []
     for index, phase in enumerate(PHASES):

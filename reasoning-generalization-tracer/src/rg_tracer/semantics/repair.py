@@ -103,7 +103,12 @@ def repair_once(
             if incorrect_unit:
                 pattern = build_token_boundary_pattern(incorrect_unit)
                 if pattern:
-                    new_step, _ = pattern.subn(expected_units, new_step, count=1)
+                    new_step, replaced = pattern.subn(expected_units, new_step, count=1)
+                    if replaced == 0:
+                        pattern_ci = re.compile(
+                            pattern.pattern, flags=pattern.flags | re.IGNORECASE
+                        )
+                        new_step, _ = pattern_ci.subn(expected_units, new_step, count=1)
             expected_trimmed = expected_units.strip()
             if expected_trimmed:
                 expected_pattern = build_token_boundary_pattern(expected_trimmed)

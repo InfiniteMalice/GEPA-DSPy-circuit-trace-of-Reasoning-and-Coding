@@ -5,19 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping
 
-
-def _safe_int(value: Any, default: int = 0) -> int:
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _safe_float(value: Any, default: float = 0.0) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
+from .utils import safe_float, safe_int
 
 
 @dataclass
@@ -41,9 +29,9 @@ class GraphNode:
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphNode":
         return cls(
             id=str(data.get("id", "")),
-            layer=_safe_int(data.get("layer"), 0),
+            layer=safe_int(data.get("layer"), 0),
             type=str(data.get("type", "unknown")),
-            activation=_safe_float(data.get("activation"), 0.0),
+            activation=safe_float(data.get("activation"), 0.0),
         )
 
 
@@ -63,7 +51,7 @@ class GraphEdge:
         return cls(
             src=str(data.get("src", "")),
             dst=str(data.get("dst", "")),
-            attr=_safe_float(data.get("attr"), 0.0),
+            attr=safe_float(data.get("attr"), 0.0),
         )
 
 
