@@ -1,5 +1,6 @@
 profiles:
   proof_math:
+    # Core weighting emphasises rigorous proofs in mathematical domains.
     weights:
       logical_validity: 0.25
       rigor: 0.20
@@ -12,10 +13,12 @@ profiles:
       self_consistency: 0.03
       heuristic_creativity: 0.02
     bonuses:
+      # Optional soft bonuses gated by attribution metrics.
       alignment_gain: 0.01
       repeatability_gain: 0.01
       sparsity_drop: 0.005
   scientific:
+    # Balanced profile for empirical or scientific reasoning tasks.
     weights:
       logical_validity: 0.18
       rigor: 0.16
@@ -28,6 +31,7 @@ profiles:
       efficiency: 0.04
       heuristic_creativity: 0.03
   heuristic:
+    # Encourages creative leaps when proofs are less accessible.
     weights:
       logical_validity: 0.18
       heuristic_creativity: 0.22
@@ -39,6 +43,7 @@ profiles:
       cognitive_efficiency: 0.06
       numerical_accuracy: 0.05
   efficiency:
+    # Prioritises succinct, efficient reasoning outputs.
     weights:
       logical_validity: 0.20
       efficiency: 0.30
@@ -49,6 +54,7 @@ profiles:
       self_consistency: 0.05
 config:
   attr:
+    # Defaults for attribution probes when profile overrides are absent.
     probe_size: 4
     topk: 2
     backend: null
