@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
@@ -36,6 +37,15 @@ class SemanticReport:
 
 
 _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
+_ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
+
+
+def _unit_pattern(token: str) -> re.Pattern[str] | None:
+    stripped = token.strip()
+    if not stripped:
+        return None
+    escaped = re.escape(stripped)
+    return re.compile(rf"(?<![A-Za-z]){escaped}(?![A-Za-z])")
 
 
 def _normalise_chain(chain: object) -> List[str]:
@@ -70,13 +80,27 @@ def _detect_units(step: str, expected: str | None) -> bool:
     if not expected:
         return True
     lowered = step.lower()
-    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
-    expected_lower = expected.lower()
-    mismatched = any(unit in lowered and unit != expected_lower for unit in alt_units)
+    expected_lower = expected.lower().strip()
+    if not expected_lower:
+        return True
+    pattern = _unit_pattern(expected_lower)
+    if pattern and pattern.search(lowered):
+        return True
+    expected_variants = {expected_lower}
+    if expected_lower.endswith("s"):
+        expected_variants.add(expected_lower.rstrip("s"))
+    else:
+        expected_variants.add(f"{expected_lower}s")
+    mismatched = False
+    for unit in _ALT_UNITS:
+        variant_pattern = _unit_pattern(unit)
+        if not variant_pattern:
+            continue
+        if variant_pattern.search(lowered) and unit not in expected_variants:
+            mismatched = True
+            break
     if mismatched:
         return False
-    if expected_lower in lowered:
-        return True
     return True
 
 

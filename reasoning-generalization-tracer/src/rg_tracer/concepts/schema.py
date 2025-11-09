@@ -28,15 +28,20 @@ class ConceptSpec:
     definition: str
     tests: List[ConceptTest] = field(default_factory=list)
     expected_substructures: List[str] = field(default_factory=list)
+    feature_catalog: List[Mapping[str, Any]] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ConceptSpec":
         tests = [ConceptTest(**test) for test in data.get("tests", [])]
+        catalog = [
+            dict(entry) for entry in data.get("feature_catalog", []) if isinstance(entry, Mapping)
+        ]
         return cls(
             name=data["name"],
             definition=data.get("definition", ""),
             tests=tests,
             expected_substructures=list(data.get("expected_substructures", [])),
+            feature_catalog=catalog,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -45,6 +50,7 @@ class ConceptSpec:
             "definition": self.definition,
             "tests": [{"input": test.input, "expected": test.expected} for test in self.tests],
             "expected_substructures": list(self.expected_substructures),
+            "feature_catalog": [dict(entry) for entry in self.feature_catalog],
         }
 
 
