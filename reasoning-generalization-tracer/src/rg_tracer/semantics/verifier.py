@@ -37,6 +37,7 @@ class SemanticReport:
 
 
 _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
+_ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
 
 
 def _normalise_chain(chain: object) -> List[str]:
@@ -74,7 +75,7 @@ def _detect_units(step: str, expected: str | None) -> bool:
     expected_lower = expected.lower()
     if re.search(rf"\b{re.escape(expected_lower)}\b", lowered):
         return True
-    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
+    alt_units = _ALT_UNITS
     mismatched = any(
         re.search(rf"\b{re.escape(unit)}\b", lowered) and unit != expected_lower
         for unit in alt_units

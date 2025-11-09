@@ -68,11 +68,13 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             if section == "config":
                 result.setdefault("config", {})
             continue
+        # State: section header at indent 2 introduces a new profile entry.
         if section == "profiles" and indent == 2 and line.endswith(":"):
             current_profile = line[:-1]
             current_subsection = None
             result["profiles"][current_profile] = {}
             continue
+        # State: indent 4 under profiles marks nested subsection (e.g. bonuses).
         if section == "profiles" and indent == 4 and line.endswith(":") and current_profile:
             current_subsection = line[:-1]
             result["profiles"][current_profile][current_subsection] = {}
@@ -93,6 +95,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             else:
                 target[axis.strip()] = value
             continue
+        # State: config entries at indent 2 define new subsections or scalar keys.
         if section == "config" and indent == 2 and line.endswith(":"):
             current_profile = None
             current_subsection = line[:-1]
@@ -107,6 +110,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             key, value = line.split(":", 1)
             result.setdefault("config", {})[key.strip()] = _parse_scalar_value(value)
             continue
+        # State: indent 4 under config writes nested key/value pairs.
         if section == "config" and indent == 4 and ":" in line and current_subsection:
             key, value = line.split(":", 1)
             config_section = result.setdefault("config", {}).setdefault(current_subsection, {})

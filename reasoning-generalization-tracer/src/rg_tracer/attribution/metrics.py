@@ -272,10 +272,12 @@ def delta_repeatability(
     return float(post - overfit)
 
 
-def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike) -> List[GraphLike]:
+def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike | None) -> List[GraphLike]:
+    if graphs is None:
+        return []
     if isinstance(graphs, (AttributionGraph, Mapping)):
         return [graphs]
-    return list(graphs)
+    return [graph for graph in graphs if graph is not None]
 
 
 def _filter_by_phase(

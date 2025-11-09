@@ -186,7 +186,7 @@ def compute_concept_reward(
         )
         positive_alignment = min(1.0, max(0.0, alignment_value))
         multiplier = 1.0 + scale_value * positive_alignment
-        reward *= max(0.0, multiplier)
+        reward *= multiplier
     return float(max(0.0, reward))
 
 
