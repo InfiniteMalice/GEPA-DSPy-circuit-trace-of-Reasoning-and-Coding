@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
+from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
 
@@ -36,6 +37,7 @@ class SemanticReport:
 
 
 _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
+_ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
 
 
 def _normalise_chain(chain: object) -> List[str]:
@@ -70,13 +72,27 @@ def _detect_units(step: str, expected: str | None) -> bool:
     if not expected:
         return True
     lowered = step.lower()
-    alt_units = {"meters", "seconds", "kg", "binary", "count", "mod"}
-    expected_lower = expected.lower()
-    mismatched = any(unit in lowered and unit != expected_lower for unit in alt_units)
+    expected_lower = expected.lower().strip()
+    if not expected_lower:
+        return True
+    pattern = build_token_boundary_pattern(expected_lower)
+    if pattern and pattern.search(lowered):
+        return True
+    expected_variants = {expected_lower}
+    if expected_lower.endswith("s"):
+        expected_variants.add(expected_lower.rstrip("s"))
+    else:
+        expected_variants.add(f"{expected_lower}s")
+    mismatched = False
+    for unit in _ALT_UNITS:
+        variant_pattern = build_token_boundary_pattern(unit)
+        if not variant_pattern:
+            continue
+        if variant_pattern.search(lowered) and unit not in expected_variants:
+            mismatched = True
+            break
     if mismatched:
         return False
-    if expected_lower in lowered:
-        return True
     return True
 
 
