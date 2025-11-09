@@ -330,14 +330,19 @@ def _map_semantics_to_features(
     contradictory_ids: List[str] = []
     for feature in features:
         raw_tags = feature.get("tags")
-        # Handle tags sourced from different pipelines (None, scalar, or iterable).
+        # Handle tags sourced from different pipelines (None, scalar, iterable, or blank strings).
         if raw_tags is None:
             tags_iter = []
         elif isinstance(raw_tags, (list, tuple, set)):
             tags_iter = raw_tags
         else:
             tags_iter = [raw_tags]
-        lower_tags = {str(tag).lower() for tag in tags_iter}
+        cleaned_tags: List[str] = []
+        for tag in tags_iter:
+            text_tag = str(tag).strip()
+            if text_tag:
+                cleaned_tags.append(text_tag.lower())
+        lower_tags = set(cleaned_tags)
         feature_id = str(feature.get("id", ""))
         if any(tag in step for step in entailed_lower for tag in lower_tags):
             entailed_ids.append(feature_id)

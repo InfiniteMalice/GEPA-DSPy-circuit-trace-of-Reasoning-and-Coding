@@ -41,6 +41,13 @@ _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
 _ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
 
 
+def _canonical_unit(value: str) -> str:
+    trimmed = value.strip()
+    if len(trimmed) > 1 and trimmed.endswith("s") and trimmed[-2].isalpha():
+        return trimmed[:-1]
+    return trimmed
+
+
 def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
         steps = [step.strip() for step in chain.split("\n") if step.strip()]
@@ -80,11 +87,8 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     matched_expected = bool(pattern and pattern.search(lowered))
     if matched_expected:
         return True, None
-    expected_variants = {expected_lower}
-    if expected_lower.endswith("s"):
-        expected_variants.add(expected_lower.rstrip("s"))
-    else:
-        expected_variants.add(f"{expected_lower}s")
+    canonical_expected = _canonical_unit(expected_lower)
+    matched_variant = False
     detected_unit: str | None = None
     for unit in _ALT_UNITS:
         variant_pattern = build_token_boundary_pattern(unit)
@@ -92,9 +96,12 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
             continue
         if variant_pattern.search(lowered):
             detected_unit = unit
-            if unit not in expected_variants:
-                return False, detected_unit
-    if detected_unit and detected_unit in expected_variants:
+            canonical_detected = _canonical_unit(unit)
+            if canonical_detected == canonical_expected:
+                matched_variant = True
+                continue
+            return False, detected_unit
+    if matched_variant:
         return True, detected_unit
     return False, detected_unit
 

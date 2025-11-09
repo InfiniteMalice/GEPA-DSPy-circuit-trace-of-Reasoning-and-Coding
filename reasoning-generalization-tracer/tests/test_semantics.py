@@ -7,6 +7,7 @@ def test_semantics_detects_and_repairs():
     report = verify_chain(chain, spec)
     assert report.score < 2
     assert any(SemanticTag.VARIABLE_DRIFT.value in entry["tags"] for entry in report.tags)
+    assert any(SemanticTag.UNIT_MISMATCH.value in entry["tags"] for entry in report.tags)
     repaired_steps = repair_once(
         chain,
         report.tags,
