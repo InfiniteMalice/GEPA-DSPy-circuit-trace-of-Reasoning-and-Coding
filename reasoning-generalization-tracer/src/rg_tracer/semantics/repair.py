@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Iterable, List, Mapping
 
+from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
 
@@ -77,12 +78,12 @@ def repair_once(
             incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
             new_step = step
             if incorrect_unit:
-                pattern = _build_unit_pattern(incorrect_unit)
+                pattern = build_token_boundary_pattern(incorrect_unit)
                 if pattern:
                     new_step, _ = pattern.subn(expected_units, new_step, count=1)
             expected_trimmed = expected_units.strip()
             if expected_trimmed:
-                expected_pattern = _build_unit_pattern(expected_trimmed)
+                expected_pattern = build_token_boundary_pattern(expected_trimmed)
                 if expected_pattern:
                     has_expected = bool(expected_pattern.search(new_step))
                 else:
@@ -101,7 +102,11 @@ def repair_once(
             break
         if fix_tag == SemanticTag.MISQUOTE.value:
             fixed = (
-                step.replace("“", '"').replace("”", '"').replace("’", "'").replace("‘", "'").strip()
+                step.replace("\u201c", '"')
+                .replace("\u201d", '"')
+                .replace("\u2018", "'")
+                .replace("\u2019", "'")
+                .strip()
             )
             if "[context clarified]" not in fixed.lower():
                 fixed = f"{fixed} [context clarified]"

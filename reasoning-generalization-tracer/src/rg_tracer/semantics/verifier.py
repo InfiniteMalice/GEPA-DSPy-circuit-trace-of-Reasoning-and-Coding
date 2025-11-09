@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
+from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
 
@@ -38,14 +39,6 @@ class SemanticReport:
 
 _KEYWORDS_SUPPORT = {"because", "therefore", "thus", "since", "hence"}
 _ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
-
-
-def _unit_pattern(token: str) -> re.Pattern[str] | None:
-    stripped = token.strip()
-    if not stripped:
-        return None
-    escaped = re.escape(stripped)
-    return re.compile(rf"(?<![A-Za-z]){escaped}(?![A-Za-z])")
 
 
 def _normalise_chain(chain: object) -> List[str]:
@@ -83,7 +76,7 @@ def _detect_units(step: str, expected: str | None) -> bool:
     expected_lower = expected.lower().strip()
     if not expected_lower:
         return True
-    pattern = _unit_pattern(expected_lower)
+    pattern = build_token_boundary_pattern(expected_lower)
     if pattern and pattern.search(lowered):
         return True
     expected_variants = {expected_lower}
@@ -93,7 +86,7 @@ def _detect_units(step: str, expected: str | None) -> bool:
         expected_variants.add(f"{expected_lower}s")
     mismatched = False
     for unit in _ALT_UNITS:
-        variant_pattern = _unit_pattern(unit)
+        variant_pattern = build_token_boundary_pattern(unit)
         if not variant_pattern:
             continue
         if variant_pattern.search(lowered) and unit not in expected_variants:

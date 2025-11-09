@@ -145,7 +145,20 @@ def _split_profile_payload(
 
 
 def _is_number(value: object) -> bool:
-    return isinstance(value, (int, float))
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return True
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return False
+        try:
+            float(stripped)
+        except ValueError:
+            return False
+        return True
+    return False
 
 
 def _parse_scalar_value(text: str) -> object:

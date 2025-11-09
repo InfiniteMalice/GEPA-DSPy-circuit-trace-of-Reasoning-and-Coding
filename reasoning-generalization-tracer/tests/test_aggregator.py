@@ -1,7 +1,6 @@
 import pytest
 
 from rg_tracer.scoring.aggregator import (
-    DEFAULT_GATES,
     Profile,
     apply_hard_gates,
     evaluate_profile,
