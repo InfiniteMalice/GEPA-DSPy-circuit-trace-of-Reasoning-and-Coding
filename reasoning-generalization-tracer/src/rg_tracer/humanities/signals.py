@@ -16,7 +16,8 @@ class HumanitiesSignals:
     hedge_rate: float
     fallacy_flags: int
     neutrality_balance: float
-    tags: List[Mapping[str, Iterable[str]]]
+    # Each tag mapping exposes the original step alongside a list of tag labels.
+    tags: List[Mapping[str, List[str]]]
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -46,7 +47,7 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     hedge_hits = 0
     fallacy_flags = 0
     neutrality_hits = 0
-    tags: List[Mapping[str, Iterable[str]]] = []
+    tags: List[Mapping[str, List[str]]] = []
     for step in steps:
         lowered = step.lower()
         if any(marker in step for marker in _CITATION_MARKERS):
@@ -59,10 +60,12 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
             hedge_hits += 1
         if any(term in lowered for term in _FALLACY_TERMS):
             fallacy_flags += 1
-            tags.append({
-                "step": step,
-                "tags": [SemanticTag.RHETORICAL_EXCESS.value],
-            })
+            tags.append(
+                {
+                    "step": step,
+                    "tags": [SemanticTag.RHETORICAL_EXCESS.value],
+                }
+            )
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
     total = len(steps)
