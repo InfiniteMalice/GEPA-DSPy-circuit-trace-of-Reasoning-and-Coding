@@ -1,7 +1,7 @@
 import pytest
 
-from rg_tracer.concepts import ConceptSpec
-from rg_tracer.runners.self_play import Candidate, _compute_attr_metrics
+from rg_tracer.concepts import ConceptSpec, compute_concept_reward
+from rg_tracer.runners.self_play import Candidate, _compute_and_apply_attr_metrics
 
 BASE_GRAPH = {
     "model_ref": "m",
@@ -50,7 +50,7 @@ def test_attr_bonus_applies_when_alignment_grows():
         "repeatability_gain": 0.0,
         "sparsity_drop": 0.0,
     }
-    result = _compute_attr_metrics(candidate, graphs, bonuses, concept=concept)
+    result = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept=concept)
     assert result["delta_alignment"] > 0
     assert candidate.attr_bonus == pytest.approx(0.05)
     assert candidate.composite == pytest.approx(0.55)
@@ -99,5 +99,17 @@ def test_concept_reward_scales_with_alignment():
         "sparsity_drop": 0.0,
     }
     base_reward = candidate.concept_reward
-    _compute_attr_metrics(candidate, graphs, bonuses, concept=concept)
+    metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept=concept)
+    task_metrics = {
+        **candidate.semantics_map,
+        "concept_reuse": 1.0,
+        "supporting_tasks": 1.0,
+    }
+    alignment_value = metrics.get("alignment") if metrics else None
+    candidate.concept_reward = compute_concept_reward(
+        candidate.trace,
+        concept,
+        task_metrics=task_metrics,
+        alignment=alignment_value,
+    )
     assert candidate.concept_reward > base_reward

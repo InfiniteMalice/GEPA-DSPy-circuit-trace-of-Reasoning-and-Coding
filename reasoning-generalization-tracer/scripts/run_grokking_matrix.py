@@ -7,7 +7,7 @@ import hashlib
 import itertools
 import json
 import numbers
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Tuple
 
@@ -39,8 +39,8 @@ def _extract_phase_graphs(
 ) -> List[Mapping[str, object]]:
     if backend_name != "null":
         raise ValueError(
-            "Backend '%s' requires a real model; use --backend null for the matrix sweep"
-            % backend_name
+            f"Backend '{backend_name}' requires a real model; use --backend null for the matrix "
+            "sweep"
         )
     backend = attr_graphs.get_backend(backend_name)
     graphs: List[Mapping[str, object]] = []
@@ -132,7 +132,7 @@ def run_matrix(
     backend: str,
     limit: int | None = None,
 ) -> Path:
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     root = output_dir / f"grokking_matrix_{timestamp}"
     root.mkdir(parents=True, exist_ok=True)
     rows: List[Tuple[str, Mapping[str, object]]] = []

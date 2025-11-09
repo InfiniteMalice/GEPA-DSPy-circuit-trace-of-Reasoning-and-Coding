@@ -42,6 +42,7 @@ def _append_with_punctuation(text: str, suffix: str) -> str:
     suffix_text = suffix.strip()
     if not trimmed:
         return suffix_text
+    trimmed = trimmed.rstrip(":;,") or trimmed
     terminal = trimmed[-1]
     if terminal in {".", "?", "!"}:
         return f"{trimmed} {suffix_text}"
@@ -77,7 +78,15 @@ def repair_once(
             break
     if fix_tag is None:
         return steps
-    for entry in tags_list:
+    if fix_tag == SemanticTag.UNIT_MISMATCH.value:
+        ordered_entries = sorted(
+            tags_list,
+            key=lambda item: bool(item.get("incorrect_unit")),
+            reverse=True,
+        )
+    else:
+        ordered_entries = tags_list
+    for entry in ordered_entries:
         if fix_tag not in entry.get("tags", []):
             continue
         step = str(entry.get("step", "")).strip()
@@ -105,6 +114,8 @@ def repair_once(
                 if not has_expected:
                     new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
+            if incorrect_unit:
+                continue
             break
         if fix_tag == SemanticTag.UNSUPPORTED.value:
             suffix = " because we justify the inference from previous steps."

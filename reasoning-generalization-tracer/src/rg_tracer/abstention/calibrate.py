@@ -45,7 +45,7 @@ def isotonic_calibration(
     """Fit an isotonic regression calibrator using the PAV algorithm."""
     pairs = sorted(
         (float(confidence), float(label_value))
-        for confidence, label_value in zip(confidences, labels)
+        for confidence, label_value in zip(confidences, labels, strict=True)
     )
     if not pairs:
         return lambda conf: conf

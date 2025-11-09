@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from collections.abc import Iterable, Mapping as MappingABC
-from typing import Dict, List, Mapping, Sequence
+from typing import Callable, Dict, List, Mapping, Sequence
 
 from ..abstention import apply_abstention
 from ..attribution import graphs as attr_graphs
@@ -195,13 +195,24 @@ def _concept_feature_descriptors(concept: ConceptSpec | None) -> List[Mapping[st
     return fallback
 
 
-def _compute_attr_metrics(
+def _resolve_attr_param(
+    config: Mapping[str, object],
+    key: str,
+    default: int,
+    *,
+    coerce: Callable[[object], int] = int,
+) -> int:
+    raw_value = config.get(key)
+    return default if raw_value is None else coerce(raw_value)
+
+
+def _compute_and_apply_attr_metrics(
     candidate: Candidate,
     graphs: List[Mapping[str, object]],
     bonuses: Mapping[str, float],
     concept: ConceptSpec | None,
 ) -> Dict[str, float]:
-    """Populate candidate attribution fields and return the computed metrics."""
+    """Compute attribution metrics and update the candidate-side bookkeeping."""
     concept_features = _concept_feature_descriptors(concept)
     metrics = {
         "sparsity": attr_metrics.path_sparsity(graphs),
@@ -223,19 +234,6 @@ def _compute_attr_metrics(
     candidate.attr_metrics = metrics
     candidate.attr_bonus = bonus
     candidate.composite += bonus
-    alignment_now = metrics.get("alignment", 0.0)
-    if concept is not None and candidate.trace:
-        task_metrics = {
-            **candidate.semantics_map,
-            "concept_reuse": 1.0,
-            "supporting_tasks": 1.0,
-        }
-        candidate.concept_reward = compute_concept_reward(
-            candidate.trace,
-            concept,
-            task_metrics=task_metrics,
-            alignment=alignment_now,
-        )
     return {**metrics, "bonus": bonus}
 
 
@@ -251,12 +249,16 @@ def _apply_attribution_rewards(
 ) -> None:
     if not candidates:
         return
-    raw_probe_size = attr_config.get("probe_size")
-    probe_size = (
-        DEFAULT_ATTR_CONFIG["probe_size"] if raw_probe_size is None else int(raw_probe_size)
+    probe_size = _resolve_attr_param(
+        attr_config,
+        "probe_size",
+        DEFAULT_ATTR_CONFIG["probe_size"],
     )
-    raw_topk = attr_config.get("topk")
-    topk = DEFAULT_ATTR_CONFIG["topk"] if raw_topk is None else int(raw_topk)
+    topk = _resolve_attr_param(
+        attr_config,
+        "topk",
+        DEFAULT_ATTR_CONFIG["topk"],
+    )
     backend_value = attr_config.get("backend", DEFAULT_ATTR_CONFIG["backend"])
     backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"])
     if probe_size <= 0 or topk <= 0:
@@ -290,7 +292,7 @@ def _apply_attribution_rewards(
                 attr_path = attr_dir / f"candidate{idx}_probe{payload['probe_index']}.json"
                 with attr_path.open("w", encoding="utf8") as graph_handle:
                     json.dump(graph, graph_handle, indent=2)
-            metrics = _compute_attr_metrics(candidate, graphs, bonuses, concept)
+            metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept)
             record = {
                 "candidate_index": idx,
                 "problem_id": candidate.problem_id,
@@ -328,6 +330,7 @@ def _map_semantics_to_features(
     contradictory_ids: List[str] = []
     for feature in features:
         raw_tags = feature.get("tags")
+        # Handle tags sourced from different pipelines (None, scalar, or iterable).
         if raw_tags is None:
             tags_iter = []
         elif isinstance(raw_tags, (list, tuple, set)):
@@ -440,8 +443,6 @@ def run_self_play(
 
     if concept is not None:
         for candidate in results:
-            if candidate.concept_reward != 0.0:
-                continue
             if not candidate.trace:
                 continue
             task_metrics = {
@@ -449,10 +450,14 @@ def run_self_play(
                 "concept_reuse": 1.0,
                 "supporting_tasks": 1.0,
             }
+            alignment_value = None
+            if candidate.attr_metrics:
+                alignment_value = candidate.attr_metrics.get("alignment")
             candidate.concept_reward = compute_concept_reward(
                 candidate.trace,
                 concept,
                 task_metrics=task_metrics,
+                alignment=alignment_value,
             )
 
     frontier = pareto_frontier(results)

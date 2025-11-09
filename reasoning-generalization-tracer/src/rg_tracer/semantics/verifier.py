@@ -77,7 +77,8 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     if not expected_lower:
         return True, None
     pattern = build_token_boundary_pattern(expected_lower)
-    if pattern and pattern.search(lowered):
+    matched_expected = bool(pattern and pattern.search(lowered))
+    if matched_expected:
         return True, None
     expected_variants = {expected_lower}
     if expected_lower.endswith("s"):
@@ -93,7 +94,9 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
             detected_unit = unit
             if unit not in expected_variants:
                 return False, detected_unit
-    return True, detected_unit
+    if detected_unit and detected_unit in expected_variants:
+        return True, detected_unit
+    return False, detected_unit
 
 
 def _detect_variable_drift(step: str, allowed: set[str]) -> bool:
