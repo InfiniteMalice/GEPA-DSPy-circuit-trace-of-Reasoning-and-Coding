@@ -6,6 +6,20 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping
 
 
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 @dataclass
 class GraphNode:
     """Represents a node within an attribution graph."""
@@ -25,13 +39,11 @@ class GraphNode:
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphNode":
-        layer_value = data.get("layer")
-        activation_value = data.get("activation")
         return cls(
             id=str(data.get("id", "")),
-            layer=int(layer_value) if layer_value is not None else 0,
+            layer=_safe_int(data.get("layer"), 0),
             type=str(data.get("type", "unknown")),
-            activation=float(activation_value) if activation_value is not None else 0.0,
+            activation=_safe_float(data.get("activation"), 0.0),
         )
 
 
@@ -48,11 +60,10 @@ class GraphEdge:
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphEdge":
-        attr_value = data.get("attr")
         return cls(
             src=str(data.get("src", "")),
             dst=str(data.get("dst", "")),
-            attr=float(attr_value) if attr_value is not None else 0.0,
+            attr=_safe_float(data.get("attr"), 0.0),
         )
 
 
@@ -82,10 +93,19 @@ class GraphMeta:
             if isinstance(positions_value, Iterable) and not isinstance(
                 positions_value, (str, bytes)
             ):
-                meta.token_positions = [int(value) for value in positions_value]
+                parsed_positions: List[int] = []
+                for value in positions_value:
+                    try:
+                        parsed_positions.append(int(value))
+                    except (TypeError, ValueError):
+                        continue
+                meta.token_positions = parsed_positions
         logits_value = data.get("logits_scale")
         if logits_value is not None:
-            meta.logits_scale = float(logits_value)
+            try:
+                meta.logits_scale = float(logits_value)
+            except (TypeError, ValueError):
+                meta.logits_scale = None
         phase_value = data.get("phase")
         if phase_value is not None:
             meta.phase = str(phase_value)

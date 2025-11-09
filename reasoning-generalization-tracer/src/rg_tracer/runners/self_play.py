@@ -322,8 +322,12 @@ def _map_semantics_to_features(
         for entry in report.get("tags", [])
         if SemanticTag.CONTRADICTION.value in entry.get("tags", [])
     ]
-    entailed_lower = [step.lower() for step in entailed_steps]
-    contradictory_lower = [step.lower() for step in contradictory_steps]
+    entailed_lower = [
+        str(step).lower() for step in entailed_steps if step is not None
+    ]
+    contradictory_lower = [
+        str(step).lower() for step in contradictory_steps if step is not None
+    ]
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
     for feature in features:

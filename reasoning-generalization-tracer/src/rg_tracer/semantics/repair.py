@@ -63,11 +63,27 @@ def repair_once(
             incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
             new_step = step
             if incorrect_unit:
-                pattern = re.compile(rf"\b{re.escape(incorrect_unit)}\b")
+                escaped = re.escape(incorrect_unit)
+                leading = incorrect_unit[0].isalnum()
+                trailing = incorrect_unit[-1].isalnum()
+                if leading and trailing:
+                    pattern = re.compile(rf"\b{escaped}\b")
+                else:
+                    pattern = re.compile(escaped)
                 new_step, _ = pattern.subn(expected_units, new_step, count=1)
-            pattern_expected = re.compile(rf"\b{re.escape(expected_units)}\b")
-            if not pattern_expected.search(new_step):
-                new_step = f"{new_step} ({expected_units})"
+            expected_trimmed = expected_units.strip()
+            if expected_trimmed:
+                escaped_expected = re.escape(expected_trimmed)
+                leading_expected = expected_trimmed[0].isalnum()
+                trailing_expected = expected_trimmed[-1].isalnum()
+                if leading_expected and trailing_expected:
+                    has_expected = bool(
+                        re.search(rf"\b{escaped_expected}\b", new_step)
+                    )
+                else:
+                    has_expected = expected_trimmed in new_step
+                if not has_expected:
+                    new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
             break
         if fix_tag == SemanticTag.UNSUPPORTED.value:

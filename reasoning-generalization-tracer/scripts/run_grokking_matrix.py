@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import numbers
 import hashlib
 import itertools
 import json
@@ -75,7 +76,7 @@ def _summarise_metrics(
     # deltas as unavailable rather than returning a wall of zeros.
     metrics["delta_alignment"] = None
     return {
-        key: (float(value) if isinstance(value, (int, float)) else value)
+        key: (float(value) if isinstance(value, numbers.Real) else value)
         for key, value in metrics.items()
     }
 

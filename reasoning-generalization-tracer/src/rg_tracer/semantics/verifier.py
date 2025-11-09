@@ -75,10 +75,14 @@ def _detect_units(step: str, expected: str | None) -> bool:
     expected_lower = expected.lower()
     if re.search(rf"\b{re.escape(expected_lower)}\b", lowered):
         return True
-    alt_units = _ALT_UNITS
+    expected_variants = {expected_lower}
+    if expected_lower.endswith("s"):
+        expected_variants.add(expected_lower.rstrip("s"))
+    else:
+        expected_variants.add(f"{expected_lower}s")
     mismatched = any(
-        re.search(rf"\b{re.escape(unit)}\b", lowered) and unit != expected_lower
-        for unit in alt_units
+        re.search(rf"\b{re.escape(unit)}\b", lowered) and unit not in expected_variants
+        for unit in _ALT_UNITS
     )
     if mismatched:
         return False

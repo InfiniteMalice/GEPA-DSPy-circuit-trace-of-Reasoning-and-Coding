@@ -64,10 +64,15 @@ def test_fallback_parser_handles_top_level_scalars(tmp_path, monkeypatch):
 
     monkeypatch.setattr(agg, "yaml", None)
     path = tmp_path / "profiles.yaml"
-    path.write_text(
-        "config:\n  alignment_scale: 0.25\nprofiles:\n  demo:\n    weights:\n      rigor: 1\n",
-        encoding="utf8",
+    yaml_text = (
+        "config:\n"
+        "  alignment_scale: 0.25\n"
+        "profiles:\n"
+        "  demo:\n"
+        "    weights:\n"
+        "      rigor: 1\n"
     )
+    path.write_text(yaml_text, encoding="utf8")
     profiles = load_profiles(path)
     assert "demo" in profiles
     config = get_last_config()

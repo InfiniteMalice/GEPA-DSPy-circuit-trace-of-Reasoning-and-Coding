@@ -26,7 +26,8 @@ def test_self_play_creates_artifacts(tmp_path):
     assert (run_dir / "attr_metrics.jsonl").exists()
     attr_dir = run_dir / "attr"
     assert attr_dir.exists()
-    assert any(attr_dir.iterdir())
+    json_files = list(attr_dir.glob("*.json"))
+    assert json_files, "attr directory should contain at least one JSON file"
     with open(run_dir / "scores.jsonl", "r", encoding="utf8") as handle:
         lines = [json.loads(line) for line in handle if line.strip()]
     assert any(candidate["passes_gates"] for candidate in lines)
