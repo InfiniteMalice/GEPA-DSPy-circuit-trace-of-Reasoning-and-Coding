@@ -69,32 +69,31 @@ def _detect_fact_free(step: str) -> bool:
     return not (has_digit or has_equation or has_support)
 
 
-def _detect_units(step: str, expected: str | None) -> bool:
+def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     if not expected:
-        return True
+        return True, None
     lowered = step.lower()
     expected_lower = expected.lower().strip()
     if not expected_lower:
-        return True
+        return True, None
     pattern = build_token_boundary_pattern(expected_lower)
     if pattern and pattern.search(lowered):
-        return True
+        return True, None
     expected_variants = {expected_lower}
     if expected_lower.endswith("s"):
         expected_variants.add(expected_lower.rstrip("s"))
     else:
         expected_variants.add(f"{expected_lower}s")
-    mismatched = False
+    detected_unit: str | None = None
     for unit in _ALT_UNITS:
         variant_pattern = build_token_boundary_pattern(unit)
         if not variant_pattern:
             continue
-        if variant_pattern.search(lowered) and unit not in expected_variants:
-            mismatched = True
-            break
-    if mismatched:
-        return False
-    return True
+        if variant_pattern.search(lowered):
+            detected_unit = unit
+            if unit not in expected_variants:
+                return False, detected_unit
+    return True, detected_unit
 
 
 def _detect_variable_drift(step: str, allowed: set[str]) -> bool:
@@ -153,10 +152,12 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
             unsupported_count += 1
         if concept and concept.lower() in step.lower():
             schema_hits += 1
+        incorrect_unit: str | None = None
         if expected_units:
-            units_ok = _detect_units(step, expected_units)
+            units_ok, detected_unit = _detect_units(step, expected_units)
             if not units_ok:
                 step_tags.append(SemanticTag.UNIT_MISMATCH.value)
+                incorrect_unit = detected_unit
                 unit_check_pass = False
         if allowed_vars and _detect_variable_drift(step, allowed_vars):
             step_tags.append(SemanticTag.VARIABLE_DRIFT.value)
@@ -169,7 +170,10 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
             entailed_count += 1
         if not fact_free:
             step_tags.append(SemanticTag.SUPPORTED.value)
-        tags[idx] = {"step": step, "tags": step_tags}
+        entry = {"step": step, "tags": step_tags}
+        if incorrect_unit:
+            entry["incorrect_unit"] = incorrect_unit
+        tags[idx] = entry
 
     total_steps = len(steps)
     contradiction_rate = contradiction_count / total_steps if total_steps else 0.0

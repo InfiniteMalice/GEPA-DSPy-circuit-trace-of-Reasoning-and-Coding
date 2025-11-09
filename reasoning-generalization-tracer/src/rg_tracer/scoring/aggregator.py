@@ -42,12 +42,19 @@ def _parse_profiles(text: str) -> tuple[Dict[str, Profile], Dict[str, object]]:
         data = yaml.safe_load(text) or {}
     else:
         data = _fallback_parse(text)
+    if not isinstance(data, Mapping):
+        raise ValueError("Profiles configuration must be a mapping")
     profiles: Dict[str, Profile] = {}
-    raw_profiles = data.get("profiles", {})
+    raw_profiles = data.get("profiles") or {}
+    if raw_profiles and not isinstance(raw_profiles, Mapping):
+        raise ValueError("profiles section must be a mapping")
     for name, raw in raw_profiles.items():
         weights, bonuses = _split_profile_payload(raw)
         profiles[name] = Profile(name=name, weights=weights, bonuses=bonuses)
-    config = data.get("config", {})
+    raw_config = data.get("config") or {}
+    if raw_config and not isinstance(raw_config, Mapping):
+        raise ValueError("config section must be a mapping")
+    config = dict(raw_config)
     return profiles, config
 
 

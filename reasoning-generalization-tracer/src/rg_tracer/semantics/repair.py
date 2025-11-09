@@ -35,6 +35,20 @@ def _normalise_chain(chain: object) -> List[str]:
     return steps or [""]
 
 
+def _append_with_punctuation(text: str, suffix: str) -> str:
+    """Append ``suffix`` to ``text`` while handling terminal punctuation."""
+
+    trimmed = text.rstrip()
+    suffix_text = suffix.strip()
+    if not trimmed:
+        return suffix_text
+    terminal = trimmed[-1]
+    if terminal in {".", "?", "!"}:
+        return f"{trimmed} {suffix_text}"
+    base = trimmed.rstrip(".")
+    return f"{base}. {suffix_text}" if base else suffix_text
+
+
 def repair_once(
     chain: object,
     tags: Iterable[Mapping[str, Iterable[str]]],
@@ -117,21 +131,9 @@ def repair_once(
                 steps[idx] = f"{step} This relationship may be correlational.".strip()
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            normative_suffix = " This recommendation is normative and contingent on shared values."
-            if normative_suffix.strip().lower() not in step.lower():
-                trimmed = step.rstrip()
-                suffix_text = normative_suffix.strip()
-                terminal = trimmed[-1:] if trimmed else ""
-                if terminal in {".", "?", "!"}:
-                    prefix = trimmed
-                    separator = " "
-                else:
-                    prefix = trimmed.rstrip(".")
-                    separator = ". " if prefix else ""
-                if not prefix:
-                    steps[idx] = suffix_text
-                else:
-                    steps[idx] = f"{prefix}{separator}{suffix_text}"
+            normative_suffix = "This recommendation is normative and contingent on shared values."
+            if normative_suffix.lower() not in step.lower():
+                steps[idx] = _append_with_punctuation(step, normative_suffix)
             break
     return steps
 

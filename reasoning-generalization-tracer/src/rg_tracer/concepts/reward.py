@@ -72,7 +72,7 @@ def _compute_match(
     expected = set(concept.expected_substructures)
     if not expected:
         return 1.0
-    tags = {tag for feature in features for tag in feature.get("tags", [])}
+    tags = {tag for feature in features for tag in (feature.get("tags") or [])}
     if not tags:
         return 0.0
     return len(tags & expected) / len(expected)
@@ -88,7 +88,8 @@ def _compute_selectivity(
     importance_other = 0.0
     for feature in features:
         weight = float(feature.get("importance", 0.0) or 0.0)
-        if set(feature.get("tags", [])) & target_tags:
+        feature_tags = set(feature.get("tags") or [])
+        if feature_tags & target_tags:
             importance_target += weight
         else:
             importance_other += weight
