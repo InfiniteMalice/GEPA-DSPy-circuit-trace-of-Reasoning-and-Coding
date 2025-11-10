@@ -294,7 +294,7 @@ def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
         reverse=True,
     )
     ranked = ranked[:top_k]
-    return {node.id for node in ranked}
+    return {str(node.id) for node in ranked}
 
 
 def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[str, float]:

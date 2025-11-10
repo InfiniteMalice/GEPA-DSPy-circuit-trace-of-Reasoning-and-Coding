@@ -88,6 +88,10 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     if matched_expected:
         return True, None
     canonical_expected = _canonical_unit(expected_lower)
+    canonical_pattern = build_token_boundary_pattern(canonical_expected)
+    matched_canonical = bool(canonical_pattern and canonical_pattern.search(lowered))
+    if matched_canonical:
+        return True, None
     matched_variant = False
     detected_unit: str | None = None
     for unit in _ALT_UNITS:
@@ -99,10 +103,11 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
             canonical_detected = _canonical_unit(unit)
             if canonical_detected == canonical_expected:
                 matched_variant = True
+                detected_unit = None
                 continue
             return False, detected_unit
     if matched_variant:
-        return True, detected_unit
+        return True, None
     return False, detected_unit
 
 
