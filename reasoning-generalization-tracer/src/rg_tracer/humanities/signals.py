@@ -62,7 +62,8 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         has_citation = any(marker in step for marker in _CITATION_MARKERS)
         if has_citation:
             cite_hits += 1
-        if '"' in step or "'" in step:
+        double_quotes = step.count('"')
+        if double_quotes:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
             counter_hits += 1
@@ -74,11 +75,11 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         if not has_citation and any(term in lowered for term in _ASSERTIVE_TERMS):
             step_tags.append(SemanticTag.UNCITED_CLAIM.value)
         quote_issue = False
-        if step.count('"') % 2 == 1 or step.count("'") % 2 == 1:
+        if double_quotes % 2 == 1:
             quote_issue = True
         if quote_issue:
             step_tags.append(SemanticTag.MISQUOTE.value)
-        if ('"' in step or "'" in step) and not has_citation:
+        if ('"' in step) and not has_citation:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1

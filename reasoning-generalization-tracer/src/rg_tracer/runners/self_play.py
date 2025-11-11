@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+import warnings
+from collections.abc import Iterable, Mapping as MappingABC
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from collections.abc import Iterable, Mapping as MappingABC
 from typing import Callable, Dict, List, Mapping, Sequence
 
 from ..abstention import apply_abstention
@@ -15,6 +16,7 @@ from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
 from ..scoring import aggregator, axes
 from ..semantics import SemanticTag, repair_once, verify_chain
+from ..semantics.patterns import build_token_boundary_pattern
 from ..trm_baseline import TinyRecursionModel
 
 AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
@@ -38,6 +40,7 @@ class Candidate:
     metrics: Dict[str, Mapping[str, object]]
     axis_scores: Dict[str, int]
     composite: float
+    base_composite: float
     passes_gates: bool
     failed_gates: Dict[str, float]
     concept_reward: float
@@ -158,6 +161,7 @@ def _build_probe_inputs(
         base_tokens = _as_list(numbers)
     if not base_tokens:
         prompt = str(problem.get("prompt", "")) or str(problem.get("statement", ""))
+        # Placeholder IDs keep BackendNull deterministic; other backends warn upstream.
         base_tokens = [ord(ch) % 10 for ch in prompt[:8]] or [0]
     task_id = str(problem.get("id", "task"))
     probes: List[Dict[str, object]] = []
@@ -243,7 +247,7 @@ def _compute_and_apply_attr_metrics(
         bonus += bonuses.get("sparsity_drop", 0.0)
     candidate.attr_metrics = metrics
     candidate.attr_bonus = bonus
-    candidate.composite += bonus
+    candidate.composite = candidate.base_composite + candidate.attr_bonus
     return {**metrics, "bonus": bonus}
 
 
@@ -275,13 +279,31 @@ def _apply_attribution_rewards(
         backend_name = DEFAULT_ATTR_CONFIG["backend"]
     if probe_size <= 0 or topk <= 0:
         return
+    has_sequence = isinstance(problem.get("sequence"), (list, tuple))
+    has_numbers = isinstance(problem.get("numbers"), (list, tuple))
+    has_explicit_tokens = has_sequence or has_numbers
+    if backend_name != "null" and not has_explicit_tokens:
+        warnings.warn(
+            "Non-null attribution backend configured without explicit tokens; "
+            "provide vocabulary-aligned probes to avoid placeholder IDs.",
+            RuntimeWarning,
+        )
     probes = _build_probe_inputs(problem, probe_size)
     if not probes:
         return
     attr_dir = run_dir / "attr"
     attr_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = run_dir / "attr_metrics.jsonl"
-    backend = attr_graphs.get_backend(backend_name)
+    try:
+        backend = attr_graphs.get_backend(backend_name)
+    except KeyError as exc:  # pragma: no cover - configuration error
+        raise ValueError(f"Unknown attribution backend: {backend_name}") from exc
+    except Exception as exc:  # pragma: no cover - backend initialisation failure
+        warnings.warn(
+            f"Failed to initialise attribution backend '{backend_name}': {exc}",
+            RuntimeWarning,
+        )
+        return
     bonuses = {**DEFAULT_ATTR_BONUSES, **dict(profile_bonuses)}
     top_pairs = sorted(
         enumerate(candidates),
@@ -356,9 +378,19 @@ def _map_semantics_to_features(
                 cleaned_tags.append(text_tag.lower())
         lower_tags = set(cleaned_tags)
         feature_id = str(feature.get("id", ""))
-        if any(tag in step for step in entailed_lower for tag in lower_tags):
+        entailed_match = False
+        contradictory_match = False
+        for tag in lower_tags:
+            pattern = build_token_boundary_pattern(tag)
+            if not pattern:
+                continue
+            if any(pattern.search(step) for step in entailed_lower):
+                entailed_match = True
+            if any(pattern.search(step) for step in contradictory_lower):
+                contradictory_match = True
+        if entailed_match:
             entailed_ids.append(feature_id)
-        if any(tag in step for step in contradictory_lower for tag in lower_tags):
+        if contradictory_match:
             contradictory_ids.append(feature_id)
     return {
         "entailed_feature_ids": entailed_ids,
@@ -431,12 +463,14 @@ def run_self_play(
         trace_obj = raw.get("trace")
         trace_json = trace_obj.to_json() if hasattr(trace_obj, "to_json") else trace_obj
         semantics_map = _map_semantics_to_features(trace_json, semantic_dict) if trace_json else {}
+        composite_value = float(eval_result["composite"])
         candidate = Candidate(
             text=abstention.text,
             confidence=raw.get("confidence", 0.0),
             metrics=raw.get("metrics", {}),
             axis_scores=axis_scores,
-            composite=float(eval_result["composite"]),
+            composite=composite_value,
+            base_composite=composite_value,
             passes_gates=gates_pass,
             failed_gates=dict(eval_result["failed_gates"]),
             concept_reward=0.0,
@@ -476,6 +510,12 @@ def run_self_play(
                 task_metrics=task_metrics,
                 alignment=alignment_value,
             )
+            candidate.composite = (
+                candidate.base_composite + candidate.attr_bonus + candidate.concept_reward
+            )
+    else:
+        for candidate in results:
+            candidate.composite = candidate.base_composite + candidate.attr_bonus
 
     frontier = pareto_frontier(results)
     best = max(results, key=lambda c: c.composite)
@@ -489,6 +529,7 @@ def run_self_play(
                         "text": candidate.text,
                         "confidence": candidate.confidence,
                         "axis_scores": candidate.axis_scores,
+                        "base_composite": candidate.base_composite,
                         "composite": candidate.composite,
                         "passes_gates": candidate.passes_gates,
                         "failed_gates": candidate.failed_gates,

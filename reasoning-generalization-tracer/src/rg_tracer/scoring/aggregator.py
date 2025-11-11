@@ -169,11 +169,10 @@ def _is_number(value: object) -> bool:
 
 
 def _parse_scalar_value(text: str) -> object:
-    value = text.strip()
-    if (value.startswith('"') and value.endswith('"')) or (
-        value.startswith("'") and value.endswith("'")
-    ):
-        value = value[1:-1]
+    stripped = text.strip()
+    if len(stripped) >= 2 and stripped[0] in {'"', "'"} and stripped[-1] == stripped[0]:
+        return stripped[1:-1]
+    value = stripped
     lowered = value.lower()
     if lowered == "null":
         return None

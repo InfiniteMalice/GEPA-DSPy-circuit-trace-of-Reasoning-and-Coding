@@ -60,9 +60,9 @@ target Tiny Recursion Models and small transformers. Each run logs:
 
 Soft bonuses (configurable; e.g., +0.01 for alignment/repeat gains, +0.005 for
 sparsity drops) are added to composite scores after hard gates. Concept rewards
-are scaled by `(1 + 0.25 * alignment)` when semantic entailment holds. All metrics
-are written to `runs/<timestamp>/attr_metrics.jsonl` alongside per-probe graph
-JSON in `runs/<timestamp>/attr/`.
+are scaled by `(1 + 0.25 * alignment)` when semantic entailment holds. Metrics
+land in `runs/<timestamp>/attr_metrics.jsonl` (a JSONL file) while each probe
+graph is stored under `runs/<timestamp>/attr/`.
 
 ## Abstention at 0.75 Confidence
 
@@ -172,8 +172,9 @@ Each self-play run emits:
 * **Humanities Profiles:** adjust humanities weights in
   `humanities/profiles.yaml`.
 * **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
-* **Attribution:** tweak probe size, top-k, and backend via `config.attr` in
-  `scoring/profiles.yaml`. Per-profile bonuses live under `profiles.*.bonuses`.
+* **Attribution:** tweak probe size, top-k, and backend via the
+  `profiles.<name>.config.attr` section in `scoring/profiles.yaml`. Per-profile
+  bonuses live under `profiles.*.bonuses`.
   Example:
   ```yaml
   config:
@@ -217,12 +218,12 @@ python scripts/run_grokking_matrix.py --limit 2
 
 The resulting directory includes one folder per configuration with
 `pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
-alignment, and repeatability deltas. The ΔAlignment column prints `n/a` because
-the matrix sweep uses the mock backend without concept feature catalogs: the
-lightweight smoke path only measures structural changes unless you pass
-descriptors via `--concept-features` (or edit the script stub). Provide catalogs
-whenever you want alignment deltas—the default keeps CI runs quick while making
-the omission explicit in the table. Look for stabilising trends across
+alignment, and repeatability deltas. ΔAlignment only populates when concept
+feature catalogs are supplied; by default the sweep uses the mock backend and
+prints `n/a` to highlight the omission. Pass descriptors via
+`--concept-features` (or edit the stub) whenever alignment deltas are needed.
+The default keeps CI runs quick while making the dependency explicit in the
+table. Look for stabilising trends across
 interventions—for example, compare `softmax` vs `stablemax` for the impact of
 numerically safe attention, inspect `sft_only` vs `srl_pretrain_then_sft` to see
 how supervised reasoning raises repeatability before accuracy improves, and

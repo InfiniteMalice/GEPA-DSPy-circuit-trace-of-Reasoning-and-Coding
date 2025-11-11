@@ -194,6 +194,7 @@ def compute_concept_reward(
             "alignment_scale",
             0.0,
             10.0,
+            min_inclusive=True,
         )
         positive_alignment = min(1.0, max(0.0, alignment_value))
         multiplier = 1.0 + scale_value * positive_alignment

@@ -5,6 +5,11 @@ from __future__ import annotations
 import re
 from typing import Iterable, List, Mapping
 
+try:  # pragma: no cover - optional regex backend for boundary repairs
+    import regex as _regex_backend
+except ImportError:  # pragma: no cover
+    _regex_backend = None
+
 from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
@@ -105,9 +110,12 @@ def repair_once(
                 if pattern:
                     new_step, replaced = pattern.subn(expected_units, new_step, count=1)
                     if replaced == 0:
-                        pattern_ci = re.compile(
-                            pattern.pattern, flags=pattern.flags | re.IGNORECASE
-                        )
+                        flags = pattern.flags | re.IGNORECASE
+                        pattern_module = pattern.__class__.__module__
+                        if _regex_backend is not None and pattern_module.startswith("regex"):
+                            pattern_ci = _regex_backend.compile(pattern.pattern, flags=flags)
+                        else:
+                            pattern_ci = re.compile(pattern.pattern, flags=flags)
                         new_step, _ = pattern_ci.subn(expected_units, new_step, count=1)
             expected_trimmed = expected_units.strip()
             if expected_trimmed:

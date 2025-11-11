@@ -119,3 +119,35 @@ def test_alignment_none_returns_base_reward():
     base = compute_concept_reward(trace, spec, task_metrics={})
     none_value = compute_concept_reward(trace, spec, task_metrics={}, alignment=None)
     assert none_value == pytest.approx(base)
+
+
+def test_alignment_zero_scale_preserves_reward():
+    spec, trace = _basic_trace_spec()
+    base = compute_concept_reward(trace, spec, task_metrics={})
+    zero_scale = compute_concept_reward(
+        trace,
+        spec,
+        task_metrics={},
+        alignment=0.8,
+        alignment_scale=0.0,
+    )
+    assert zero_scale == pytest.approx(base)
+
+
+def test_alignment_penalty_applies_before_multiplier():
+    spec, trace = _basic_trace_spec()
+    penalty_reward = compute_concept_reward(
+        trace,
+        spec,
+        task_metrics={"contradictory_feature_ids": ["edge"]},
+        alignment=0.9,
+        alignment_scale=0.5,
+    )
+    boosted_clean = compute_concept_reward(
+        trace,
+        spec,
+        task_metrics={},
+        alignment=0.9,
+        alignment_scale=0.5,
+    )
+    assert penalty_reward < boosted_clean
