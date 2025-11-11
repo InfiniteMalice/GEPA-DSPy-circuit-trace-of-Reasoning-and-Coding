@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+_LETTER_CLASS = r"[^\W\d_]"
+
 
 def build_token_boundary_pattern(text: str) -> re.Pattern[str] | None:
     """Return a regex that respects token boundaries for ``text``.
@@ -20,7 +22,7 @@ def build_token_boundary_pattern(text: str) -> re.Pattern[str] | None:
     leading_alnum = trimmed[0].isalnum()
     trailing_alnum = trimmed[-1].isalnum()
     if leading_alnum and trailing_alnum:
-        return re.compile(rf"(?<![A-Za-z]){escaped}(?![A-Za-z])")
+        return re.compile(rf"(?<!{_LETTER_CLASS}){escaped}(?!{_LETTER_CLASS})", re.UNICODE)
     return re.compile(escaped)
 
 

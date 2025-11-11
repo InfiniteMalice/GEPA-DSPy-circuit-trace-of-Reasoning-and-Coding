@@ -13,6 +13,23 @@ except ImportError:  # pragma: no cover
 from .schema import AttributionGraph, GraphEdge, GraphMeta, GraphNode, merge_graphs
 
 
+def _strip_sample_index(graph_dict: Mapping[str, object]) -> dict[str, object]:
+    """Return a copy of ``graph_dict`` without per-sample metadata keys."""
+
+    result = dict(graph_dict)
+    meta_dict = result.get("meta")
+    if isinstance(meta_dict, Mapping):
+        meta_copy: dict[str, object] = dict(meta_dict)
+        meta_copy.pop("sample_index", None)
+        extras = meta_copy.get("extras")
+        if isinstance(extras, Mapping):
+            extras_copy: dict[str, object] = dict(extras)
+            extras_copy.pop("sample_index", None)
+            meta_copy["extras"] = extras_copy
+        result["meta"] = meta_copy
+    return result
+
+
 class AttributionBackend:
     """Base interface for attribution graph extraction backends."""
 
@@ -104,20 +121,7 @@ class BackendNull(AttributionBackend):
             )
         if len(graphs) == 1:
             return graphs[0].to_dict()
-        serialised: list[Mapping[str, object]] = []
-        for graph in graphs:
-            graph_dict: dict[str, object] = dict(graph.to_dict())
-            meta_dict = graph_dict.get("meta")
-            if isinstance(meta_dict, Mapping):
-                meta_copy: dict[str, object] = dict(meta_dict)
-                meta_copy.pop("sample_index", None)
-                extras = meta_copy.get("extras")
-                if isinstance(extras, Mapping):
-                    extras_copy: dict[str, object] = dict(extras)
-                    extras_copy.pop("sample_index", None)
-                    meta_copy["extras"] = extras_copy
-                graph_dict["meta"] = meta_copy
-            serialised.append(graph_dict)
+        serialised = [_strip_sample_index(graph.to_dict()) for graph in graphs]
         merged = merge_graphs(serialised)
         return merged.to_dict()
 

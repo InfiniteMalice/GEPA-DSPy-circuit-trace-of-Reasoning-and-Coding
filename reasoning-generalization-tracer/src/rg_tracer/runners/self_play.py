@@ -145,7 +145,17 @@ def _build_probe_inputs(
 ) -> List[Dict[str, object]]:
     if probe_size <= 0:
         return []
-    base_tokens = list(problem.get("sequence", []) or problem.get("numbers", []))
+    sequence = problem.get("sequence")
+    numbers = problem.get("numbers")
+
+    def _as_list(value: object) -> List[object]:
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        return []
+
+    base_tokens = _as_list(sequence)
+    if not base_tokens:
+        base_tokens = _as_list(numbers)
     if not base_tokens:
         prompt = str(problem.get("prompt", "")) or str(problem.get("statement", ""))
         base_tokens = [ord(ch) % 10 for ch in prompt[:8]] or [0]
