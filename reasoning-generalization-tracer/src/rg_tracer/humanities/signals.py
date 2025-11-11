@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Union
 
 from ..semantics import SemanticTag
 
