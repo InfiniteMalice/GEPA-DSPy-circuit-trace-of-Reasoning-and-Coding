@@ -19,10 +19,6 @@ STABILITY = ["softmax", "stablemax"]
 GRADIENT = ["off", "perpend_grad_on"]
 REASONING = ["sft_only", "srl_pretrain_then_sft"]
 PHASES = ["pre_overfit", "overfit", "pre_grok", "post_grok"]
-BACKEND_CHOICES = ["null", "hooked", "external"]
-_BACKEND_ERROR_MSG = (
-    "Backend '{backend}' requires a real model; use --backend null for the matrix sweep"
-)
 
 
 def _combo_name(combo: Mapping[str, str]) -> str:
@@ -36,13 +32,8 @@ def _build_combo_grid() -> Iterable[Mapping[str, str]]:
         yield dict(zip(keys, combo, strict=True))
 
 
-def _extract_phase_graphs(
-    backend_name: str,
-    seed_offset: int,
-) -> List[Mapping[str, object]]:
-    if backend_name != "null":
-        raise ValueError(_BACKEND_ERROR_MSG.format(backend=backend_name))
-    backend = attr_graphs.get_backend(backend_name)
+def _extract_phase_graphs(seed_offset: int) -> List[Mapping[str, object]]:
+    backend = attr_graphs.get_backend("null")
     graphs: List[Mapping[str, object]] = []
     for index, phase in enumerate(PHASES):
         payload = {
@@ -129,7 +120,6 @@ def _write_summary(
 def run_matrix(
     *,
     output_dir: Path,
-    backend: str,
     limit: int | None = None,
 ) -> Path:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -142,7 +132,7 @@ def run_matrix(
         name = _combo_name(combo)
         digest = hashlib.sha256(name.encode("utf8")).hexdigest()
         seed = int(digest, 16) % 10_000
-        graphs = _extract_phase_graphs(backend, seed)
+        graphs = _extract_phase_graphs(seed)
         metrics = _summarise_metrics(graphs)
         cell_dir = root / name
         _write_cell_artifacts(cell_dir, graphs, metrics)
@@ -154,12 +144,6 @@ def run_matrix(
 def parse_args(argv: List[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="runs/matrix", help="Directory for experiment outputs")
-    parser.add_argument(
-        "--backend",
-        default="null",
-        choices=BACKEND_CHOICES,
-        help="Attribution backend to use",
-    )
     parser.add_argument("--limit", type=int, help="Optional limit on number of matrix cells")
     return parser.parse_args(argv)
 
@@ -167,7 +151,7 @@ def parse_args(argv: List[str] | None = None) -> argparse.Namespace:
 def main(argv: List[str] | None = None) -> None:
     args = parse_args(argv)
     output_dir = Path(args.output).resolve()
-    run_dir = run_matrix(output_dir=output_dir, backend=args.backend, limit=args.limit)
+    run_dir = run_matrix(output_dir=output_dir, limit=args.limit)
     print(json.dumps({"run_dir": str(run_dir)}))
 
 

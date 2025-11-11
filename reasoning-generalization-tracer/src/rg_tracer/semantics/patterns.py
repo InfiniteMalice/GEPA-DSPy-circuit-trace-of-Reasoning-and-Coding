@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
-import re
+from typing import Pattern
 
-_LETTER_CLASS = r"[^\W\d_]"
+try:  # pragma: no cover - regex optional for runtime precision
+    import regex as _regex
+except ImportError:  # pragma: no cover
+    _regex = None
+    import re as _re
+else:  # pragma: no cover
+    _re = _regex
+
+if _regex is not None:
+    _LETTER_CLASS = r"\p{L}"
+else:
+    _LETTER_CLASS = r"[^\W\d_]"
 
 
-def build_token_boundary_pattern(text: str) -> re.Pattern[str] | None:
+def build_token_boundary_pattern(text: str) -> Pattern[str] | None:
     """Return a regex that respects token boundaries for ``text``.
 
     The pattern prevents partial matches against alphabetic neighbours while still
@@ -18,12 +29,19 @@ def build_token_boundary_pattern(text: str) -> re.Pattern[str] | None:
     trimmed = text.strip()
     if not trimmed:
         return None
-    escaped = re.escape(trimmed)
+    escaped = _re.escape(trimmed)
     leading_alnum = trimmed[0].isalnum()
     trailing_alnum = trimmed[-1].isalnum()
     if leading_alnum and trailing_alnum:
-        return re.compile(rf"(?<!{_LETTER_CLASS}){escaped}(?!{_LETTER_CLASS})", re.UNICODE)
-    return re.compile(escaped)
+        return _re.compile(rf"(?<!{_LETTER_CLASS}){escaped}(?!{_LETTER_CLASS})")
+    return _re.compile(escaped)
 
 
-__all__ = ["build_token_boundary_pattern"]
+def extract_letter_tokens(text: str) -> list[str]:
+    """Return contiguous alphabetic tokens using the active regex backend."""
+
+    pattern = r"\p{L}+" if _regex is not None else r"[^\W\d_]+"
+    return _re.findall(pattern, text)
+
+
+__all__ = ["build_token_boundary_pattern", "extract_letter_tokens"]

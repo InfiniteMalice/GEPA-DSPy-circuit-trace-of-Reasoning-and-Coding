@@ -148,8 +148,6 @@ def repeatability(
         return 1.0
     overlaps: List[float] = []
     weight_maps = [_edge_weight_map(graph, top_k=top_k) for graph in graphs_seq]
-    if len(weight_maps) <= 1:
-        return 1.0
     for left, right in combinations(weight_maps, 2):
         keys = set(left) | set(right)
         if not keys:

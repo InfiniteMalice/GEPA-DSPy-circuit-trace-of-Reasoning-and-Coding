@@ -270,7 +270,9 @@ def _apply_attribution_rewards(
         DEFAULT_ATTR_CONFIG["topk"],
     )
     backend_value = attr_config.get("backend", DEFAULT_ATTR_CONFIG["backend"])
-    backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"])
+    backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
+    if not backend_name:
+        backend_name = DEFAULT_ATTR_CONFIG["backend"]
     if probe_size <= 0 or topk <= 0:
         return
     probes = _build_probe_inputs(problem, probe_size)
