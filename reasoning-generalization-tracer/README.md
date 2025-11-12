@@ -220,10 +220,10 @@ The resulting directory includes one folder per configuration with
 `pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
 alignment, and repeatability deltas. ΔAlignment only populates when concept
 feature catalogs are supplied; by default the sweep uses the mock backend and
-prints `n/a` to highlight the omission. Pass descriptors via
-`--concept-features` (or edit the stub) whenever alignment deltas are needed.
-The default keeps CI runs quick while making the dependency explicit in the
-table. Look for stabilising trends across
+prints `n/a` to highlight the omission. Provide descriptors by editing the
+stub concept feature catalog (or wiring your own) whenever alignment deltas are
+needed. The default keeps CI runs quick while making the dependency explicit in
+the table. Look for stabilising trends across
 interventions—for example, compare `softmax` vs `stablemax` for the impact of
 numerically safe attention, inspect `sft_only` vs `srl_pretrain_then_sft` to see
 how supervised reasoning raises repeatability before accuracy improves, and

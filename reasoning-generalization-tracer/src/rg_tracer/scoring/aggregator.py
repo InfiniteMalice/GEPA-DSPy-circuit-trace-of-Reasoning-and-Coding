@@ -62,8 +62,23 @@ def _fallback_parse(text: str) -> Dict[str, object]:
     result: Dict[str, object] = {"profiles": {}}
     current_profile: str | None = None
     current_subsection: str | None = None
-    current_nested: str | None = None
     section: str | None = None
+    config_stack: list[tuple[int, Dict[str, object]]] = []
+
+    def _find_container(
+        stack: list[tuple[int, Dict[str, object]]],
+        indent: int,
+        *,
+        inclusive: bool,
+    ) -> Dict[str, object]:
+        def comparator(level: int) -> bool:
+            return level <= indent if inclusive else level < indent
+
+        for level, container in reversed(stack):
+            if comparator(level):
+                return container
+        return stack[0][1] if stack else result.setdefault("config", {})
+
     for raw_line in text.splitlines():
         if not raw_line.strip() or raw_line.strip().startswith("#"):
             continue
@@ -75,6 +90,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                 raise ValueError("Unexpected top-level key in profiles fallback parser")
             if section == "config":
                 result.setdefault("config", {})
+                config_stack = [(0, result["config"])]
             continue
         # State: section header at indent 2 introduces a new profile entry.
         if section == "profiles" and indent == 2 and line.endswith(":"):
@@ -104,41 +120,22 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                 target[axis.strip()] = value
             continue
         # State: config entries at indent 2 define new subsections or scalar keys.
-        if section == "config" and indent == 2 and line.endswith(":"):
-            current_profile = None
-            current_subsection = line[:-1]
-            current_nested = None
-            result.setdefault("config", {})[current_subsection] = {}
-            continue
-        if section == "config" and indent == 2 and ":" in line and not line.endswith(":"):
-            key, value = line.split(":", 1)
-            result.setdefault("config", {})[key.strip()] = _parse_scalar_value(value)
-            continue
-        if section == "config" and indent == 4 and line.endswith(":"):
-            container = result.setdefault("config", {})
-            if current_subsection is not None:
-                container = container.setdefault(current_subsection, {})
-            current_nested = line[:-1]
-            container[current_nested] = {}
-            continue
-        # State: indent 4 under config writes nested key/value pairs.
-        if section == "config" and indent == 4 and ":" in line and not line.endswith(":"):
-            current_nested = None
-            key, value = line.split(":", 1)
-            config_section = result.setdefault("config", {})
-            if current_subsection is not None:
-                config_section = config_section.setdefault(current_subsection, {})
-            config_section[key.strip()] = _parse_scalar_value(value)
-            continue
-        if section == "config" and indent > 4 and ":" in line:
-            key, value = line.split(":", 1)
-            container = result.setdefault("config", {})
-            if current_subsection is not None:
-                container = container.setdefault(current_subsection, {})
-            if current_nested is not None:
-                container = container.setdefault(current_nested, {})
-            container[key.strip()] = _parse_scalar_value(value)
-            continue
+        if section == "config":
+            if not config_stack:
+                config_stack = [(0, result.setdefault("config", {}))]
+            if line.endswith(":"):
+                key = line[:-1]
+                parent = _find_container(config_stack, indent, inclusive=False)
+                target: Dict[str, object] = {}
+                parent[key] = target
+                config_stack = [entry for entry in config_stack if entry[0] < indent]
+                config_stack.append((indent, target))
+                continue
+            if ":" in line and not line.endswith(":"):
+                key, value = line.split(":", 1)
+                container = _find_container(config_stack, indent, inclusive=True)
+                container[key.strip()] = _parse_scalar_value(value)
+                continue
         raise ValueError(f"Unable to parse line: {raw_line}")
     return result
 

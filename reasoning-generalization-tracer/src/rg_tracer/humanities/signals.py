@@ -86,12 +86,15 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         if step_tags:
             tags.append({"step": step, "tags": step_tags})
     if counter_hits == 0 and steps:
-        tags.append(
-            {
-                "step": steps[-1],
-                "tags": [SemanticTag.UNSUPPORTED.value],
-            }
-        )
+        unsupported = SemanticTag.UNSUPPORTED.value
+        last_step = steps[-1]
+        if tags and tags[-1].get("step") == last_step:
+            existing = list(tags[-1].get("tags", []))
+            if unsupported not in existing:
+                existing.append(unsupported)
+                tags[-1]["tags"] = existing
+        else:
+            tags.append({"step": last_step, "tags": [unsupported]})
     total = len(steps)
     return HumanitiesSignals(
         citation_coverage=cite_hits / total,
