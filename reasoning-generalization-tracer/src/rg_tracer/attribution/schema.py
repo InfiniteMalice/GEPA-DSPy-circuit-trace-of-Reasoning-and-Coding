@@ -164,7 +164,8 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
             key = (edge.src, edge.dst)
             edge_attrs.setdefault(key, []).append(edge.attr)
     merged_nodes = []
-    for node_id, values in node_attrs.items():
+    for node_id in sorted(node_attrs):
+        values = node_attrs[node_id]
         template = node_templates.get(node_id)
         layer = template.layer if template is not None else 0
         node_type = template.type if template is not None else "unknown"
@@ -176,10 +177,10 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
                 activation=sum(values) / len(values),
             )
         )
-    merged_edges = [
-        GraphEdge(src=src, dst=dst, attr=sum(values) / len(values))
-        for (src, dst), values in edge_attrs.items()
-    ]
+    merged_edges = []
+    for src, dst in sorted(edge_attrs):
+        values = edge_attrs[(src, dst)]
+        merged_edges.append(GraphEdge(src=src, dst=dst, attr=sum(values) / len(values)))
     meta = GraphMeta(
         token_positions=list(base.meta.token_positions),
         logits_scale=base.meta.logits_scale,

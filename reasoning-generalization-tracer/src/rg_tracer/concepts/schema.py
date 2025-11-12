@@ -29,6 +29,7 @@ class ConceptSpec:
     tests: List[ConceptTest] = field(default_factory=list)
     expected_substructures: List[str] = field(default_factory=list)
     feature_catalog: List[Mapping[str, Any]] = field(default_factory=list)
+    """Catalog of feature descriptors (id, tags, notes, etc.) exposed to attribution tools."""
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ConceptSpec":

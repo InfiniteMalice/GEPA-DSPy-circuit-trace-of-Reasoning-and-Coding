@@ -62,6 +62,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
     result: Dict[str, object] = {"profiles": {}}
     current_profile: str | None = None
     current_subsection: str | None = None
+    current_nested: str | None = None
     section: str | None = None
     for raw_line in text.splitlines():
         if not raw_line.strip() or raw_line.strip().startswith("#"):
@@ -106,17 +107,37 @@ def _fallback_parse(text: str) -> Dict[str, object]:
         if section == "config" and indent == 2 and line.endswith(":"):
             current_profile = None
             current_subsection = line[:-1]
+            current_nested = None
             result.setdefault("config", {})[current_subsection] = {}
             continue
         if section == "config" and indent == 2 and ":" in line and not line.endswith(":"):
             key, value = line.split(":", 1)
             result.setdefault("config", {})[key.strip()] = _parse_scalar_value(value)
             continue
+        if section == "config" and indent == 4 and line.endswith(":"):
+            container = result.setdefault("config", {})
+            if current_subsection is not None:
+                container = container.setdefault(current_subsection, {})
+            current_nested = line[:-1]
+            container[current_nested] = {}
+            continue
         # State: indent 4 under config writes nested key/value pairs.
-        if section == "config" and indent == 4 and ":" in line and current_subsection:
+        if section == "config" and indent == 4 and ":" in line and not line.endswith(":"):
+            current_nested = None
             key, value = line.split(":", 1)
-            config_section = result.setdefault("config", {}).setdefault(current_subsection, {})
+            config_section = result.setdefault("config", {})
+            if current_subsection is not None:
+                config_section = config_section.setdefault(current_subsection, {})
             config_section[key.strip()] = _parse_scalar_value(value)
+            continue
+        if section == "config" and indent > 4 and ":" in line:
+            key, value = line.split(":", 1)
+            container = result.setdefault("config", {})
+            if current_subsection is not None:
+                container = container.setdefault(current_subsection, {})
+            if current_nested is not None:
+                container = container.setdefault(current_nested, {})
+            container[key.strip()] = _parse_scalar_value(value)
             continue
         raise ValueError(f"Unable to parse line: {raw_line}")
     return result

@@ -134,9 +134,10 @@ def run_matrix(
         seed = int(digest, 16) % 10_000
         graphs = _extract_phase_graphs(seed)
         metrics = _summarise_metrics(graphs)
+        metrics_with_seed = {**metrics, "seed": seed}
         cell_dir = root / name
-        _write_cell_artifacts(cell_dir, graphs, metrics)
-        rows.append((name, metrics))
+        _write_cell_artifacts(cell_dir, graphs, metrics_with_seed)
+        rows.append((name, metrics_with_seed))
     _write_summary(root / "summary.md", rows)
     return root
 

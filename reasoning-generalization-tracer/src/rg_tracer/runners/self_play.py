@@ -287,6 +287,7 @@ def _apply_attribution_rewards(
             "Non-null attribution backend configured without explicit tokens; "
             "provide vocabulary-aligned probes to avoid placeholder IDs.",
             RuntimeWarning,
+            stacklevel=2,
         )
     probes = _build_probe_inputs(problem, probe_size)
     if not probes:
@@ -297,11 +298,17 @@ def _apply_attribution_rewards(
     try:
         backend = attr_graphs.get_backend(backend_name)
     except KeyError as exc:  # pragma: no cover - configuration error
-        raise ValueError(f"Unknown attribution backend: {backend_name}") from exc
+        warnings.warn(
+            f"Unknown attribution backend '{backend_name}': {exc}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return
     except Exception as exc:  # pragma: no cover - backend initialisation failure
         warnings.warn(
             f"Failed to initialise attribution backend '{backend_name}': {exc}",
             RuntimeWarning,
+            stacklevel=2,
         )
         return
     bonuses = {**DEFAULT_ATTR_BONUSES, **dict(profile_bonuses)}

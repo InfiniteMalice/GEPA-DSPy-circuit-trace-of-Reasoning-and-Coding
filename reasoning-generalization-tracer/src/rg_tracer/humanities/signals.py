@@ -17,7 +17,7 @@ class HumanitiesSignals:
     fallacy_flags: int
     neutrality_balance: float
     # Each tag mapping exposes the original step alongside a list of tag labels.
-    tags: List[Mapping[str, List[str]]]
+    tags: List[Mapping[str, Union[str, List[str]]]]
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -55,7 +55,7 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     hedge_hits = 0
     fallacy_flags = 0
     neutrality_hits = 0
-    tags: List[Mapping[str, List[str]]] = []
+    tags: List[Mapping[str, Union[str, List[str]]]] = []
     for step in steps:
         lowered = step.lower()
         step_tags: List[str] = []
