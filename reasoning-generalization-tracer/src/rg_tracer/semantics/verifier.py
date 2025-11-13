@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
-from .patterns import build_token_boundary_pattern, extract_letter_tokens
+from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
 
@@ -92,9 +92,6 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     matched_canonical = bool(canonical_pattern and canonical_pattern.search(lowered))
     if matched_canonical:
         return True, None
-    for token in extract_letter_tokens(lowered):
-        if _canonical_unit(token) == canonical_expected:
-            return True, None
     matched_variant = False
     detected_unit: str | None = None
     for unit in _ALT_UNITS:

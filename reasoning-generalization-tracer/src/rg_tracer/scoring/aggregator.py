@@ -133,7 +133,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                 continue
             if ":" in line and not line.endswith(":"):
                 key, value = line.split(":", 1)
-                container = _find_container(config_stack, indent, inclusive=True)
+                container = _find_container(config_stack, indent, inclusive=False)
                 container[key.strip()] = _parse_scalar_value(value)
                 continue
         raise ValueError(f"Unable to parse line: {raw_line}")
