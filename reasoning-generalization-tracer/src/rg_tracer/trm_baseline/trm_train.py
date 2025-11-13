@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from typing import Callable, Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Sequence, Tuple
 
 from .trm_model import TinyRecursionModel
 

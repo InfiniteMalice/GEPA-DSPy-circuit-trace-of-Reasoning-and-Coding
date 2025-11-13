@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Union
 
 from ..semantics import SemanticTag
 
@@ -16,7 +16,8 @@ class HumanitiesSignals:
     hedge_rate: float
     fallacy_flags: int
     neutrality_balance: float
-    tags: List[Mapping[str, Iterable[str]]]
+    # Each tag mapping exposes the original step alongside a list of tag labels.
+    tags: List[Mapping[str, Union[str, List[str]]]]
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -34,6 +35,14 @@ _CITATION_MARKERS = {"[", "("}
 _HEDGE_TERMS = {"likely", "perhaps", "suggests", "appears", "contested"}
 _COUNTER_TERMS = {"however", "on the other hand", "critics", "counter"}
 _FALLACY_TERMS = {"obviously", "clearly", "undeniably", "must", "always"}
+_ASSERTIVE_TERMS = {
+    "shows",
+    "demonstrates",
+    "proves",
+    "confirms",
+    "reveals",
+    "therefore",
+}
 
 
 def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
@@ -46,12 +55,15 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     hedge_hits = 0
     fallacy_flags = 0
     neutrality_hits = 0
-    tags: List[Mapping[str, Iterable[str]]] = []
+    tags: List[Mapping[str, Union[str, List[str]]]] = []
     for step in steps:
         lowered = step.lower()
-        if any(marker in step for marker in _CITATION_MARKERS):
+        step_tags: List[str] = []
+        has_citation = any(marker in step for marker in _CITATION_MARKERS)
+        if has_citation:
             cite_hits += 1
-        if '"' in step or "'" in step:
+        quote_count = step.count('"')
+        if quote_count:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
             counter_hits += 1
@@ -59,12 +71,25 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
             hedge_hits += 1
         if any(term in lowered for term in _FALLACY_TERMS):
             fallacy_flags += 1
-            tags.append({
-                "step": step,
-                "tags": [SemanticTag.RHETORICAL_EXCESS.value],
-            })
+            step_tags.append(SemanticTag.RHETORICAL_EXCESS.value)
+        if not has_citation and any(term in lowered for term in _ASSERTIVE_TERMS):
+            step_tags.append(SemanticTag.UNCITED_CLAIM.value)
+        quote_issue = False
+        if quote_count % 2 == 1:
+            quote_issue = True
+        if quote_issue:
+            step_tags.append(SemanticTag.MISQUOTE.value)
+        if ('"' in step) and not has_citation:
+            step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
+        tags.append({"step": step, "tags": step_tags})
+    if counter_hits == 0 and steps and tags:
+        unsupported = SemanticTag.UNSUPPORTED.value
+        existing = list(tags[-1].get("tags", []))
+        if unsupported not in existing:
+            existing.append(unsupported)
+            tags[-1]["tags"] = existing
     total = len(steps)
     return HumanitiesSignals(
         citation_coverage=cite_hits / total,
