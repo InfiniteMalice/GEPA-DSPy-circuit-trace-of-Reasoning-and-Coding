@@ -83,8 +83,7 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
-        if step_tags:
-            tags.append({"step": step, "tags": step_tags})
+        tags.append({"step": step, "tags": step_tags})
     if counter_hits == 0 and steps:
         unsupported = SemanticTag.UNSUPPORTED.value
         last_step = steps[-1]

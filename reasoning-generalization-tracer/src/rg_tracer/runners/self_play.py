@@ -310,7 +310,7 @@ def _apply_attribution_rewards(
             RuntimeWarning,
             stacklevel=2,
         )
-        return
+        raise
     bonuses = {**DEFAULT_ATTR_BONUSES, **dict(profile_bonuses)}
     top_pairs = sorted(
         enumerate(candidates),

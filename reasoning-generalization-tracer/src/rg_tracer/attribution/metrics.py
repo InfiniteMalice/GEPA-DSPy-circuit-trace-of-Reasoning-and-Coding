@@ -214,8 +214,9 @@ def delta_sparsity(
 ) -> float:
     """Return ``Δ = sparsity_overfit - sparsity_post`` (positive = flatter paths)."""
 
-    overfit_graphs = _filter_by_phase(graphs, overfit_phase)
-    post_graphs = _filter_by_phase(graphs, post_phase)
+    graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
+    overfit_graphs = _filter_by_phase(graphs_seq, overfit_phase)
+    post_graphs = _filter_by_phase(graphs_seq, post_phase)
     if not overfit_graphs or not post_graphs:
         return 0.0
     overfit = path_sparsity(overfit_graphs)
@@ -235,8 +236,9 @@ def delta_alignment(
 
     if top_k <= 0:
         raise ValueError("top_k must be positive")
-    overfit_graphs = _filter_by_phase(graphs, overfit_phase)
-    post_graphs = _filter_by_phase(graphs, post_phase)
+    graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
+    overfit_graphs = _filter_by_phase(graphs_seq, overfit_phase)
+    post_graphs = _filter_by_phase(graphs_seq, post_phase)
     if not overfit_graphs or not post_graphs:
         return 0.0
     overfit = concept_alignment(overfit_graphs, concept_features, top_k=top_k)
@@ -255,8 +257,9 @@ def delta_repeatability(
 
     if top_k <= 0:
         raise ValueError("top_k must be positive")
-    overfit_graphs = _filter_by_phase(graphs, overfit_phase)
-    post_graphs = _filter_by_phase(graphs, post_phase)
+    graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
+    overfit_graphs = _filter_by_phase(graphs_seq, overfit_phase)
+    post_graphs = _filter_by_phase(graphs_seq, post_phase)
     if not overfit_graphs or not post_graphs:
         return 0.0
     overfit = repeatability(overfit_graphs, top_k=top_k)
