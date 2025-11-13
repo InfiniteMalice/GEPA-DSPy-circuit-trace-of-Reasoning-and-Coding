@@ -274,7 +274,14 @@ def _apply_attribution_rewards(
         DEFAULT_ATTR_CONFIG["topk"],
     )
     backend_value = attr_config.get("backend", DEFAULT_ATTR_CONFIG["backend"])
-    backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
+    backend_kwargs: Dict[str, object] = {}
+    if isinstance(backend_value, MappingABC):
+        backend_kwargs = {key: value for key, value in backend_value.items() if key != "name"}
+        backend_name = (
+            str(backend_value.get("name", DEFAULT_ATTR_CONFIG["backend"])).strip().lower()
+        )
+    else:
+        backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
     if not backend_name:
         backend_name = DEFAULT_ATTR_CONFIG["backend"]
     if probe_size <= 0 or topk <= 0:
@@ -296,7 +303,7 @@ def _apply_attribution_rewards(
     attr_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = run_dir / "attr_metrics.jsonl"
     try:
-        backend = attr_graphs.get_backend(backend_name)
+        backend = attr_graphs.get_backend(backend_name, **backend_kwargs)
     except KeyError as exc:  # pragma: no cover - configuration error
         warnings.warn(
             f"Unknown attribution backend '{backend_name}': {exc}",

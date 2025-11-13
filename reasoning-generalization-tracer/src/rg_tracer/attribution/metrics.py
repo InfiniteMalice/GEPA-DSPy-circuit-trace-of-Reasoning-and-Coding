@@ -119,13 +119,20 @@ def average_branching_factor(
         weighted_sum = 0.0
         total_weight = 0.0
         for edges in outgoing.values():
-            sorted_edges = sorted(edges, key=lambda e: abs(safe_float(e.attr)), reverse=True)
+            weighted_edges = [
+                (edge, abs(safe_float(edge.attr)))
+                for edge in edges
+                if abs(safe_float(edge.attr)) > 0
+            ]
+            if not weighted_edges:
+                continue
+            weighted_edges.sort(key=lambda item: item[1], reverse=True)
             if top_k is not None:
-                sorted_edges = sorted_edges[:top_k]
-            weight = sum(abs(safe_float(edge.attr)) for edge in sorted_edges)
+                weighted_edges = weighted_edges[:top_k]
+            weight = sum(mass for _, mass in weighted_edges)
             if weight <= 0:
                 continue
-            weighted_sum += len(sorted_edges) * weight
+            weighted_sum += len(weighted_edges) * weight
             total_weight += weight
         if total_weight <= 0:
             factors.append(0.0)

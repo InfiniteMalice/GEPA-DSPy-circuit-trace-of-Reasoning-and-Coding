@@ -112,11 +112,11 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
 
 
 def _detect_variable_drift(step: str, allowed: set[str]) -> tuple[bool, str | None]:
-    tokens = {
-        token.strip(".,:;!")
-        for token in step.split()
-        if token.isalpha() and len(token) == 1 and token.islower()
-    }
+    tokens = set()
+    for token in step.split():
+        stripped = token.strip(".,:;!")
+        if stripped.isalpha() and len(stripped) == 1 and stripped.islower():
+            tokens.add(stripped)
     if not tokens:
         return False, None
     unexpected = sorted(token for token in tokens if allowed and token not in allowed)
