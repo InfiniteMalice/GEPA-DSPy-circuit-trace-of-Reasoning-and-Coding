@@ -62,8 +62,8 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         has_citation = any(marker in step for marker in _CITATION_MARKERS)
         if has_citation:
             cite_hits += 1
-        double_quotes = step.count('"')
-        if double_quotes:
+        quote_count = step.count('"')
+        if quote_count:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
             counter_hits += 1
@@ -75,7 +75,7 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         if not has_citation and any(term in lowered for term in _ASSERTIVE_TERMS):
             step_tags.append(SemanticTag.UNCITED_CLAIM.value)
         quote_issue = False
-        if double_quotes % 2 == 1:
+        if quote_count % 2 == 1:
             quote_issue = True
         if quote_issue:
             step_tags.append(SemanticTag.MISQUOTE.value)
@@ -84,16 +84,12 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
         tags.append({"step": step, "tags": step_tags})
-    if counter_hits == 0 and steps:
+    if counter_hits == 0 and steps and tags:
         unsupported = SemanticTag.UNSUPPORTED.value
-        last_step = steps[-1]
-        if tags and tags[-1].get("step") == last_step:
-            existing = list(tags[-1].get("tags", []))
-            if unsupported not in existing:
-                existing.append(unsupported)
-                tags[-1]["tags"] = existing
-        else:
-            tags.append({"step": last_step, "tags": [unsupported]})
+        existing = list(tags[-1].get("tags", []))
+        if unsupported not in existing:
+            existing.append(unsupported)
+            tags[-1]["tags"] = existing
     total = len(steps)
     return HumanitiesSignals(
         citation_coverage=cite_hits / total,
