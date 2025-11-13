@@ -111,16 +111,18 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     return False, detected_unit
 
 
-def _detect_variable_drift(step: str, allowed: set[str]) -> bool:
+def _detect_variable_drift(step: str, allowed: set[str]) -> tuple[bool, str | None]:
     tokens = {
         token.strip(".,:;!")
         for token in step.split()
         if token.isalpha() and len(token) == 1 and token.islower()
     }
     if not tokens:
-        return False
-    unexpected = {token for token in tokens if allowed and token not in allowed}
-    return bool(unexpected)
+        return False, None
+    unexpected = sorted(token for token in tokens if allowed and token not in allowed)
+    if not unexpected:
+        return False, None
+    return True, unexpected[0]
 
 
 def _detect_humanities_tags(step: str, tags: List[str]) -> None:
@@ -174,7 +176,8 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
                 step_tags.append(SemanticTag.UNIT_MISMATCH.value)
                 incorrect_unit = detected_unit
                 unit_check_pass = False
-        if allowed_vars and _detect_variable_drift(step, allowed_vars):
+        drift_detected, drift_token = _detect_variable_drift(step, allowed_vars)
+        if drift_detected:
             step_tags.append(SemanticTag.VARIABLE_DRIFT.value)
             variable_drift += 1
         _detect_humanities_tags(step, step_tags)
@@ -188,6 +191,8 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         entry = {"step": step, "tags": step_tags}
         if incorrect_unit:
             entry["incorrect_unit"] = incorrect_unit
+        if drift_token:
+            entry["offending_token"] = drift_token
         tags[idx] = entry
 
     total_steps = len(steps)
@@ -214,7 +219,7 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         signals = analyse_humanities_chain(steps)
         humanities_metrics = {
             "citation_coverage": signals.citation_coverage,
-            "quote_integrity": signals.quote_integrity,
+            "quote_presence": signals.quote_presence,
             "counterevidence_ratio": signals.counterevidence_ratio,
             "hedge_rate": signals.hedge_rate,
             "fallacy_flags": signals.fallacy_flags,
@@ -227,7 +232,7 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
     else:
         humanities_metrics = {
             "citation_coverage": 0.0,
-            "quote_integrity": 0.0,
+            "quote_presence": 0.0,
             "counterevidence_ratio": 0.0,
             "hedge_rate": 0.0,
             "fallacy_flags": 0,

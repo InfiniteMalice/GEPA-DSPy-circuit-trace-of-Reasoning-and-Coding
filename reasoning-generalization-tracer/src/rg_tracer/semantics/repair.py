@@ -100,7 +100,30 @@ def repair_once(
         except ValueError:
             continue
         if fix_tag == SemanticTag.VARIABLE_DRIFT.value:
-            steps[idx] = re.sub(r"\by\b", replacement_var, step)
+            offending_token = str(entry.get("offending_token", "")).strip()
+            candidate = offending_token
+            if not candidate:
+                match = re.search(r"\b([A-Za-z])\b", step)
+                if match:
+                    candidate = match.group(1)
+            new_step = step
+            if candidate:
+                pattern = build_token_boundary_pattern(candidate)
+                if pattern:
+                    new_step, replaced = pattern.subn(replacement_var, new_step, count=1)
+                    if replaced == 0:
+                        flags = pattern.flags | re.IGNORECASE
+                        module_name = pattern.__class__.__module__
+                        if _regex_backend is not None and module_name.startswith("regex"):
+                            pattern_ci = _regex_backend.compile(pattern.pattern, flags=flags)
+                        else:
+                            pattern_ci = re.compile(pattern.pattern, flags=flags)
+                        new_step, _ = pattern_ci.subn(replacement_var, new_step, count=1)
+                else:
+                    new_step = new_step.replace(candidate, replacement_var, 1)
+            else:
+                new_step = re.sub(r"\b[A-Za-z]\b", replacement_var, new_step, count=1)
+            steps[idx] = new_step
             break
         if fix_tag == SemanticTag.UNIT_MISMATCH.value and expected_units:
             incorrect_unit = str(entry.get("incorrect_unit", "")).strip()

@@ -3,26 +3,31 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Mapping, Union
+from typing import Iterable, List, Mapping, TypedDict
 
 from ..semantics import SemanticTag
+
+
+class StepTagMapping(TypedDict):
+    step: str
+    tags: List[str]
 
 
 @dataclass
 class HumanitiesSignals:
     citation_coverage: float
-    quote_integrity: float
+    quote_presence: float
     counterevidence_ratio: float
     hedge_rate: float
     fallacy_flags: int
     neutrality_balance: float
     # Each tag mapping exposes the original step alongside a list of tag labels.
-    tags: List[Mapping[str, Union[str, List[str]]]]
+    tags: List[StepTagMapping]
 
     def as_dict(self) -> Mapping[str, object]:
         return {
             "citation_coverage": self.citation_coverage,
-            "quote_integrity": self.quote_integrity,
+            "quote_presence": self.quote_presence,
             "counterevidence_ratio": self.counterevidence_ratio,
             "hedge_rate": self.hedge_rate,
             "fallacy_flags": self.fallacy_flags,
@@ -55,7 +60,7 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     hedge_hits = 0
     fallacy_flags = 0
     neutrality_hits = 0
-    tags: List[Mapping[str, Union[str, List[str]]]] = []
+    tags: List[StepTagMapping] = []
     for step in steps:
         lowered = step.lower()
         step_tags: List[str] = []
@@ -86,14 +91,14 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         tags.append({"step": step, "tags": step_tags})
     if counter_hits == 0 and steps and tags:
         unsupported = SemanticTag.UNSUPPORTED.value
-        existing = list(tags[-1].get("tags", []))
+        existing = list(tags[-1]["tags"])
         if unsupported not in existing:
             existing.append(unsupported)
             tags[-1]["tags"] = existing
     total = len(steps)
     return HumanitiesSignals(
         citation_coverage=cite_hits / total,
-        quote_integrity=quote_hits / total,
+        quote_presence=quote_hits / total,
         counterevidence_ratio=counter_hits / total,
         hedge_rate=hedge_hits / total,
         fallacy_flags=fallacy_flags,
@@ -102,4 +107,4 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     )
 
 
-__all__ = ["HumanitiesSignals", "analyse_humanities_chain"]
+__all__ = ["HumanitiesSignals", "StepTagMapping", "analyse_humanities_chain"]
