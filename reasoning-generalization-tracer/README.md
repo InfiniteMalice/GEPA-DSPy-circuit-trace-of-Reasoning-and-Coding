@@ -172,9 +172,9 @@ Each self-play run emits:
 * **Humanities Profiles:** adjust humanities weights in
   `humanities/profiles.yaml`.
 * **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
-* **Attribution:** tweak probe size, top-k, and backend via the
-  `profiles.<name>.config.attr` section in `scoring/profiles.yaml`. Per-profile
-  bonuses live under `profiles.*.bonuses`.
+* **Attribution:** tweak probe size, top-k, and backend via the `config.attr`
+  section in `scoring/profiles.yaml`. Per-profile bonuses live under
+  `profiles.*.bonuses`.
   Example:
   ```yaml
   config:

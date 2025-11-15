@@ -10,6 +10,11 @@ try:  # pragma: no cover - optional regex backend for boundary repairs
 except ImportError:  # pragma: no cover
     _regex_backend = None
 
+if _regex_backend is not None:  # pragma: no cover - optional dependency
+    _REGEX_PATTERN_TYPE = getattr(_regex_backend, "Pattern", None)
+else:  # pragma: no cover - regex not installed
+    _REGEX_PATTERN_TYPE = None
+
 from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
@@ -47,12 +52,26 @@ def _append_with_punctuation(text: str, suffix: str) -> str:
     suffix_text = suffix.strip()
     if not trimmed:
         return suffix_text
+    if set(trimmed) <= {"."}:
+        return f"{trimmed} {suffix_text}"
     trimmed = trimmed.rstrip(":;,") or trimmed
     terminal = trimmed[-1]
     if terminal in {".", "?", "!"}:
         return f"{trimmed} {suffix_text}"
     base = trimmed.rstrip(".")
     return f"{base}. {suffix_text}" if base else suffix_text
+
+
+def _compile_case_insensitive(pattern: object, *, flags: int) -> re.Pattern:
+    """Recompile ``pattern`` with ``flags`` while respecting optional regex backend."""
+
+    if (
+        _regex_backend is not None
+        and _REGEX_PATTERN_TYPE is not None
+        and isinstance(pattern, _REGEX_PATTERN_TYPE)
+    ):
+        return _regex_backend.compile(pattern.pattern, flags=flags)
+    return re.compile(pattern.pattern, flags=flags)
 
 
 def repair_once(
@@ -62,7 +81,11 @@ def repair_once(
     expected_units: str | None = None,
     preferred_variables: Iterable[str] | None = None,
 ) -> List[str]:
-    """Attempt a single targeted repair based on semantic tags."""
+    """Attempt targeted repairs for a single pass of semantic tags.
+
+    All tags other than ``UNIT_MISMATCH`` trigger at most one edit. Unit fixes may
+    adjust multiple steps when the report identifies several concrete mismatches.
+    """
     steps = _normalise_chain(chain)
     preferred = list(preferred_variables or [])
     replacement_var = preferred[0] if preferred else "x"
@@ -113,11 +136,7 @@ def repair_once(
                     new_step, replaced = pattern.subn(replacement_var, new_step, count=1)
                     if replaced == 0:
                         flags = pattern.flags | re.IGNORECASE
-                        module_name = pattern.__class__.__module__
-                        if _regex_backend is not None and module_name.startswith("regex"):
-                            pattern_ci = _regex_backend.compile(pattern.pattern, flags=flags)
-                        else:
-                            pattern_ci = re.compile(pattern.pattern, flags=flags)
+                        pattern_ci = _compile_case_insensitive(pattern, flags=flags)
                         new_step, _ = pattern_ci.subn(replacement_var, new_step, count=1)
                 else:
                     new_step = new_step.replace(candidate, replacement_var, 1)
@@ -134,22 +153,14 @@ def repair_once(
                     new_step, replaced = pattern.subn(expected_units, new_step, count=1)
                     if replaced == 0:
                         flags = pattern.flags | re.IGNORECASE
-                        pattern_module = pattern.__class__.__module__
-                        if _regex_backend is not None and pattern_module.startswith("regex"):
-                            pattern_ci = _regex_backend.compile(pattern.pattern, flags=flags)
-                        else:
-                            pattern_ci = re.compile(pattern.pattern, flags=flags)
+                        pattern_ci = _compile_case_insensitive(pattern, flags=flags)
                         new_step, _ = pattern_ci.subn(expected_units, new_step, count=1)
             expected_trimmed = expected_units.strip()
             if expected_trimmed:
                 expected_pattern = build_token_boundary_pattern(expected_trimmed)
                 if expected_pattern:
                     flags = expected_pattern.flags | re.IGNORECASE
-                    pattern_module = expected_pattern.__class__.__module__
-                    if _regex_backend is not None and pattern_module.startswith("regex"):
-                        matcher = _regex_backend.compile(expected_pattern.pattern, flags=flags)
-                    else:
-                        matcher = re.compile(expected_pattern.pattern, flags=flags)
+                    matcher = _compile_case_insensitive(expected_pattern, flags=flags)
                     has_expected = bool(matcher.search(new_step))
                 else:
                     has_expected = expected_trimmed.lower() in new_step.lower()
