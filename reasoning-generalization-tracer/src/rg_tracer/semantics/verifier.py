@@ -20,7 +20,7 @@ class SemanticReport:
     symbol_binding_errors: int
     schema_consistency_pct: float
     humanities_metrics: Dict[str, float]
-    tags: List[Dict[str, Iterable[str]]] = field(default_factory=list)
+    tags: List[Dict[str, object]] = field(default_factory=list)
 
     def as_dict(self) -> Dict[str, object]:
         payload = {
@@ -145,10 +145,16 @@ def _detect_humanities_tags(step: str, tags: List[str]) -> None:
 
 def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticReport:
     steps = _normalise_chain(chain)
-    tags: List[Dict[str, List[str]]] = [{"tags": []} for _ in steps]
-    expected_units = str(problem_spec.get("units", "")) or None
+    tags: List[Dict[str, object]] = [{"tags": []} for _ in steps]
+    raw_units = problem_spec.get("units")
+    expected_units = str(raw_units).strip() if raw_units is not None else None
+    if expected_units == "":
+        expected_units = None
     allowed_vars = {str(var) for var in problem_spec.get("variables", [])}
-    concept = str(problem_spec.get("concept", "")) or None
+    raw_concept = problem_spec.get("concept")
+    concept = str(raw_concept).strip() if raw_concept is not None else None
+    if concept == "":
+        concept = None
     humanities_domain = problem_spec.get("domain") == "humanities"
 
     contradiction_count = 0

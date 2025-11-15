@@ -93,7 +93,7 @@ normative/positive separation, uncertainty calibration, intellectual charity,
 rhetorical hygiene, reproducibility, synthesis, and epistemic neutrality. Hard
 gates enforce minimum thresholds on source handling, interpretive fidelity, and
 normative clarity before any reward is granted. Signals include citation
-coverage, quote integrity, counterevidence ratios, hedging, fallacy flags, and
+coverage, quote presence, counterevidence ratios, hedging, fallacy flags, and
 neutrality balance.
 
 ## Tiny Recursion Model Baseline

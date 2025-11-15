@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from collections.abc import Mapping as MappingABC
 from typing import Callable, Iterable, Mapping, MutableMapping, Sequence
 
 try:  # pragma: no cover - torch optional for CI
@@ -189,14 +190,27 @@ def extract_graph(
     model: object,
     inputs: Iterable[Mapping[str, object]] | Mapping[str, object],
     *,
-    backend: AttributionBackend | None = None,
+    backend: AttributionBackend | Mapping[str, object] | None = None,
     backend_name: str = "null",
     layers: Sequence[int] | None = None,
     seed: int | None = None,
 ) -> Mapping[str, object]:
     """Extract an attribution graph using the configured backend."""
 
-    backend = backend or get_backend(backend_name)
+    if isinstance(backend, MappingABC):
+        config = dict(backend)
+        name_value = config.pop("name", backend_name)
+        name_text = str(name_value).strip()
+        resolved_name = (name_text or str(backend_name)).strip().lower()
+        kwargs_value = config.pop("kwargs", {})
+        if isinstance(kwargs_value, MappingABC):
+            kwargs = dict(kwargs_value)
+        else:
+            kwargs = {}
+        kwargs.update(config)
+        backend = get_backend(resolved_name, **kwargs)
+    elif backend is None:
+        backend = get_backend(backend_name)
     return backend.extract_graph(model, inputs, layers=layers, seed=seed)
 
 

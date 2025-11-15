@@ -358,10 +358,18 @@ def _load_problem(path: str | Path) -> Mapping[str, object]:
 
 
 def _map_semantics_to_features(
-    trace: Mapping[str, object],
+    trace: Mapping[str, object] | object,
     report: Mapping[str, object],
 ) -> Dict[str, List[str]]:
-    features = trace.get("features", []) if trace else []
+    if not isinstance(trace, MappingABC):
+        return {"entailed_feature_ids": [], "contradictory_feature_ids": []}
+    raw_features = trace.get("features", []) or []
+    if isinstance(raw_features, MappingABC):
+        features_iterable = [raw_features]
+    elif isinstance(raw_features, Iterable) and not isinstance(raw_features, (str, bytes)):
+        features_iterable = list(raw_features)
+    else:
+        features_iterable = []
     entailed_steps = [
         entry.get("step", "")
         for entry in report.get("tags", [])
@@ -376,7 +384,9 @@ def _map_semantics_to_features(
     contradictory_lower = [str(step).lower() for step in contradictory_steps if step is not None]
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
-    for feature in features:
+    for feature in features_iterable:
+        if not isinstance(feature, MappingABC):
+            continue
         raw_tags = feature.get("tags")
         # Handle tags sourced from different pipelines (None, scalar, iterable, or blank strings).
         if raw_tags is None:

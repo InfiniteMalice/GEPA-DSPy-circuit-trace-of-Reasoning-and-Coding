@@ -57,7 +57,7 @@ def _append_with_punctuation(text: str, suffix: str) -> str:
 
 def repair_once(
     chain: object,
-    tags: Iterable[Mapping[str, Iterable[str]]],
+    tags: Iterable[Mapping[str, object]],
     *,
     expected_units: str | None = None,
     preferred_variables: Iterable[str] | None = None,
@@ -144,9 +144,15 @@ def repair_once(
             if expected_trimmed:
                 expected_pattern = build_token_boundary_pattern(expected_trimmed)
                 if expected_pattern:
-                    has_expected = bool(expected_pattern.search(new_step))
+                    flags = expected_pattern.flags | re.IGNORECASE
+                    pattern_module = expected_pattern.__class__.__module__
+                    if _regex_backend is not None and pattern_module.startswith("regex"):
+                        matcher = _regex_backend.compile(expected_pattern.pattern, flags=flags)
+                    else:
+                        matcher = re.compile(expected_pattern.pattern, flags=flags)
+                    has_expected = bool(matcher.search(new_step))
                 else:
-                    has_expected = expected_trimmed in new_step
+                    has_expected = expected_trimmed.lower() in new_step.lower()
                 if not has_expected:
                     new_step = f"{new_step} ({expected_units})"
             steps[idx] = new_step
