@@ -190,7 +190,7 @@ def extract_graph(
     model: object,
     inputs: Iterable[Mapping[str, object]] | Mapping[str, object],
     *,
-    backend: AttributionBackend | None = None,
+    backend: AttributionBackend | Mapping[str, object] | None = None,
     backend_name: str = "null",
     layers: Sequence[int] | None = None,
     seed: int | None = None,

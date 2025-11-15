@@ -43,7 +43,7 @@ def _append_with_punctuation(text: str, suffix: str) -> str:
 
 def repair_once(
     chain: object,
-    tags: Iterable[Mapping[str, Iterable[str]]],
+    tags: Iterable[Mapping[str, object]],
     *,
     expected_units: str | None = None,
     preferred_variables: Iterable[str] | None = None,
