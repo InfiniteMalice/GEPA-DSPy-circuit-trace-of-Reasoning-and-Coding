@@ -100,18 +100,23 @@ def test_concept_reward_scales_with_alignment():
         "repeatability_gain": 0.0,
         "sparsity_drop": 0.0,
     }
-    base_reward = candidate.concept_reward
-    metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept=concept)
     task_metrics = {
         **candidate.semantics_map,
         "concept_reuse": 1.0,
         "supporting_tasks": 1.0,
     }
+    base_reward = compute_concept_reward(
+        candidate.trace,
+        concept,
+        task_metrics=task_metrics,
+        alignment=None,
+    )
+    metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept=concept)
     alignment_value = metrics.get("alignment") if metrics else None
-    candidate.concept_reward = compute_concept_reward(
+    aligned_reward = compute_concept_reward(
         candidate.trace,
         concept,
         task_metrics=task_metrics,
         alignment=alignment_value,
     )
-    assert candidate.concept_reward > base_reward
+    assert aligned_reward > base_reward

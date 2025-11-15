@@ -108,11 +108,16 @@ for toy tasks.
 
 ```bash
 pip install -e .
+# Optional: enable Unicode-aware semantic heuristics
+pip install -e ".[semantics]"
 ```
 
 Python 3.10+ is required. Circuit tracing depends on the
 [`circuit-tracer`](https://github.com/openai/circuit-tracer) project pinned in
-`pyproject.toml`.
+`pyproject.toml`. Installing the `semantics` extra pulls in the optional
+[`regex`](https://pypi.org/project/regex/) backend so token-boundary helpers can
+use `\p{L}` for non-ASCII scripts; without it the ASCII-safe fallbacks remain in
+use.
 
 ## Quickstart
 
@@ -163,7 +168,8 @@ Each self-play run emits:
 
 ## Configuration
 
-* **Profiles:** tweak weights in `profiles.yaml` or supply a custom file.
+* **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (packaged
+  at runtime as `scoring/profiles.yaml`) or supply a custom file.
 * **Concept Rewards:** override weights via the `weights` parameter in
   `compute_concept_reward`.
 * **Abstention:** calibrate model confidences using `abstention/calibrate.py`.
@@ -173,7 +179,8 @@ Each self-play run emits:
   `humanities/profiles.yaml`.
 * **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
 * **Attribution:** tweak probe size, top-k, and backend via the `config.attr`
-  section in `scoring/profiles.yaml`. Per-profile bonuses live under
+  section in `src/rg_tracer/scoring/profiles.yaml` (exposed in packages as
+  `scoring/profiles.yaml`). Per-profile bonuses live under
   `profiles.*.bonuses`.
   Example:
   ```yaml

@@ -276,10 +276,16 @@ def _apply_attribution_rewards(
     backend_value = attr_config.get("backend", DEFAULT_ATTR_CONFIG["backend"])
     backend_kwargs: Dict[str, object] = {}
     if isinstance(backend_value, MappingABC):
-        backend_kwargs = {key: value for key, value in backend_value.items() if key != "name"}
+        backend_config = dict(backend_value)
         backend_name = (
-            str(backend_value.get("name", DEFAULT_ATTR_CONFIG["backend"])).strip().lower()
+            str(backend_config.pop("name", DEFAULT_ATTR_CONFIG["backend"])).strip().lower()
         )
+        kwargs_value = backend_config.pop("kwargs", {})
+        if isinstance(kwargs_value, MappingABC):
+            backend_kwargs = dict(kwargs_value)
+        else:
+            backend_kwargs = {}
+        backend_kwargs.update(backend_config)
     else:
         backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
     if not backend_name:

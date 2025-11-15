@@ -210,7 +210,7 @@ def extract_graph(
         kwargs.update(config)
         backend = get_backend(resolved_name, **kwargs)
     elif backend is None:
-        backend = get_backend(backend_name)
+        backend = get_backend(str(backend_name).strip().lower())
     return backend.extract_graph(model, inputs, layers=layers, seed=seed)
 
 
