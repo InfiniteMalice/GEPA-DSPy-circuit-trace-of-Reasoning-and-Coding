@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import traceback
 import warnings
 from collections.abc import Iterable, Mapping as MappingABC
 from dataclasses import dataclass, field
@@ -290,6 +291,7 @@ def _apply_attribution_rewards(
         backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
     if not backend_name:
         backend_name = DEFAULT_ATTR_CONFIG["backend"]
+    backend_spec: Mapping[str, object] = {"name": backend_name, **backend_kwargs}
     if probe_size <= 0 or topk <= 0:
         return
     has_sequence = isinstance(problem.get("sequence"), (list, tuple))
@@ -308,22 +310,6 @@ def _apply_attribution_rewards(
     attr_dir = run_dir / "attr"
     attr_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = run_dir / "attr_metrics.jsonl"
-    try:
-        backend = attr_graphs.get_backend(backend_name, **backend_kwargs)
-    except KeyError as exc:  # pragma: no cover - configuration error
-        warnings.warn(
-            f"Unknown attribution backend '{backend_name}': {exc}",
-            RuntimeWarning,
-            stacklevel=2,
-        )
-        return
-    except Exception as exc:  # pragma: no cover - backend initialisation failure
-        warnings.warn(
-            f"Failed to initialise attribution backend '{backend_name}': {exc}",
-            RuntimeWarning,
-            stacklevel=2,
-        )
-        raise
     bonuses = {**DEFAULT_ATTR_BONUSES, **dict(profile_bonuses)}
     top_pairs = sorted(
         enumerate(candidates),
@@ -332,27 +318,39 @@ def _apply_attribution_rewards(
     )[:topk]
     with metrics_path.open("w", encoding="utf8") as handle:
         for idx, candidate in top_pairs:
-            graphs: List[Mapping[str, object]] = []
-            for probe in probes:
-                payload = dict(probe)
-                seed = idx * 997 + int(payload.get("probe_index", 0))
-                graph = attr_graphs.extract_graph(
-                    model,
-                    payload,
-                    backend=backend,
-                    seed=seed,
+            try:
+                graphs: List[Mapping[str, object]] = []
+                for probe in probes:
+                    payload = dict(probe)
+                    seed = idx * 997 + int(payload.get("probe_index", 0))
+                    graph = attr_graphs.extract_graph(
+                        model,
+                        payload,
+                        backend=backend_spec,
+                        backend_name=backend_name,
+                        seed=seed,
+                    )
+                    graphs.append(graph)
+                    attr_path = attr_dir / f"candidate{idx}_probe{payload['probe_index']}.json"
+                    with attr_path.open("w", encoding="utf8") as graph_handle:
+                        json.dump(graph, graph_handle, indent=2)
+                metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept)
+                record = {
+                    "candidate_index": idx,
+                    "problem_id": candidate.problem_id,
+                    **metrics,
+                }
+                handle.write(json.dumps(record) + "\n")
+            except Exception as exc:  # pragma: no cover - attribution failure per candidate
+                detail = traceback.format_exc()
+                warnings.warn(
+                    (
+                        f"Attribution failed for candidate {idx} ({candidate.problem_id}): {exc}\n"
+                        f"{detail}"
+                    ),
+                    RuntimeWarning,
+                    stacklevel=2,
                 )
-                graphs.append(graph)
-                attr_path = attr_dir / f"candidate{idx}_probe{payload['probe_index']}.json"
-                with attr_path.open("w", encoding="utf8") as graph_handle:
-                    json.dump(graph, graph_handle, indent=2)
-            metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept)
-            record = {
-                "candidate_index": idx,
-                "problem_id": candidate.problem_id,
-                **metrics,
-            }
-            handle.write(json.dumps(record) + "\n")
 
 
 def _load_problem(path: str | Path) -> Mapping[str, object]:

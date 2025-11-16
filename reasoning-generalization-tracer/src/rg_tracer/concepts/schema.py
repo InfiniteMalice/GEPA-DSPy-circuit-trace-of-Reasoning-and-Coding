@@ -39,7 +39,11 @@ class ConceptSpec:
         catalog = [dict(entry) for entry in raw_catalog if isinstance(entry, Mapping)]
         if len(catalog) < len(raw_catalog):
             dropped = len(raw_catalog) - len(catalog)
-            warnings.warn(f"Dropped {dropped} invalid feature_catalog entries", RuntimeWarning)
+            warnings.warn(
+                f"Dropped {dropped} invalid feature_catalog entries",
+                RuntimeWarning,
+                stacklevel=2,
+            )
         return cls(
             name=data["name"],
             definition=data.get("definition", ""),

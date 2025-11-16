@@ -56,7 +56,9 @@ target Tiny Recursion Models and small transformers. Each run logs:
 * **Repeatability** – Jaccard overlap of top edges across probes.
 * **Concept Alignment** – overlap@k with concept features from circuit traces.
 * **Δ Metrics** – sparsity drop, alignment gain, and repeatability gain
-  comparing `overfit` and `post_grok` phases.
+  comparing `overfit` and `post_grok` phases. JSON records expose these as the
+  `delta_sparsity`, `delta_alignment`, and `delta_repeatability` keys alongside
+  the raw metrics so automation can consume them directly.
 
 Soft bonuses (configurable; e.g., +0.01 for alignment/repeat gains, +0.005 for
 sparsity drops) are added to composite scores after hard gates. Concept rewards
@@ -164,7 +166,9 @@ Each self-play run emits:
 * `best.json` – best-performing candidate under the chosen profile.
 * `attr/` – attribution graphs for top candidates (one JSON per probe).
 * `attr_metrics.jsonl` – attribution metric records stored alongside `attr/` in the
-  run directory root (not inside the folder).
+  run directory root (not inside the folder). Each JSON line exposes
+  `delta_alignment`, `delta_repeatability`, and `delta_sparsity` keys plus the
+  raw summary metrics for the candidate.
 
 ## Configuration
 

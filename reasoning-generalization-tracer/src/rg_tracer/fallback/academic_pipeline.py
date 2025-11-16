@@ -42,7 +42,12 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     fallacy_flags = float(report.get("fallacy_flags", 0))
     neutral = float(report.get("neutrality_balance", 0.0))
     citation = float(report.get("citation_coverage", 0.0))
-    quote_presence = float(report.get("quote_presence", 0.0))
+    quote_presence_value = report.get("quote_presence")
+    if quote_presence_value is None:
+        quote_presence_value = report.get("quote_integrity")
+    if quote_presence_value is None:
+        quote_presence_value = report.get("quotes")
+    quote_presence = float(quote_presence_value or 0.0)
     counter = float(report.get("counterevidence_ratio", 0.0))
     hedge = float(report.get("hedge_rate", 0.0))
     fact_free = float(report.get("fact_free_ratio", 0.0))

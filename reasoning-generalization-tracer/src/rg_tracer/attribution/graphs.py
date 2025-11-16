@@ -175,7 +175,10 @@ _BACKENDS: MutableMapping[str, Callable[..., AttributionBackend]] = {
 def register_backend(name: str, factory: Callable[..., AttributionBackend]) -> None:
     """Register a backend factory under ``name``."""
 
-    _BACKENDS[name] = factory
+    key = str(name).strip().lower()
+    if not key:
+        raise ValueError("backend name must be non-empty")
+    _BACKENDS[key] = factory
 
 
 def get_backend(name: str, **kwargs: object) -> AttributionBackend:

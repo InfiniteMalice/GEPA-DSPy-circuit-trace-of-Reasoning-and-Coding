@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping
 
@@ -155,20 +156,30 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
     base = normalised[0]
     node_attrs: MutableMapping[str, List[float]] = {}
     edge_attrs: MutableMapping[tuple[str, str], List[float]] = {}
-    node_templates: Dict[str, GraphNode] = {}
+    node_templates: Dict[str, List[GraphNode]] = {}
     for graph in normalised:
         for node in graph.nodes:
             node_attrs.setdefault(node.id, []).append(node.activation)
-            node_templates.setdefault(node.id, node)
+            node_templates.setdefault(node.id, []).append(node)
         for edge in graph.edges:
             key = (edge.src, edge.dst)
             edge_attrs.setdefault(key, []).append(edge.attr)
     merged_nodes = []
     for node_id in sorted(node_attrs):
         values = node_attrs[node_id]
-        template = node_templates.get(node_id)
-        layer = template.layer if template is not None else 0
-        node_type = template.type if template is not None else "unknown"
+        templates = node_templates.get(node_id, [])
+        if templates:
+            layer_counts = Counter(template.layer for template in templates)
+            layer = layer_counts.most_common(1)[0][0]
+            type_candidates = [template.type for template in templates if template.type]
+            if type_candidates:
+                type_counts = Counter(type_candidates)
+                node_type = type_counts.most_common(1)[0][0]
+            else:
+                node_type = "unknown"
+        else:
+            layer = 0
+            node_type = "unknown"
         merged_nodes.append(
             GraphNode(
                 id=node_id,

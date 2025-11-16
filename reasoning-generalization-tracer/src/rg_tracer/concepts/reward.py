@@ -156,7 +156,7 @@ def compute_concept_reward(
     entailed_ids = {str(value) for value in _iter_ids(raw_entailed)}
     contradictory_ids = {str(value) for value in _iter_ids(raw_contradictory)}
     features = _filter_features(
-        trace_json.get("features", []),
+        trace_json.get("features") or [],
         entailed_ids,
         contradictory_ids,
     )

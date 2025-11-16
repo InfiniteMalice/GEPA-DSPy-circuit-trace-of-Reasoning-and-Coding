@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Sequence
 
-from .patterns import build_token_boundary_pattern
+from .patterns import build_token_boundary_pattern, extract_letter_tokens
 from .taxonomy import SemanticTag
 
 
@@ -92,15 +92,21 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     matched_canonical = bool(canonical_pattern and canonical_pattern.search(lowered))
     if matched_canonical:
         return True, None
+    tokens = extract_letter_tokens(lowered)
+    for token in tokens:
+        canonical_token = _canonical_unit(token)
+        if canonical_token == canonical_expected:
+            return True, None
     matched_variant = False
     detected_unit: str | None = None
     for unit in _ALT_UNITS:
-        variant_pattern = build_token_boundary_pattern(unit)
+        unit_lower = unit.lower().strip()
+        variant_pattern = build_token_boundary_pattern(unit_lower)
         if not variant_pattern:
             continue
         if variant_pattern.search(lowered):
-            detected_unit = unit
-            canonical_detected = _canonical_unit(unit)
+            detected_unit = unit_lower
+            canonical_detected = _canonical_unit(unit_lower)
             if canonical_detected == canonical_expected:
                 matched_variant = True
                 detected_unit = None
@@ -115,8 +121,8 @@ def _detect_variable_drift(step: str, allowed: set[str]) -> tuple[bool, str | No
     tokens = set()
     for token in step.split():
         stripped = token.strip(".,:;!")
-        if stripped.isalpha() and len(stripped) == 1 and stripped.islower():
-            tokens.add(stripped)
+        if stripped.isalpha() and len(stripped) == 1:
+            tokens.add(stripped.lower())
     if not tokens:
         return False, None
     unexpected = sorted(token for token in tokens if allowed and token not in allowed)
@@ -150,7 +156,9 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
     expected_units = str(raw_units).strip() if raw_units is not None else None
     if expected_units == "":
         expected_units = None
-    allowed_vars = {str(var) for var in problem_spec.get("variables", [])}
+    allowed_vars = {
+        str(var).strip().lower() for var in problem_spec.get("variables", []) if str(var).strip()
+    }
     raw_concept = problem_spec.get("concept")
     concept = str(raw_concept).strip() if raw_concept is not None else None
     if concept == "":

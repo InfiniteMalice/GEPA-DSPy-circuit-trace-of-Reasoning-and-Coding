@@ -6,7 +6,7 @@ import copy
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, Mapping
+from typing import Dict, Iterable, List, Mapping
 
 try:  # pragma: no cover - optional dependency
     import yaml
@@ -65,6 +65,14 @@ def _fallback_parse(text: str) -> Dict[str, object]:
     section: str | None = None
     config_stack: list[tuple[int, Dict[str, object]]] = []
 
+    filtered: List[tuple[str, str, int]] = []
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip())
+        filtered.append((raw_line, stripped, indent))
+
     def _find_container(
         stack: list[tuple[int, Dict[str, object]]],
         indent: int,
@@ -79,11 +87,9 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                 return container
         return stack[0][1] if stack else result.setdefault("config", {})
 
-    for raw_line in text.splitlines():
-        if not raw_line.strip() or raw_line.strip().startswith("#"):
-            continue
-        indent = len(raw_line) - len(raw_line.lstrip())
-        line = raw_line.strip()
+    total = len(filtered)
+    for index, (raw_line, line, indent) in enumerate(filtered):
+        next_indent = filtered[index + 1][2] if index + 1 < total else None
         if indent == 0 and line.endswith(":"):
             section = line[:-1]
             if section not in {"profiles", "config"}:
@@ -125,11 +131,16 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                 config_stack = [(0, result.setdefault("config", {}))]
             if line.endswith(":"):
                 key = line[:-1]
-                parent = _find_container(config_stack, indent, inclusive=False)
-                target: Dict[str, object] = {}
-                parent[key] = target
-                config_stack = [entry for entry in config_stack if entry[0] < indent]
-                config_stack.append((indent, target))
+                has_child = next_indent is not None and next_indent > indent
+                if has_child:
+                    parent = _find_container(config_stack, indent, inclusive=False)
+                    target: Dict[str, object] = {}
+                    parent[key] = target
+                    config_stack = [entry for entry in config_stack if entry[0] < indent]
+                    config_stack.append((indent, target))
+                else:
+                    container = _find_container(config_stack, indent, inclusive=False)
+                    container[key] = None
                 continue
             if ":" in line and not line.endswith(":"):
                 key, value = line.split(":", 1)
@@ -210,8 +221,14 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, Profile]:
         path = Path(__file__).with_name("profiles.yaml")
     else:
         path = Path(path)
-    profiles, config = _parse_profiles(path.read_text())
     global _LAST_CONFIG
+    text = path.read_text()
+    _LAST_CONFIG = {}
+    try:
+        profiles, config = _parse_profiles(text)
+    except Exception:
+        _LAST_CONFIG = {}
+        raise
     _LAST_CONFIG = copy.deepcopy(config)
     return profiles
 

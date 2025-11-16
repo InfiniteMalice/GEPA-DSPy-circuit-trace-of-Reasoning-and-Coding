@@ -120,3 +120,4 @@ def test_concept_reward_scales_with_alignment():
         alignment=alignment_value,
     )
     assert aligned_reward > base_reward
+    assert alignment_value and alignment_value > 0
