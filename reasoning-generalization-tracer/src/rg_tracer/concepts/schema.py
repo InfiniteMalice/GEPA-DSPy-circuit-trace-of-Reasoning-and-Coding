@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional
+from typing import Any, Callable, Dict, List, Mapping
 
 
 @dataclass
@@ -28,15 +29,27 @@ class ConceptSpec:
     definition: str
     tests: List[ConceptTest] = field(default_factory=list)
     expected_substructures: List[str] = field(default_factory=list)
+    feature_catalog: List[Mapping[str, Any]] = field(default_factory=list)
+    """Catalog of feature descriptors (id, tags, notes, etc.) exposed to attribution tools."""
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ConceptSpec":
         tests = [ConceptTest(**test) for test in data.get("tests", [])]
+        raw_catalog = data.get("feature_catalog", [])
+        catalog = [dict(entry) for entry in raw_catalog if isinstance(entry, Mapping)]
+        if len(catalog) < len(raw_catalog):
+            dropped = len(raw_catalog) - len(catalog)
+            warnings.warn(
+                f"Dropped {dropped} invalid feature_catalog entries",
+                RuntimeWarning,
+                stacklevel=2,
+            )
         return cls(
             name=data["name"],
             definition=data.get("definition", ""),
             tests=tests,
             expected_substructures=list(data.get("expected_substructures", [])),
+            feature_catalog=catalog,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -45,6 +58,7 @@ class ConceptSpec:
             "definition": self.definition,
             "tests": [{"input": test.input, "expected": test.expected} for test in self.tests],
             "expected_substructures": list(self.expected_substructures),
+            "feature_catalog": [dict(entry) for entry in self.feature_catalog],
         }
 
 
