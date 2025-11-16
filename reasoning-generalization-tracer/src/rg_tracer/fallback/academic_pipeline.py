@@ -42,7 +42,7 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     fallacy_flags = float(report.get("fallacy_flags", 0))
     neutral = float(report.get("neutrality_balance", 0.0))
     citation = float(report.get("citation_coverage", 0.0))
-    quotes = float(report.get("quote_integrity", 0.0))
+    quote_presence = float(report.get("quote_presence", 0.0))
     counter = float(report.get("counterevidence_ratio", 0.0))
     hedge = float(report.get("hedge_rate", 0.0))
     fact_free = float(report.get("fact_free_ratio", 0.0))
@@ -50,7 +50,7 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     entailed = float(report.get("entailed_steps_pct", 0.0))
     schema = float(report.get("schema_consistency_pct", 0.0))
     fallacy_ratio = 1.0 / (1.0 + fallacy_flags)
-    combined_sources = max(citation, quotes)
+    combined_sources = max(citation, quote_presence)
     metrics["source_handling"] = {
         "positive": _grade_ratio(citation),
         "coverage": _grade_ratio(combined_sources),
