@@ -168,8 +168,9 @@ Each self-play run emits:
 
 ## Configuration
 
-* **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (packaged
-  at runtime as `scoring/profiles.yaml`) or supply a custom file.
+* **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (the file
+  is installed as `scoring/profiles.yaml`, which is what the loader resolves) or
+  supply a custom file.
 * **Concept Rewards:** override weights via the `weights` parameter in
   `compute_concept_reward`.
 * **Abstention:** calibrate model confidences using `abstention/calibrate.py`.

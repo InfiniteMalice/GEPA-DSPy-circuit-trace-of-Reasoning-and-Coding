@@ -21,7 +21,7 @@ llm = [
     "accelerate>=0.23",
 ]
 semantics = [
-    "regex>=2023.10.3",
+    "regex>=2024.0.0",
 ]
 
 [project.urls]
