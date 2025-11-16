@@ -161,7 +161,8 @@ def _build_probe_inputs(
     if not base_tokens:
         base_tokens = _as_list(numbers)
     if not base_tokens:
-        prompt = str(problem.get("prompt", "")) or str(problem.get("statement", ""))
+        prompt_source = problem.get("prompt") or problem.get("statement") or ""
+        prompt = str(prompt_source)
         # Placeholder IDs keep BackendNull deterministic; other backends warn upstream.
         base_tokens = [ord(ch) % 10 for ch in prompt[:8]] or [0]
     task_id = str(problem.get("id", "task"))
@@ -218,7 +219,12 @@ def _resolve_attr_param(
     coerce: Callable[[object], int] = int,
 ) -> int:
     raw_value = config.get(key)
-    return default if raw_value is None else coerce(raw_value)
+    if raw_value is None:
+        return default
+    try:
+        return coerce(raw_value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _compute_and_apply_attr_metrics(
@@ -351,6 +357,7 @@ def _apply_attribution_rewards(
                     RuntimeWarning,
                     stacklevel=2,
                 )
+                continue
 
 
 def _load_problem(path: str | Path) -> Mapping[str, object]:
@@ -384,8 +391,8 @@ def _map_semantics_to_features(
         for entry in report.get("tags", [])
         if SemanticTag.CONTRADICTION.value in entry.get("tags", [])
     ]
-    entailed_lower = [str(step).lower() for step in entailed_steps if step is not None]
-    contradictory_lower = [str(step).lower() for step in contradictory_steps if step is not None]
+    entailed_lower = [str(step).casefold() for step in entailed_steps if step is not None]
+    contradictory_lower = [str(step).casefold() for step in contradictory_steps if step is not None]
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
     for feature in features_iterable:
@@ -403,7 +410,7 @@ def _map_semantics_to_features(
         for tag in tags_iter:
             text_tag = str(tag).strip()
             if text_tag:
-                cleaned_tags.append(text_tag.lower())
+                cleaned_tags.append(text_tag.casefold())
         lower_tags = set(cleaned_tags)
         raw_identifier = feature.get("id")
         if raw_identifier is None:
@@ -623,10 +630,13 @@ def run_self_play(
                 "text": best.text,
                 "confidence": best.confidence,
                 "axis_scores": best.axis_scores,
+                "base_composite": best.base_composite,
                 "composite": best.composite,
                 "passes_gates": best.passes_gates,
                 "failed_gates": best.failed_gates,
                 "concept_reward": best.concept_reward,
+                "attr_bonus": best.attr_bonus,
+                "attr_metrics": best.attr_metrics,
                 "abstained": best.abstained,
                 "problem_id": best.problem_id,
             },

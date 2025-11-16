@@ -128,13 +128,16 @@ def run_matrix(
     root = output_dir / f"grokking_matrix_{timestamp}"
     root.mkdir(parents=True, exist_ok=True)
     rows: List[Tuple[str, Mapping[str, object]]] = []
+    total_cells = len(REGULARISATION) * len(STABILITY) * len(GRADIENT) * len(REASONING)
+    max_cells = min(total_cells, limit) if limit is not None else total_cells
     for idx, combo in enumerate(_build_combo_grid()):
         if limit is not None and idx >= limit:
             break
         name = _combo_name(combo)
         digest_text = hashlib.sha256(name.encode("utf8")).hexdigest()
         combo_digest = int(digest_text, 16)
-        seed = combo_digest % 10_000
+        seed = (combo_digest ^ idx) % 10_000
+        print(f"Processing cell {idx + 1}/{max_cells}: {name}", flush=True)
         graphs = _extract_phase_graphs(combo_digest, name)
         metrics = _summarise_metrics(graphs)
         metrics_with_seed = {**metrics, "seed": seed}

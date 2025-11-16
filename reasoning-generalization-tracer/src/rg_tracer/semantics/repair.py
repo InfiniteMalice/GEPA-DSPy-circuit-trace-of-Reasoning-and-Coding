@@ -171,9 +171,9 @@ def repair_once(
                 continue
             break
         if fix_tag == SemanticTag.UNSUPPORTED.value:
-            suffix = " because we justify the inference from previous steps."
-            if suffix.strip() not in step:
-                steps[idx] = f"{step}{suffix}"
+            suffix = "Because we justify the inference from previous steps."
+            if suffix.lower() not in step.lower():
+                steps[idx] = _append_with_punctuation(step, suffix)
             break
         if fix_tag == SemanticTag.UNCITED_CLAIM.value:
             steps[idx] = f"{step} (Doe 2020, p. 14)"
@@ -192,7 +192,8 @@ def repair_once(
             break
         if fix_tag == SemanticTag.OVERCLAIMED_CAUSALITY.value:
             if "may" not in step.lower():
-                steps[idx] = f"{step} This relationship may be correlational.".strip()
+                clarification = "This relationship may be correlational."
+                steps[idx] = _append_with_punctuation(step, clarification)
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
             normative_suffix = "This recommendation is normative and contingent on shared values."

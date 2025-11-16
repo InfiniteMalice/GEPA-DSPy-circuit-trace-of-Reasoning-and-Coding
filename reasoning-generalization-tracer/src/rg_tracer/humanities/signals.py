@@ -62,12 +62,13 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     neutrality_hits = 0
     tags: List[StepTagMapping] = []
     for step in steps:
-        lowered = step.lower()
+        text = str(step).strip()
+        lowered = text.lower()
         step_tags: List[str] = []
-        has_citation = any(marker in step for marker in _CITATION_MARKERS)
+        has_citation = any(marker in text for marker in _CITATION_MARKERS)
         if has_citation:
             cite_hits += 1
-        double_quote_count = step.count('"')
+        double_quote_count = text.count('"')
         if double_quote_count:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
@@ -81,11 +82,11 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
             step_tags.append(SemanticTag.UNCITED_CLAIM.value)
         if double_quote_count % 2 == 1:
             step_tags.append(SemanticTag.MISQUOTE.value)
-        if ('"' in step) and not has_citation:
+        if ('"' in text) and not has_citation:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
-        tags.append({"step": step, "tags": step_tags})
+        tags.append({"step": text, "tags": step_tags})
     if counter_hits == 0 and steps and tags:
         unsupported = SemanticTag.UNSUPPORTED.value
         if unsupported not in tags[-1]["tags"]:

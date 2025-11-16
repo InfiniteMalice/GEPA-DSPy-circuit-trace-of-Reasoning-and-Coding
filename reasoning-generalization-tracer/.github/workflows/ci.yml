@@ -91,6 +91,17 @@ from rg_tracer.concepts import ConceptSpec, compute_concept_reward
               },
           )
           assert reward > 0.3, reward
+          aligned = compute_concept_reward(
+              trace,
+              spec,
+              task_metrics={
+                  "concept_reuse": 1.0,
+                  "supporting_tasks": 1,
+                  "entailed_feature_ids": ["F1"],
+              },
+              alignment=0.5,
+          )
+          assert aligned > reward
           PY
         working-directory: reasoning-generalization-tracer
       - name: Smoke humanities CLI

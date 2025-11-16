@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from statistics import mean
-from typing import Dict, Iterable, List, Mapping, Sequence
+from typing import Dict, List, Mapping, Sequence
 
 from ..abstention import ABSTENTION_THRESHOLD
 from ..humanities import HumanitiesProfile, evaluate_profile, load_profiles
@@ -22,7 +22,7 @@ def _load_records(path: str | Path) -> List[Mapping[str, object]]:
     return records
 
 
-def _count_tag(report_tags: Sequence[Mapping[str, Iterable[str]]], tag: SemanticTag) -> int:
+def _count_tag(report_tags: Sequence[Mapping[str, object]], tag: SemanticTag) -> int:
     return sum(1 for entry in report_tags if tag.value in entry.get("tags", []))
 
 

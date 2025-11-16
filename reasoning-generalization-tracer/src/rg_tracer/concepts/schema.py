@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Mapping
+from typing import Any, Callable, Dict, Iterable, List, Mapping
 
 
 @dataclass
@@ -35,10 +35,18 @@ class ConceptSpec:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ConceptSpec":
         tests = [ConceptTest(**test) for test in data.get("tests", [])]
-        raw_catalog = data.get("feature_catalog", [])
-        catalog = [dict(entry) for entry in raw_catalog if isinstance(entry, Mapping)]
-        if len(catalog) < len(raw_catalog):
-            dropped = len(raw_catalog) - len(catalog)
+        raw_entries = data.get("feature_catalog")
+        if raw_entries is None:
+            source_entries: List[object] = []
+        elif isinstance(raw_entries, Mapping):
+            source_entries = [raw_entries]
+        elif isinstance(raw_entries, Iterable) and not isinstance(raw_entries, (str, bytes)):
+            source_entries = list(raw_entries)
+        else:
+            source_entries = []
+        catalog = [dict(entry) for entry in source_entries if isinstance(entry, Mapping)]
+        if len(catalog) < len(source_entries):
+            dropped = len(source_entries) - len(catalog)
             warnings.warn(
                 f"Dropped {dropped} invalid feature_catalog entries",
                 RuntimeWarning,

@@ -115,7 +115,7 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
                 break
         if not variant_match:
             continue
-        detected_unit = unit_lower
+        detected_unit = canonical_detected or unit_lower
         if canonical_detected == canonical_expected:
             matched_variant = True
             detected_unit = None
@@ -130,8 +130,9 @@ def _detect_variable_drift(step: str, allowed: set[str]) -> tuple[bool, str | No
     tokens = set()
     for token in step.split():
         stripped = token.strip(".,:;!")
-        if stripped.isalpha() and len(stripped) == 1:
-            tokens.add(stripped.casefold())
+        normalised = stripped.casefold()
+        if normalised.isalpha() and len(normalised) == 1:
+            tokens.add(normalised)
     if not tokens:
         return False, None
     unexpected = sorted(token for token in tokens if allowed and token not in allowed)
