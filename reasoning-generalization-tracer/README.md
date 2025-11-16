@@ -115,9 +115,9 @@ pip install -e ".[semantics]"
 Python 3.10+ is required. Circuit tracing depends on the
 [`circuit-tracer`](https://github.com/openai/circuit-tracer) project pinned in
 `pyproject.toml`. Installing the `semantics` extra pulls in the optional
-[`regex`](https://pypi.org/project/regex/) backend so token-boundary helpers can
-use `\p{L}` for non-ASCII scripts; without it the ASCII-safe fallbacks remain in
-use.
+[`regex`](https://pypi.org/project/regex/) backend (pinned at
+`regex>=2024.11.6`) so token-boundary helpers can use `\p{L}` for non-ASCII
+scripts; without it the ASCII-safe fallbacks remain in use.
 
 ## Quickstart
 
@@ -167,6 +167,10 @@ Each self-play run emits:
   run directory root (not inside the folder).
 
 ## Configuration
+
+References to `scoring/profiles.yaml` point at the packaged path that
+`rg_tracer` loads; when editing in this repository update
+`src/rg_tracer/scoring/profiles.yaml`.
 
 * **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (the file
   is installed as `scoring/profiles.yaml`, which is what the loader resolves) or

@@ -22,7 +22,7 @@ PHASES = ["pre_overfit", "overfit", "pre_grok", "post_grok"]
 
 
 def _combo_name(combo: Mapping[str, str]) -> str:
-    return "_".join(f"{key}={value}" for key, value in combo.items())
+    return "_".join(f"{key}={value}" for key, value in sorted(combo.items()))
 
 
 def _build_combo_grid() -> Iterable[Mapping[str, str]]:

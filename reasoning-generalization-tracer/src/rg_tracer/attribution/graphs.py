@@ -19,11 +19,11 @@ def _strip_sample_index(graph_dict: Mapping[str, object]) -> dict[str, object]:
 
     result = dict(graph_dict)
     meta_dict = result.get("meta")
-    if isinstance(meta_dict, Mapping):
+    if isinstance(meta_dict, MappingABC):
         meta_copy: dict[str, object] = dict(meta_dict)
         meta_copy.pop("sample_index", None)
         extras = meta_copy.get("extras")
-        if isinstance(extras, Mapping):
+        if isinstance(extras, MappingABC):
             extras_copy: dict[str, object] = dict(extras)
             extras_copy.pop("sample_index", None)
             meta_copy["extras"] = extras_copy
