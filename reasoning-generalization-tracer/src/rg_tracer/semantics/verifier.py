@@ -101,17 +101,26 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
     detected_unit: str | None = None
     for unit in _ALT_UNITS:
         unit_lower = unit.lower().strip()
-        variant_pattern = build_token_boundary_pattern(unit_lower)
-        if not variant_pattern:
+        if not unit_lower:
             continue
-        if variant_pattern.search(lowered):
-            detected_unit = unit_lower
-            canonical_detected = _canonical_unit(unit_lower)
-            if canonical_detected == canonical_expected:
-                matched_variant = True
-                detected_unit = None
-                continue
-            return False, detected_unit
+        canonical_detected = _canonical_unit(unit_lower)
+        search_terms = {unit_lower}
+        if canonical_detected:
+            search_terms.add(canonical_detected)
+        variant_match = False
+        for term in search_terms:
+            pattern = build_token_boundary_pattern(term)
+            if pattern and pattern.search(lowered):
+                variant_match = True
+                break
+        if not variant_match:
+            continue
+        detected_unit = unit_lower
+        if canonical_detected == canonical_expected:
+            matched_variant = True
+            detected_unit = None
+            continue
+        return False, detected_unit
     if matched_variant:
         return True, None
     return False, detected_unit
@@ -122,7 +131,7 @@ def _detect_variable_drift(step: str, allowed: set[str]) -> tuple[bool, str | No
     for token in step.split():
         stripped = token.strip(".,:;!")
         if stripped.isalpha() and len(stripped) == 1:
-            tokens.add(stripped.lower())
+            tokens.add(stripped.casefold())
     if not tokens:
         return False, None
     unexpected = sorted(token for token in tokens if allowed and token not in allowed)
@@ -157,7 +166,7 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
     if expected_units == "":
         expected_units = None
     allowed_vars = {
-        str(var).strip().lower() for var in problem_spec.get("variables", []) if str(var).strip()
+        str(var).strip().casefold() for var in problem_spec.get("variables", []) if str(var).strip()
     }
     raw_concept = problem_spec.get("concept")
     concept = str(raw_concept).strip() if raw_concept is not None else None
@@ -242,7 +251,9 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         if signals.tags:
             for idx, entry in enumerate(signals.tags):
                 if idx < len(tags):
-                    tags[idx]["tags"].extend(entry.get("tags", []))
+                    merged = list(tags[idx].get("tags", []))
+                    merged.extend(entry.get("tags", []))
+                    tags[idx]["tags"] = list(dict.fromkeys(merged))
     else:
         humanities_metrics = {
             "citation_coverage": 0.0,

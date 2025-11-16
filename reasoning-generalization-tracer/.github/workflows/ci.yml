@@ -39,28 +39,28 @@ jobs:
           test -d "$RUN_DIR/attr"
           ls "$RUN_DIR/attr"
           python - <<'PY'
-import json
-import os
-from pathlib import Path
+          import json
+          import os
+          from pathlib import Path
 
-run_dir = Path(os.environ["RUN_DIR"])
-metrics_path = run_dir / "attr_metrics.jsonl"
-lines = [
-    json.loads(line)
-    for line in metrics_path.read_text(encoding="utf8").splitlines()
-    if line.strip()
-]
-assert lines, "attr_metrics.jsonl is empty"
-for key in (
-    "delta_alignment",
-    "delta_repeatability",
-    "delta_sparsity",
-):
-    assert key in lines[0], lines[0]
-attr_dir = run_dir / "attr"
-files = list(attr_dir.iterdir())
-assert files, "attr directory empty"
-assert any(path.suffix == ".json" for path in files), files
+          run_dir = Path(os.environ["RUN_DIR"])
+          metrics_path = run_dir / "attr_metrics.jsonl"
+          lines = [
+              json.loads(line)
+              for line in metrics_path.read_text(encoding="utf8").splitlines()
+              if line.strip()
+          ]
+          assert lines, "attr_metrics.jsonl is empty"
+          for key in (
+              "delta_alignment",
+              "delta_repeatability",
+              "delta_sparsity",
+          ):
+              assert key in lines[0], lines[0]
+          attr_dir = run_dir / "attr"
+          files = list(attr_dir.iterdir())
+          assert files, "attr directory empty"
+          assert any(path.suffix == ".json" for path in files), files
           PY
           grep -q "Attribution Metrics" "$RUN_DIR/summary.md"
         working-directory: reasoning-generalization-tracer
@@ -69,28 +69,28 @@ assert any(path.suffix == ".json" for path in files), files
           python - <<'PY'
 from rg_tracer.concepts import ConceptSpec, compute_concept_reward
 
-trace = {
-    "features": [
-        {"id": "F1", "layer": 1, "importance": 0.7, "tags": ["parity"]}
-    ],
-    "edges": [],
-    "path_lengths": {"mean": 1.0},
-}
-spec = ConceptSpec(
-    name="parity",
-    definition="",
-    expected_substructures=["parity"],
-)
-reward = compute_concept_reward(
-    trace,
-    spec,
-    task_metrics={
-        "concept_reuse": 1.0,
-        "supporting_tasks": 1,
-        "entailed_feature_ids": ["F1"],
-    },
-)
-assert reward > 0.3, reward
+          trace = {
+              "features": [
+                  {"id": "F1", "layer": 1, "importance": 0.7, "tags": ["parity"]}
+              ],
+              "edges": [],
+              "path_lengths": {"mean": 1.0},
+          }
+          spec = ConceptSpec(
+              name="parity",
+              definition="",
+              expected_substructures=["parity"],
+          )
+          reward = compute_concept_reward(
+              trace,
+              spec,
+              task_metrics={
+                  "concept_reuse": 1.0,
+                  "supporting_tasks": 1,
+                  "entailed_feature_ids": ["F1"],
+              },
+          )
+          assert reward > 0.3, reward
           PY
         working-directory: reasoning-generalization-tracer
       - name: Smoke humanities CLI
@@ -99,11 +99,11 @@ assert reward > 0.3, reward
             --profile humanities > humanities.json
           test -s humanities.json
           python - <<'PY'
-import json
+          import json
 
-data = json.load(open("humanities.json", "r", encoding="utf8"))
-assert data["records"], data
-assert any(record["abstained"] for record in data["records"])
+          data = json.load(open("humanities.json", "r", encoding="utf8"))
+          assert data["records"], data
+          assert any(record["abstained"] for record in data["records"])
           PY
         working-directory: reasoning-generalization-tracer
       - name: Smoke fallback pipeline
@@ -111,15 +111,15 @@ assert any(record["abstained"] for record in data["records"])
           python - <<'PY'
 from rg_tracer.fallback import run_academic_pipeline
 
-output = run_academic_pipeline(
-    "datasets/humanities/sample_claims.jsonl"
-)
-assert output["summary"]["count"] >= 2
-assert any(not rec["abstained"] for rec in output["records"])
-assert any(rec["abstained"] for rec in output["records"])
-for record in output["records"]:
-    if not record["abstained"]:
-        assert "posterior" in record
+          output = run_academic_pipeline(
+              "datasets/humanities/sample_claims.jsonl"
+          )
+          assert output["summary"]["count"] >= 2
+          assert any(not rec["abstained"] for rec in output["records"])
+          assert any(rec["abstained"] for rec in output["records"])
+          for record in output["records"]:
+              if not record["abstained"]:
+                  assert "posterior" in record
           PY
         working-directory: reasoning-generalization-tracer
       - name: Upload runs artifact

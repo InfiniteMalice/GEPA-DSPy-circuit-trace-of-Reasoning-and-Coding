@@ -405,7 +405,10 @@ def _map_semantics_to_features(
             if text_tag:
                 cleaned_tags.append(text_tag.lower())
         lower_tags = set(cleaned_tags)
-        feature_id = str(feature.get("id", ""))
+        raw_identifier = feature.get("id")
+        if raw_identifier is None:
+            continue
+        feature_id = str(raw_identifier)
         entailed_match = False
         contradictory_match = False
         for tag in lower_tags:

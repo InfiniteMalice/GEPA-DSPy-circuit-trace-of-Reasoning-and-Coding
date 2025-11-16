@@ -32,17 +32,17 @@ def _build_combo_grid() -> Iterable[Mapping[str, str]]:
         yield dict(zip(keys, combo, strict=True))
 
 
-def _extract_phase_graphs(seed_offset: int, combo_name: str) -> List[Mapping[str, object]]:
+def _extract_phase_graphs(combo_digest: int, combo_name: str) -> List[Mapping[str, object]]:
     backend = attr_graphs.get_backend("null")
     graphs: List[Mapping[str, object]] = []
     for index, phase in enumerate(PHASES):
         payload = {
-            "task_id": f"phase_{phase}_{seed_offset}",
-            "tokens": [index, seed_offset],
+            "task_id": f"phase_{phase}_{combo_digest}",
+            "tokens": [index, combo_digest],
             "phase": phase,
             "probe_index": index,
         }
-        phase_key = f"{combo_name}_{phase}_{seed_offset}_{index}"
+        phase_key = f"{combo_digest}_{combo_name}_{phase}_{index}"
         phase_seed = int(hashlib.sha256(phase_key.encode("utf8")).hexdigest(), 16) % 10_000
         graph = attr_graphs.extract_graph(
             model=None,
@@ -132,9 +132,10 @@ def run_matrix(
         if limit is not None and idx >= limit:
             break
         name = _combo_name(combo)
-        digest = hashlib.sha256(name.encode("utf8")).hexdigest()
-        seed = int(digest, 16) % 10_000
-        graphs = _extract_phase_graphs(seed, name)
+        digest_text = hashlib.sha256(name.encode("utf8")).hexdigest()
+        combo_digest = int(digest_text, 16)
+        seed = combo_digest % 10_000
+        graphs = _extract_phase_graphs(combo_digest, name)
         metrics = _summarise_metrics(graphs)
         metrics_with_seed = {**metrics, "seed": seed}
         cell_dir = root / name

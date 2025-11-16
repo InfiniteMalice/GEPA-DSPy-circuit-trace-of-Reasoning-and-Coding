@@ -64,18 +64,22 @@ def test_load_profiles_exposes_config(tmp_path):
 def test_fallback_parser_handles_top_level_scalars(tmp_path, monkeypatch):
     from rg_tracer.scoring import aggregator as agg
 
-    monkeypatch.setattr(agg, "yaml", None, raising=False)
-    path = tmp_path / "profiles.yaml"
-    yaml_text = (
-        "config:\n"
-        "  alignment_scale: 0.25\n"
-        "profiles:\n"
-        "  demo:\n"
-        "    weights:\n"
-        "      rigor: 1\n"
-    )
-    path.write_text(yaml_text, encoding="utf8")
-    profiles = load_profiles(path)
-    assert "demo" in profiles
-    config = get_last_config()
-    assert config["alignment_scale"] == 0.25
+    original_yaml = agg.yaml
+    try:
+        agg.yaml = None
+        path = tmp_path / "profiles.yaml"
+        yaml_text = (
+            "config:\n"
+            "  alignment_scale: 0.25\n"
+            "profiles:\n"
+            "  demo:\n"
+            "    weights:\n"
+            "      rigor: 1\n"
+        )
+        path.write_text(yaml_text, encoding="utf8")
+        profiles = load_profiles(path)
+        assert "demo" in profiles
+        config = get_last_config()
+        assert config["alignment_scale"] == 0.25
+    finally:
+        agg.yaml = original_yaml

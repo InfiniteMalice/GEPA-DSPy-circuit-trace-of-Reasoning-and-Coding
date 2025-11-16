@@ -45,16 +45,27 @@ def _parse_profiles(text: str) -> tuple[Dict[str, Profile], Dict[str, object]]:
     if not isinstance(data, Mapping):
         raise TypeError("Profiles configuration must be a mapping")
     profiles: Dict[str, Profile] = {}
-    raw_profiles = data.get("profiles") or {}
-    if raw_profiles and not isinstance(raw_profiles, Mapping):
-        raise TypeError("profiles section must be a mapping")
+    if "profiles" in data:
+        raw_profiles = data["profiles"]
+        if raw_profiles is None:
+            raw_profiles = {}
+        elif not isinstance(raw_profiles, Mapping):
+            raise TypeError("profiles section must be a mapping")
+    else:
+        raw_profiles = {}
     for name, raw in raw_profiles.items():
         weights, bonuses = _split_profile_payload(raw)
         profiles[name] = Profile(name=name, weights=weights, bonuses=bonuses)
-    raw_config = data.get("config") or {}
-    if raw_config and not isinstance(raw_config, Mapping):
-        raise TypeError("config section must be a mapping")
-    config = dict(raw_config)
+    if "config" in data:
+        raw_config = data["config"]
+        if raw_config is None:
+            config = {}
+        elif not isinstance(raw_config, Mapping):
+            raise TypeError("config section must be a mapping")
+        else:
+            config = dict(raw_config)
+    else:
+        config = {}
     return profiles, config
 
 
@@ -106,8 +117,13 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             continue
         # State: indent 4 under profiles marks nested subsection (e.g. bonuses).
         if section == "profiles" and indent == 4 and line.endswith(":") and current_profile:
-            current_subsection = line[:-1]
-            result["profiles"][current_profile][current_subsection] = {}
+            has_child = next_indent is not None and next_indent > indent
+            if has_child:
+                current_subsection = line[:-1]
+                result["profiles"][current_profile][current_subsection] = {}
+            else:
+                current_subsection = None
+                result["profiles"][current_profile][line[:-1]] = None
             continue
         if section == "profiles" and indent >= 4 and ":" in line and current_profile:
             if indent == 4:

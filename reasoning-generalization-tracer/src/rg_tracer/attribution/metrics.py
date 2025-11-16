@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from itertools import combinations
+import math
 from typing import Iterable, List, Mapping, Sequence
 
 from .schema import AttributionGraph, GraphEdge, normalise_graph
@@ -26,6 +27,8 @@ def _edge_weights(graph: AttributionGraph) -> List[float]:
     weights: List[float] = []
     for edge in graph.edges:
         weight = safe_float(edge.attr)
+        if not math.isfinite(weight):
+            continue
         if abs(weight) > 0.0:
             weights.append(weight)
     return weights
@@ -78,7 +81,7 @@ def average_path_length(graphs: Sequence[GraphLike] | GraphLike) -> float:
         weighted_length = 0.0
         for edge in graph.edges:
             weight = abs(safe_float(edge.attr))
-            if weight <= 0:
+            if not math.isfinite(weight) or weight <= 0:
                 continue
             src_layer = layers.get(edge.src)
             if src_layer is None:
@@ -122,8 +125,9 @@ def average_branching_factor(
             weighted_edges: List[tuple[GraphEdge, float]] = []
             for edge in edges:
                 mass = abs(safe_float(edge.attr))
-                if mass > 0:
-                    weighted_edges.append((edge, mass))
+                if not math.isfinite(mass) or mass <= 0:
+                    continue
+                weighted_edges.append((edge, mass))
             if not weighted_edges:
                 continue
             weighted_edges.sort(key=lambda item: item[1], reverse=True)
@@ -298,9 +302,14 @@ def _filter_by_phase(
 def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
+
+    def _activation(node: object) -> float:
+        value = safe_float(getattr(node, "activation", 0.0))
+        return value if math.isfinite(value) else 0.0
+
     ranked = sorted(
         graph.nodes,
-        key=lambda node: abs(safe_float(getattr(node, "activation", 0.0))),
+        key=lambda node: abs(_activation(node)),
         reverse=True,
     )
     ranked = ranked[:top_k]
@@ -310,7 +319,12 @@ def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
 def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[tuple[str, str], float]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
-    weighted = [(edge, abs(safe_float(edge.attr))) for edge in graph.edges]
+    weighted = []
+    for edge in graph.edges:
+        mass = abs(safe_float(edge.attr))
+        if not math.isfinite(mass) or mass <= 0:
+            continue
+        weighted.append((edge, mass))
     weighted.sort(key=lambda item: item[1], reverse=True)
     ranked = weighted[:top_k]
     total = sum(mass for _, mass in ranked)
