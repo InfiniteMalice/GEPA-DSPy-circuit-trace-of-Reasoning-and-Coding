@@ -170,7 +170,9 @@ Each self-play run emits:
 
 References to `scoring/profiles.yaml` point at the packaged path that
 `rg_tracer` loads; when editing in this repository update
-`src/rg_tracer/scoring/profiles.yaml`.
+`src/rg_tracer/scoring/profiles.yaml`. When running the CLI outside the repo,
+pass `--profiles scoring/profiles.yaml` (the installed path) unless you supply
+your own file.
 
 * **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (the file
   is installed as `scoring/profiles.yaml`, which is what the loader resolves) or

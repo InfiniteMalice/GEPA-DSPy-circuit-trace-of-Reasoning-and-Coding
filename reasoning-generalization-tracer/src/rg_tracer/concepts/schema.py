@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Mapping
 
@@ -34,9 +35,11 @@ class ConceptSpec:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ConceptSpec":
         tests = [ConceptTest(**test) for test in data.get("tests", [])]
-        catalog = [
-            dict(entry) for entry in data.get("feature_catalog", []) if isinstance(entry, Mapping)
-        ]
+        raw_catalog = data.get("feature_catalog", [])
+        catalog = [dict(entry) for entry in raw_catalog if isinstance(entry, Mapping)]
+        if len(catalog) < len(raw_catalog):
+            dropped = len(raw_catalog) - len(catalog)
+            warnings.warn(f"Dropped {dropped} invalid feature_catalog entries", RuntimeWarning)
         return cls(
             name=data["name"],
             definition=data.get("definition", ""),

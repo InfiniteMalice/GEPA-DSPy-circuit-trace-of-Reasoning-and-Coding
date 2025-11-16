@@ -181,9 +181,10 @@ def register_backend(name: str, factory: Callable[..., AttributionBackend]) -> N
 def get_backend(name: str, **kwargs: object) -> AttributionBackend:
     """Return an instantiated backend for ``name``."""
 
-    if name not in _BACKENDS:
+    key = str(name).strip().lower()
+    if key not in _BACKENDS:
         raise KeyError(f"Unknown attribution backend: {name}")
-    return _BACKENDS[name](**kwargs)
+    return _BACKENDS[key](**kwargs)
 
 
 def extract_graph(
@@ -210,15 +211,18 @@ def extract_graph(
         kwargs.update(config)
         backend = get_backend(resolved_name, **kwargs)
     elif backend is None:
-        backend = get_backend(str(backend_name).strip().lower())
+        resolved_name = str(backend_name).strip().lower()
+        backend = get_backend(resolved_name)
     return backend.extract_graph(model, inputs, layers=layers, seed=seed)
 
 
 def _coerce_sequence(
     inputs: Iterable[Mapping[str, object]] | Mapping[str, object],
 ) -> list[Mapping[str, object]]:
-    if isinstance(inputs, Mapping):
+    if isinstance(inputs, MappingABC):
         return [inputs]
+    if isinstance(inputs, (str, bytes)):
+        raise TypeError("inputs must be mapping-like or iterable of mappings")
     return list(inputs)
 
 

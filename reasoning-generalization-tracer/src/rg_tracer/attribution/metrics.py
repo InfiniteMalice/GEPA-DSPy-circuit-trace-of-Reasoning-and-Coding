@@ -119,11 +119,11 @@ def average_branching_factor(
         weighted_sum = 0.0
         total_weight = 0.0
         for edges in outgoing.values():
-            weighted_edges = [
-                (edge, abs(safe_float(edge.attr)))
-                for edge in edges
-                if abs(safe_float(edge.attr)) > 0
-            ]
+            weighted_edges: List[tuple[GraphEdge, float]] = []
+            for edge in edges:
+                mass = abs(safe_float(edge.attr))
+                if mass > 0:
+                    weighted_edges.append((edge, mass))
             if not weighted_edges:
                 continue
             weighted_edges.sort(key=lambda item: item[1], reverse=True)
@@ -204,8 +204,8 @@ def concept_alignment(
             edge_score = (
                 sum(
                     weight
-                    for key, weight in weight_map.items()
-                    if any(node in concept_ids for node in key.split("->"))
+                    for (src, dst), weight in weight_map.items()
+                    if src in concept_ids or dst in concept_ids
                 )
                 / weight_total
             )
@@ -219,7 +219,7 @@ def delta_sparsity(
     overfit_phase: str = "overfit",
     post_phase: str = "post_grok",
 ) -> float:
-    """Return ``Δ = sparsity_overfit - sparsity_post`` (positive = flatter paths)."""
+    """Return ``Δ = sparsity_overfit - sparsity_post`` (positive = spikier overfit)."""
 
     graphs_seq = _ensure_graphs(_coerce_sequence(graphs))
     overfit_graphs = _filter_by_phase(graphs_seq, overfit_phase)
@@ -279,6 +279,8 @@ def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike | None) -> List[Gra
         return []
     if isinstance(graphs, (AttributionGraph, Mapping)):
         return [graphs]
+    if isinstance(graphs, (str, bytes)):
+        raise TypeError("graphs must be mapping-like, AttributionGraph, or an iterable of graphs")
     return [graph for graph in graphs if graph is not None]
 
 
@@ -305,15 +307,16 @@ def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
     return {str(node.id) for node in ranked}
 
 
-def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[str, float]:
+def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[tuple[str, str], float]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
-    ranked = sorted(graph.edges, key=lambda e: abs(safe_float(e.attr)), reverse=True)
-    ranked = ranked[:top_k]
-    total = sum(abs(safe_float(edge.attr)) for edge in ranked)
+    weighted = [(edge, abs(safe_float(edge.attr))) for edge in graph.edges]
+    weighted.sort(key=lambda item: item[1], reverse=True)
+    ranked = weighted[:top_k]
+    total = sum(mass for _, mass in ranked)
     if total <= 0:
         return {}
-    return {f"{edge.src}->{edge.dst}": abs(safe_float(edge.attr)) / total for edge in ranked}
+    return {(edge.src, edge.dst): mass / total for edge, mass in ranked}
 
 
 __all__ = [
