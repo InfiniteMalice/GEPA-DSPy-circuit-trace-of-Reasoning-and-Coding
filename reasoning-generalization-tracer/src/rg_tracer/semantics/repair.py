@@ -54,6 +54,10 @@ def _append_with_punctuation(text: str, suffix: str) -> str:
         return suffix_text
     if set(trimmed) <= {"."}:
         return f"{trimmed} {suffix_text}"
+    punctuation_only = all(char in ".:;," for char in trimmed)
+    if punctuation_only:
+        # Preserve ellipses, but drop bare separators such as ':' or ';'.
+        return suffix_text if set(trimmed) - {"."} else f"{trimmed} {suffix_text}"
     trimmed = trimmed.rstrip(":;,") or trimmed
     terminal = trimmed[-1]
     if terminal in {".", "?", "!"}:
@@ -191,8 +195,8 @@ def repair_once(
             steps[idx] = fixed
             break
         if fix_tag == SemanticTag.OVERCLAIMED_CAUSALITY.value:
-            if "may" not in step.lower():
-                clarification = "This relationship may be correlational."
+            clarification = "This relationship may be correlational."
+            if clarification.lower() not in step.lower():
                 steps[idx] = _append_with_punctuation(step, clarification)
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:

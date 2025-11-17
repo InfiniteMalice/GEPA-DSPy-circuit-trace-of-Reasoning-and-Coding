@@ -128,7 +128,7 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
 
 def _detect_variable_drift(step: str, allowed: set[str]) -> tuple[bool, str | None]:
     tokens = set()
-    for token in step.split():
+    for token in str(step).split():
         stripped = token.strip(".,:;!")
         normalised = stripped.casefold()
         if normalised.isalpha() and len(normalised) == 1:
