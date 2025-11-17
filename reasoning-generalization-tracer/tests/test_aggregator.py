@@ -6,6 +6,7 @@ from rg_tracer.scoring.aggregator import (
     evaluate_profile,
     get_last_config,
     load_profiles,
+    _split_profile_payload,
     weighted_geometric_mean,
 )
 
@@ -79,3 +80,9 @@ def test_fallback_parser_handles_top_level_scalars(tmp_path, monkeypatch):
     assert "demo" in profiles
     config = get_last_config()
     assert config["alignment_scale"] == 0.25
+
+
+def test_split_profile_payload_rejects_non_numeric_weights():
+    payload = {"weights": {"rigor": "not-a-number"}}
+    with pytest.raises(ValueError, match="rigor"):
+        _split_profile_payload(payload)

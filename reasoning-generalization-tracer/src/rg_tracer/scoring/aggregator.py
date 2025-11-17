@@ -167,6 +167,14 @@ def _fallback_parse(text: str) -> Dict[str, object]:
     return result
 
 
+def _require_numeric_weight(axis: object, value: object) -> float:
+    axis_name = str(axis)
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:  # pragma: no cover - defensive guard
+        raise ValueError(f"Weight for axis '{axis_name}' must be numeric") from exc
+
+
 def _split_profile_payload(
     raw: Mapping[str, object] | Iterable[tuple[str, object]],
 ) -> tuple[Dict[str, float], Dict[str, float]]:
@@ -181,7 +189,9 @@ def _split_profile_payload(
     else:
         bonuses_raw = {}
         weights_source = raw
-    weights = {axis: float(value) for axis, value in weights_source}
+    weights: Dict[str, float] = {}
+    for axis, value in weights_source:
+        weights[str(axis)] = _require_numeric_weight(axis, value)
     bonuses: Dict[str, float] = {}
     if isinstance(bonuses_raw, Mapping):
         for axis, value in bonuses_raw.items():
