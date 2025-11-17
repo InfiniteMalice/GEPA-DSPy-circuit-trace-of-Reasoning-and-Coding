@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from statistics import mean
-from typing import Dict, Iterable, List, Mapping, Sequence
+from typing import Dict, List, Mapping, Sequence
 
 from ..abstention import ABSTENTION_THRESHOLD
 from ..humanities import HumanitiesProfile, evaluate_profile, load_profiles
@@ -22,7 +22,7 @@ def _load_records(path: str | Path) -> List[Mapping[str, object]]:
     return records
 
 
-def _count_tag(report_tags: Sequence[Mapping[str, Iterable[str]]], tag: SemanticTag) -> int:
+def _count_tag(report_tags: Sequence[Mapping[str, object]], tag: SemanticTag) -> int:
     return sum(1 for entry in report_tags if tag.value in entry.get("tags", []))
 
 
@@ -42,7 +42,12 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     fallacy_flags = float(report.get("fallacy_flags", 0))
     neutral = float(report.get("neutrality_balance", 0.0))
     citation = float(report.get("citation_coverage", 0.0))
-    quotes = float(report.get("quote_integrity", 0.0))
+    quote_presence_value = report.get("quote_presence")
+    if quote_presence_value is None:
+        quote_presence_value = report.get("quote_integrity")
+    if quote_presence_value is None:
+        quote_presence_value = report.get("quotes")
+    quote_presence = float(quote_presence_value or 0.0)
     counter = float(report.get("counterevidence_ratio", 0.0))
     hedge = float(report.get("hedge_rate", 0.0))
     fact_free = float(report.get("fact_free_ratio", 0.0))
@@ -50,7 +55,7 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     entailed = float(report.get("entailed_steps_pct", 0.0))
     schema = float(report.get("schema_consistency_pct", 0.0))
     fallacy_ratio = 1.0 / (1.0 + fallacy_flags)
-    combined_sources = max(citation, quotes)
+    combined_sources = max(citation, quote_presence)
     metrics["source_handling"] = {
         "positive": _grade_ratio(citation),
         "coverage": _grade_ratio(combined_sources),

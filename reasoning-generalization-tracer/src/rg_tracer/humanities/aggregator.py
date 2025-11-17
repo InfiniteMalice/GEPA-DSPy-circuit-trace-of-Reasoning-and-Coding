@@ -26,9 +26,11 @@ class HumanitiesProfile:
         total = sum(self.weights.get(axis, 0.0) for axis in HUMANITIES_AXES)
         if total <= 0:
             raise ValueError(f"Profile {self.name} has no positive weights")
-        return {
-            axis: self.weights.get(axis, 0.0) / total for axis in HUMANITIES_AXES
+        weights = {
+            axis: self.weights.get(axis, 0.0) / total  # normalised axis weight
+            for axis in HUMANITIES_AXES
         }
+        return weights
 
 
 def _parse_profiles(text: str) -> Dict[str, HumanitiesProfile]:
@@ -64,7 +66,8 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, HumanitiesProfile
 
 def score_axes(metrics: Mapping[str, Mapping[str, object]]) -> HumanitiesScores:
     scores = {
-        axis: score_axis(axis, metrics.get(axis, {})) for axis in HUMANITIES_AXES
+        axis: score_axis(axis, metrics.get(axis, {}))  # aggregate per axis
+        for axis in HUMANITIES_AXES
     }
     return HumanitiesScores(scores=scores)
 

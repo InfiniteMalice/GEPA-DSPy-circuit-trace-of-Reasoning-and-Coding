@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from statistics import mean
-from typing import Iterable, Sequence, Tuple
+from typing import Iterable, Mapping, Sequence, Tuple
 
 from ..scoring import axes
 from ..semantics import verify_chain
