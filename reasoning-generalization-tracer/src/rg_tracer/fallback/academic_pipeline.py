@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from statistics import mean
-from typing import Dict, Iterable, List, Mapping, Sequence
+from typing import Dict, List, Mapping, Sequence
 
 from ..abstention import ABSTENTION_THRESHOLD
 from ..humanities import HumanitiesProfile, evaluate_profile, load_profiles
