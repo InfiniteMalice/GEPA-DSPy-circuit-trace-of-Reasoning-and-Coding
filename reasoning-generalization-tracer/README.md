@@ -208,6 +208,13 @@ your own file.
         sparsity_drop: 0.005
   ```
 
+## Release Notes
+
+* **Humanities quote metrics:** `quote_presence` is now the canonical field for
+  per-step quote coverage. Serialized reports still expose a legacy
+  `quote_integrity` key with the same value so downstream consumers can migrate
+  without breaking changes.
+
 ## Limitations
 
 * Circuit tracing uses a local stub when the external dependency is missing.

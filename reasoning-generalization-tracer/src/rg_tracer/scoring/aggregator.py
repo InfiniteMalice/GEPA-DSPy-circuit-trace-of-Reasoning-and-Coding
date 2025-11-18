@@ -186,7 +186,9 @@ def _split_profile_payload(
             weights_source = raw["weights"].items()
         else:
             weights_source = (
-                (key, value) for key, value in raw.items() if _is_number(value) and key != "bonuses"
+                (key, value)
+                for key, value in raw.items()
+                if key != "bonuses" and (_is_number(value) or isinstance(value, bool))
             )
     else:
         bonuses_raw = {}

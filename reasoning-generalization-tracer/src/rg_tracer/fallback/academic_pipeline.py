@@ -22,8 +22,25 @@ def _load_records(path: str | Path) -> List[Mapping[str, object]]:
     return records
 
 
+def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
+    raw_tags = entry.get("tags", [])
+    if isinstance(raw_tags, Mapping):
+        candidate = raw_tags.get("tags", [])
+    else:
+        candidate = raw_tags
+    if isinstance(candidate, str):
+        values: Iterable[object] = [candidate]
+    elif isinstance(candidate, Iterable):  # type: ignore[arg-type]
+        values = candidate  # pragma: no cover - typing guard
+    else:
+        values = []
+    for label in values:
+        if isinstance(label, str):
+            yield label
+
+
 def _count_tag(report_tags: Sequence[Mapping[str, object]], tag: SemanticTag) -> int:
-    return sum(1 for entry in report_tags if tag.value in entry.get("tags", []))
+    return sum(1 for entry in report_tags if tag.value in set(_iter_tag_labels(entry)))
 
 
 def _grade_ratio(value: float) -> float:

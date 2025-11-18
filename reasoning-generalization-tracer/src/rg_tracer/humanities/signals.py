@@ -28,6 +28,9 @@ class HumanitiesSignals:
         return {
             "citation_coverage": self.citation_coverage,
             "quote_presence": self.quote_presence,
+            # Maintain compatibility with earlier releases that consumed
+            # ``quote_integrity`` directly.
+            "quote_integrity": self.quote_presence,
             "counterevidence_ratio": self.counterevidence_ratio,
             "hedge_rate": self.hedge_rate,
             "fallacy_flags": self.fallacy_flags,
@@ -62,14 +65,14 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     neutrality_hits = 0
     tags: List[StepTagMapping] = []
     for step in steps:
-        text = str(step).strip()
+        text = step  # ``steps`` already stores trimmed ``str`` values.
         lowered = text.lower()
         step_tags: List[str] = []
         has_citation = any(marker in text for marker in _CITATION_MARKERS)
         if has_citation:
             cite_hits += 1
         double_quote_count = text.count('"')
-        if double_quote_count:
+        if double_quote_count // 2 > 0:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
             counter_hits += 1
@@ -78,16 +81,22 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         if any(term in lowered for term in _FALLACY_TERMS):
             fallacy_flags += 1
             step_tags.append(SemanticTag.RHETORICAL_EXCESS.value)
-        if not has_citation and any(term in lowered for term in _ASSERTIVE_TERMS):
+        uncited_assertion = not has_citation and any(term in lowered for term in _ASSERTIVE_TERMS)
+        if uncited_assertion:
             step_tags.append(SemanticTag.UNCITED_CLAIM.value)
         if double_quote_count % 2 == 1:
             step_tags.append(SemanticTag.MISQUOTE.value)
+        # UNCITED_CLAIM and QUOTE_OOC serve different reviewers: the former
+        # flags assertions lacking citations while the latter highlights any
+        # quoted material that is out of context. Allowing both on the same
+        # step is intentional so downstream tooling can reason about each
+        # axis independently.
         if ('"' in text) and not has_citation:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
         tags.append({"step": text, "tags": step_tags})
-    if counter_hits == 0 and steps and tags:
+    if counter_hits == 0 and tags:
         unsupported = SemanticTag.UNSUPPORTED.value
         if unsupported not in tags[-1]["tags"]:
             tags[-1]["tags"].append(unsupported)
