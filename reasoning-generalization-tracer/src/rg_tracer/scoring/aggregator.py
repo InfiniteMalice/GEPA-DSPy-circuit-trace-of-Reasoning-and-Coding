@@ -169,6 +169,8 @@ def _fallback_parse(text: str) -> Dict[str, object]:
 
 def _require_numeric_weight(axis: object, value: object) -> float:
     axis_name = str(axis)
+    if isinstance(value, bool):
+        raise ValueError(f"Weight for axis '{axis_name}' must be numeric")
     try:
         return float(value)
     except (TypeError, ValueError) as exc:  # pragma: no cover - defensive guard
@@ -198,6 +200,8 @@ def _split_profile_payload(
             if value is None:
                 continue
             if isinstance(value, str) and value.strip().lower() == "null":
+                continue
+            if isinstance(value, bool):
                 continue
             try:
                 bonuses[str(axis)] = float(value)
