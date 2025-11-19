@@ -172,11 +172,10 @@ Each self-play run emits:
 
 ## Configuration
 
-References to `scoring/profiles.yaml` point at the packaged path that
-`rg_tracer` loads; when editing in this repository update
-`src/rg_tracer/scoring/profiles.yaml`. When running the CLI outside the repo,
-pass `--profiles scoring/profiles.yaml` (the installed path) unless you supply
-your own file.
+When editing the default profiles in this repository, modify
+`src/rg_tracer/scoring/profiles.yaml`. After installation, the CLI loads the
+packaged `scoring/profiles.yaml`; pass `--profiles /path/to/custom.yaml` to use
+any other file.
 
 * **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (the file
   is installed as `scoring/profiles.yaml`, which is what the loader resolves) or
@@ -190,20 +189,20 @@ your own file.
   `humanities/profiles.yaml`.
 * **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
 * **Attribution:** tweak probe size, top-k, and backend via the `config.attr`
-  section in `src/rg_tracer/scoring/profiles.yaml` (exposed in packages as
+  section in `src/rg_tracer/scoring/profiles.yaml` (packaged as
   `scoring/profiles.yaml`). Per-profile bonuses live under
   `profiles.*.bonuses`.
-  Example:
+  Example (mirroring `proof_math` defaults):
   ```yaml
   config:
     attr:
-      probe_size: 3
-      topk: 1
+      probe_size: 4
+      topk: 2
       backend: null
   profiles:
-    demo:
+    proof_math:
       bonuses:
-        alignment_gain: 0.02
+        alignment_gain: 0.01
         repeatability_gain: 0.01
         sparsity_drop: 0.005
   ```

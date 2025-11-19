@@ -98,3 +98,9 @@ def test_split_profile_payload_rejects_bool_weights_legacy_shape():
     payload = {"rigor": True}
     with pytest.raises(ValueError, match="rigor"):
         _split_profile_payload(payload)
+
+
+def test_split_profile_payload_rejects_non_mapping_weights_section():
+    payload = {"weights": 1}
+    with pytest.raises(TypeError, match="weights section must be a mapping"):
+        _split_profile_payload(payload)

@@ -31,50 +31,16 @@ jobs:
           RUN_DIR=$(rg-tracer self-play --profile proof_math --k 3 \
             --problem datasets/toy_math/addition_small.jsonl \
             --concept parity --sampler trm \
-            | python - <<'PY'
-          import json
-          import sys
-
-          try:
-              data = json.load(sys.stdin)
-          except json.JSONDecodeError as exc:  # pragma: no cover - CI guard
-              raise SystemExit(f"Failed to parse rg-tracer output: {exc}") from exc
-          if "run_dir" not in data:
-              raise SystemExit(f"Missing run_dir in output: {data}")
-          print(data["run_dir"])
-PY
-          ) || { echo "Failed to extract run_dir from rg-tracer output"; exit 1; }
+            | python .github/scripts/extract_run_dir.py) || {
+              echo "Failed to extract run_dir from rg-tracer output" >&2
+              exit 1
+            }
           export RUN_DIR
           test -f "$RUN_DIR/summary.md"
           test -f "$RUN_DIR/semantics.jsonl"
           test -f "$RUN_DIR/attr_metrics.jsonl"
           test -d "$RUN_DIR/attr"
-          ls "$RUN_DIR/attr"
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          run_dir = Path(os.environ["RUN_DIR"])
-          metrics_path = run_dir / "attr_metrics.jsonl"
-          lines = [
-              json.loads(line)
-              for line in metrics_path.read_text(encoding="utf8").splitlines()
-              if line.strip()
-          ]
-          assert lines, "attr_metrics.jsonl is empty"
-          for key in (
-              "delta_alignment",
-              "delta_repeatability",
-              "delta_sparsity",
-          ):
-              assert key in lines[0], lines[0]
-          attr_dir = run_dir / "attr"
-          files = list(attr_dir.iterdir())
-          assert files, "attr directory empty"
-          assert any(path.suffix == ".json" for path in files), files
-          PY
-          grep -q "Attribution Metrics" "$RUN_DIR/summary.md"
+          python .github/scripts/validate_metrics.py
         working-directory: reasoning-generalization-tracer
       - name: Concept reward smoke
         run: |

@@ -28,8 +28,11 @@ class GraphNode:
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphNode":
+        node_id = str(data.get("id") or "")
+        if not node_id:
+            raise ValueError("GraphNode requires non-empty 'id'")
         return cls(
-            id=str(data.get("id", "")),
+            id=node_id,
             layer=safe_int(data.get("layer"), 0),
             type=str(data.get("type", "unknown")),
             activation=safe_float(data.get("activation"), 0.0),
@@ -49,9 +52,13 @@ class GraphEdge:
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphEdge":
+        src = str(data.get("src") or "")
+        dst = str(data.get("dst") or "")
+        if not src or not dst:
+            raise ValueError("GraphEdge requires non-empty 'src' and 'dst'")
         return cls(
-            src=str(data.get("src", "")),
-            dst=str(data.get("dst", "")),
+            src=src,
+            dst=dst,
             attr=safe_float(data.get("attr"), 0.0),
         )
 

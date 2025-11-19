@@ -142,6 +142,8 @@ def run_matrix(
         print(f"Processing cell {idx + 1}/{max_cells}: {name}", flush=True)
         graphs = _extract_phase_graphs(combo_digest, name)
         metrics = _summarise_metrics(graphs)
+        # ``seed`` is recorded for bookkeeping; phase seeds incorporate the
+        # combo digest directly inside ``_extract_phase_graphs``.
         metrics_with_seed = {**metrics, "seed": seed}
         cell_dir = root / name
         _write_cell_artifacts(cell_dir, graphs, metrics_with_seed)

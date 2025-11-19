@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable as IterableABC
+from collections.abc import Iterable as IterableABC, Mapping as MappingABC
 from pathlib import Path
 from statistics import mean
 from typing import Dict, List, Mapping, Sequence
@@ -26,10 +26,13 @@ def _load_records(path: str | Path) -> List[Mapping[str, object]]:
 def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
     """Yield tag labels from polymorphic payloads.
 
-    Accepts plain strings or any iterable of strings; non-string values are
-    ignored so consumers always receive clean labels.
+    ``entry["tags"]`` may be a single string, any iterable of strings, or a
+    nested mapping that itself exposes ``{"tags": ...}``. Non-string entries
+    are ignored so downstream consumers always receive clean labels.
     """
     raw_tags = entry.get("tags", [])
+    if isinstance(raw_tags, MappingABC) and "tags" in raw_tags:
+        raw_tags = raw_tags["tags"]
     if isinstance(raw_tags, str):
         values: Iterable[object] = [raw_tags]
     elif isinstance(raw_tags, IterableABC):

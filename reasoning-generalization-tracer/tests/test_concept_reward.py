@@ -134,6 +134,25 @@ def test_alignment_zero_scale_preserves_reward():
     assert zero_scale == pytest.approx(base)
 
 
+def test_alignment_invalid_parameters_raise() -> None:
+    spec, trace = _basic_trace_spec()
+    with pytest.raises(ValueError):
+        compute_concept_reward(
+            trace,
+            spec,
+            task_metrics={},
+            alignment=1_000_000.0,
+        )
+    with pytest.raises(ValueError):
+        compute_concept_reward(
+            trace,
+            spec,
+            task_metrics={},
+            alignment=0.5,
+            alignment_scale=20.0,
+        )
+
+
 def test_alignment_penalty_applies_before_multiplier():
     spec, trace = _basic_trace_spec()
     penalty_reward = compute_concept_reward(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable as IterableABC
 from typing import Any, Iterable, Mapping
 
 from .schema import ConceptSpec
@@ -65,6 +66,17 @@ def _filter_features(
     return filtered
 
 
+def _feature_tags(feature: Mapping[str, Any]) -> set[str]:
+    raw = feature.get("tags")
+    if raw is None:
+        return set()
+    if isinstance(raw, str):
+        return {raw}
+    if isinstance(raw, IterableABC):
+        return {str(tag) for tag in raw if isinstance(tag, str)}
+    return set()
+
+
 def _compute_match(
     features: Iterable[Mapping[str, Any]],
     concept: ConceptSpec,
@@ -72,7 +84,7 @@ def _compute_match(
     expected = set(concept.expected_substructures)
     if not expected:
         return 1.0
-    tags = {tag for feature in features for tag in (feature.get("tags") or [])}
+    tags = {tag for feature in features for tag in _feature_tags(feature)}
     if not tags:
         return 0.0
     return len(tags & expected) / len(expected)
@@ -88,7 +100,7 @@ def _compute_selectivity(
     importance_other = 0.0
     for feature in features:
         weight = float(feature.get("importance", 0.0) or 0.0)
-        feature_tags = set(feature.get("tags") or [])
+        feature_tags = _feature_tags(feature)
         if feature_tags & target_tags:
             importance_target += weight
         else:
@@ -101,7 +113,6 @@ def _compute_selectivity(
 
 def _compute_parsimony(
     trace_json: Mapping[str, Any],
-    target_tags: set[str],
     features: Iterable[Mapping[str, Any]],
 ) -> float:
     lengths = trace_json.get("path_lengths", {})
@@ -163,7 +174,7 @@ def compute_concept_reward(
     target_tags = set(concept_spec.expected_substructures)
     match = _compute_match(features, concept_spec)
     selectivity = _compute_selectivity(features, target_tags)
-    parsimony = _compute_parsimony(trace_json, target_tags, features)
+    parsimony = _compute_parsimony(trace_json, features)
     transfer = _compute_transfer(task_metrics)
     reward = (
         weights.get("match", 0.0) * match

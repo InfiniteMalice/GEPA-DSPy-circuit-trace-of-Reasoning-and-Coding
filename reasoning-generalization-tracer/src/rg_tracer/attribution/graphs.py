@@ -201,7 +201,10 @@ def extract_graph(
 ) -> Mapping[str, object]:
     """Extract an attribution graph using the configured backend."""
 
-    if isinstance(backend, MappingABC):
+    if isinstance(backend, str):
+        resolved_name = backend.strip().lower() or backend_name
+        backend = get_backend(resolved_name)
+    elif isinstance(backend, MappingABC):
         config = dict(backend)
         name_value = config.pop("name", backend_name)
         name_text = str(name_value).strip()

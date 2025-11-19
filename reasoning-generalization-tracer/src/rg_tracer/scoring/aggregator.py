@@ -184,10 +184,17 @@ def _split_profile_payload(
 ) -> tuple[Dict[str, float], Dict[str, float]]:
     if isinstance(raw, Mapping):
         bonuses_raw = raw.get("bonuses", {})
-        if "weights" in raw and isinstance(raw["weights"], Mapping):
-            weights_source = raw["weights"].items()
+        if "weights" in raw:
+            weights_value = raw["weights"]
+            if not isinstance(weights_value, Mapping):
+                raise TypeError("weights section must be a mapping")
+            weights_source = weights_value.items()
         else:
-            weights_source = ((key, value) for key, value in raw.items() if key != "bonuses")
+            weights_source = (
+                (key, value)
+                for key, value in raw.items()
+                if key != "bonuses"
+            )
     else:
         bonuses_raw = {}
         weights_source = raw
@@ -236,14 +243,7 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, Profile]:
         path = Path(path)
     global _LAST_CONFIG
     text = path.read_text()
-    with _LAST_CONFIG_LOCK:
-        _LAST_CONFIG = {}
-    try:
-        profiles, config = _parse_profiles(text)
-    except Exception:
-        with _LAST_CONFIG_LOCK:
-            _LAST_CONFIG = {}
-        raise
+    profiles, config = _parse_profiles(text)
     with _LAST_CONFIG_LOCK:
         _LAST_CONFIG = copy.deepcopy(config)
     return profiles
