@@ -45,7 +45,7 @@ jobs:
       - name: Concept reward smoke
         run: |
           python - <<'PY'
-          from rg_tracer.concepts import ConceptSpec, compute_concept_reward
+from rg_tracer.concepts import ConceptSpec, compute_concept_reward
 
           trace = {
               "features": [
@@ -98,7 +98,7 @@ jobs:
       - name: Smoke fallback pipeline
         run: |
           python - <<'PY'
-          from rg_tracer.fallback import run_academic_pipeline
+from rg_tracer.fallback import run_academic_pipeline
 
           output = run_academic_pipeline(
               "datasets/humanities/sample_claims.jsonl"
