@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable as IterableABC
 from pathlib import Path
 from statistics import mean
 from typing import Dict, List, Mapping, Sequence
@@ -30,8 +31,8 @@ def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
         candidate = raw_tags
     if isinstance(candidate, str):
         values: Iterable[object] = [candidate]
-    elif isinstance(candidate, Iterable):  # type: ignore[arg-type]
-        values = candidate  # pragma: no cover - typing guard
+    elif isinstance(candidate, IterableABC):
+        values = candidate
     else:
         values = []
     for label in values:

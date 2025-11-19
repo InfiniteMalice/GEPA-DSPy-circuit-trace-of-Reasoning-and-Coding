@@ -115,12 +115,12 @@ def _detect_units(step: str, expected: str | None) -> tuple[bool, str | None]:
                 break
         if not variant_match:
             continue
-        detected_unit = canonical_detected or unit_lower
+        candidate_unit = canonical_detected or unit_lower
         if canonical_detected == canonical_expected:
             matched_variant = True
-            detected_unit = None
             continue
-        return False, detected_unit
+        if detected_unit is None:
+            detected_unit = candidate_unit
     if matched_variant:
         return True, None
     return False, detected_unit
