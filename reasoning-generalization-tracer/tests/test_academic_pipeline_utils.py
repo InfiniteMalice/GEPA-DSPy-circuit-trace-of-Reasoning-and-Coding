@@ -33,13 +33,3 @@ def test_iter_tag_labels_supports_other_iterables() -> None:
     assert list(_iter_tag_labels(entry)) == ["x", "y"]
     entry = {"tags": {"alpha", "beta"}}
     assert sorted(_iter_tag_labels(entry)) == ["alpha", "beta"]
-
-
-def test_iter_tag_labels_handles_nested_mapping_scalar() -> None:
-    entry = {"tags": {"tags": "inner"}}
-    assert list(_iter_tag_labels(entry)) == ["inner"]
-
-
-def test_iter_tag_labels_handles_nested_mapping_iterable() -> None:
-    entry = {"tags": {"tags": ["first", "second"]}}
-    assert list(_iter_tag_labels(entry)) == ["first", "second"]

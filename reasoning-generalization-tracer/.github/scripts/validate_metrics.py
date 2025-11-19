@@ -21,16 +21,20 @@ def _load_lines(metrics_path: Path) -> list[dict[str, object]]:
     for raw in text.splitlines():
         if not raw.strip():
             continue
-        data = json.loads(raw)
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:  # pragma: no cover - CI safety
+            raise SystemExit(f"Failed to parse metrics line {raw!r}: {exc}") from exc
         if isinstance(data, dict):
             records.append(data)
     return records
 
 
 def main() -> int:
-    run_dir = Path(os.environ.get("RUN_DIR", ""))
-    if not run_dir:
+    run_dir_raw = os.environ.get("RUN_DIR")
+    if not run_dir_raw:
         raise SystemExit("RUN_DIR environment variable is required")
+    run_dir = Path(run_dir_raw)
     metrics_path = run_dir / "attr_metrics.jsonl"
     attr_dir = run_dir / "attr"
     if not metrics_path.exists():

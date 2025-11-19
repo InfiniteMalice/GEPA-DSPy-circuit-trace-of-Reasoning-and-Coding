@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Mapping
 
 
 def main() -> int:
@@ -12,6 +13,12 @@ def main() -> int:
     except json.JSONDecodeError as exc:  # pragma: no cover - CI safety
         msg = f"Failed to parse rg-tracer output: {exc}"
         print(msg, file=sys.stderr)
+        return 1
+    if not isinstance(data, Mapping):
+        print(
+            f"Expected JSON object with run_dir, got {type(data).__name__}",
+            file=sys.stderr,
+        )
         return 1
     run_dir = data.get("run_dir")
     if not isinstance(run_dir, str) or not run_dir:

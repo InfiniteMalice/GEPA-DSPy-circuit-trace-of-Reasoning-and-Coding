@@ -53,8 +53,12 @@ _ASSERTIVE_TERMS = {
 }
 
 
-def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
-    steps = [value for step in chain if (value := str(step).strip())]
+def analyse_humanities_chain(chain: Iterable[str] | str) -> HumanitiesSignals:
+    if isinstance(chain, str):
+        raw_steps: Iterable[str] = chain.splitlines()
+    else:
+        raw_steps = chain
+    steps = [value for step in raw_steps if (value := str(step).strip())]
     if not steps:
         steps = [""]
     cite_hits = 0

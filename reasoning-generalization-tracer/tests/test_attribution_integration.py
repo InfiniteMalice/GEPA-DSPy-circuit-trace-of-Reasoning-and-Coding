@@ -112,7 +112,7 @@ def test_concept_reward_scales_with_alignment():
         alignment=None,
     )
     metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept=concept)
-    alignment_value = metrics.get("alignment") if metrics else None
+    alignment_value = metrics["alignment"]
     aligned_reward = compute_concept_reward(
         candidate.trace,
         concept,
@@ -120,4 +120,4 @@ def test_concept_reward_scales_with_alignment():
         alignment=alignment_value,
     )
     assert aligned_reward > base_reward
-    assert alignment_value and alignment_value > 0
+    assert alignment_value > 0

@@ -348,9 +348,9 @@ def _apply_attribution_rewards(
                     **metrics,
                 }
                 handle.write(json.dumps(record) + "\n")
-            except (
-                Exception
-            ) as exc:  # pragma: no cover - attribution failure per candidate  # noqa: BLE001
+            except (RuntimeError, ValueError, TypeError, OSError, KeyError) as exc:
+                # Attribution is a best-effort diagnostic; warn and continue
+                # rather than aborting the full self-play run.
                 detail = traceback.format_exc()
                 warnings.warn(
                     (
