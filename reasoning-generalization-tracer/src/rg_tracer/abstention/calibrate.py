@@ -15,7 +15,9 @@ def temperature_scale(
 ) -> Callable[[float], float]:
     """Fit a temperature scaling function on binary confidences."""
     confidences = [_clip(float(c)) for c in confidences]
-    labels = [int(l) for l in labels]
+    labels = [int(label_value) for label_value in labels]
+    if len(confidences) != len(labels):
+        raise ValueError("confidences and labels must be the same length")
     logits = [math.log(c / (1 - c)) for c in confidences]
     temps = [0.5 + i * 0.05 for i in range(1, 101)]
     best_temp = 1.0
@@ -23,7 +25,7 @@ def temperature_scale(
 
     for temp in temps:
         loss = 0.0
-        for logit, label in zip(logits, labels):
+        for logit, label in zip(logits, labels, strict=True):
             scaled = 1 / (1 + math.exp(-logit / temp))
             loss -= label * math.log(_clip(scaled)) + (1 - label) * math.log(_clip(1 - scaled))
         loss /= max(1, len(labels))
@@ -43,7 +45,11 @@ def isotonic_calibration(
     confidences: Iterable[float], labels: Iterable[int]
 ) -> Callable[[float], float]:
     """Fit an isotonic regression calibrator using the PAV algorithm."""
-    pairs = sorted((float(c), float(l)) for c, l in zip(confidences, labels))
+    confidences_list = [float(conf) for conf in confidences]
+    labels_list = [int(label_value) for label_value in labels]
+    if len(confidences_list) != len(labels_list):
+        raise ValueError("confidences and labels must be the same length")
+    pairs = sorted(zip(confidences_list, labels_list, strict=True))
     if not pairs:
         return lambda conf: conf
 

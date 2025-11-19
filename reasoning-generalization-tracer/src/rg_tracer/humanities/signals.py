@@ -3,25 +3,34 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, TypedDict
 
 from ..semantics import SemanticTag
+
+
+class StepTagMapping(TypedDict):
+    step: str
+    tags: List[str]
 
 
 @dataclass
 class HumanitiesSignals:
     citation_coverage: float
-    quote_integrity: float
+    quote_presence: float
     counterevidence_ratio: float
     hedge_rate: float
     fallacy_flags: int
     neutrality_balance: float
-    tags: List[Mapping[str, Iterable[str]]]
+    # Each tag mapping exposes the original step alongside a list of tag labels.
+    tags: List[StepTagMapping]
 
     def as_dict(self) -> Mapping[str, object]:
         return {
             "citation_coverage": self.citation_coverage,
-            "quote_integrity": self.quote_integrity,
+            "quote_presence": self.quote_presence,
+            # Maintain compatibility with earlier releases that consumed
+            # ``quote_integrity`` directly.
+            "quote_integrity": self.quote_presence,
             "counterevidence_ratio": self.counterevidence_ratio,
             "hedge_rate": self.hedge_rate,
             "fallacy_flags": self.fallacy_flags,
@@ -34,10 +43,18 @@ _CITATION_MARKERS = {"[", "("}
 _HEDGE_TERMS = {"likely", "perhaps", "suggests", "appears", "contested"}
 _COUNTER_TERMS = {"however", "on the other hand", "critics", "counter"}
 _FALLACY_TERMS = {"obviously", "clearly", "undeniably", "must", "always"}
+_ASSERTIVE_TERMS = {
+    "shows",
+    "demonstrates",
+    "proves",
+    "confirms",
+    "reveals",
+    "therefore",
+}
 
 
 def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
-    steps = [step.strip() for step in chain if str(step).strip()]
+    steps = [value for step in chain if (value := str(step).strip())]
     if not steps:
         steps = [""]
     cite_hits = 0
@@ -46,12 +63,15 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     hedge_hits = 0
     fallacy_flags = 0
     neutrality_hits = 0
-    tags: List[Mapping[str, Iterable[str]]] = []
+    tags: List[StepTagMapping] = []
     for step in steps:
         lowered = step.lower()
-        if any(marker in step for marker in _CITATION_MARKERS):
+        step_tags: List[str] = []
+        has_citation = any(marker in step for marker in _CITATION_MARKERS)
+        if has_citation:
             cite_hits += 1
-        if '"' in step or "'" in step:
+        double_quote_count = step.count('"')
+        if double_quote_count // 2 > 0:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
             counter_hits += 1
@@ -59,16 +79,32 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
             hedge_hits += 1
         if any(term in lowered for term in _FALLACY_TERMS):
             fallacy_flags += 1
-            tags.append({
-                "step": step,
-                "tags": [SemanticTag.RHETORICAL_EXCESS.value],
-            })
+            step_tags.append(SemanticTag.RHETORICAL_EXCESS.value)
+        uncited_assertion = not has_citation and any(term in lowered for term in _ASSERTIVE_TERMS)
+        if uncited_assertion:
+            step_tags.append(SemanticTag.UNCITED_CLAIM.value)
+        if double_quote_count % 2 == 1:
+            step_tags.append(SemanticTag.MISQUOTE.value)
+        # UNCITED_CLAIM and QUOTE_OOC serve different reviewers: the former
+        # flags assertions lacking citations while the latter highlights any
+        # quoted material that is out of context. Allowing both on the same
+        # step is intentional so downstream tooling can reason about each
+        # axis independently.
+        if ('"' in step) and not has_citation:
+            step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
+        tags.append({"step": step, "tags": step_tags})
+    if counter_hits == 0 and tags:
+        # The absence of counter-evidence indicates the concluding step lacks
+        # explicit support, so tag the final statement once.
+        unsupported = SemanticTag.UNSUPPORTED.value
+        if unsupported not in tags[-1]["tags"]:
+            tags[-1]["tags"].append(unsupported)
     total = len(steps)
     return HumanitiesSignals(
         citation_coverage=cite_hits / total,
-        quote_integrity=quote_hits / total,
+        quote_presence=quote_hits / total,
         counterevidence_ratio=counter_hits / total,
         hedge_rate=hedge_hits / total,
         fallacy_flags=fallacy_flags,
@@ -77,4 +113,4 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     )
 
 
-__all__ = ["HumanitiesSignals", "analyse_humanities_chain"]
+__all__ = ["HumanitiesSignals", "StepTagMapping", "analyse_humanities_chain"]
