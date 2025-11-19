@@ -129,9 +129,11 @@ def run_matrix(
     root.mkdir(parents=True, exist_ok=True)
     rows: List[Tuple[str, Mapping[str, object]]] = []
     total_cells = len(REGULARISATION) * len(STABILITY) * len(GRADIENT) * len(REASONING)
+    if limit is not None and limit < 0:
+        raise ValueError("--limit must be non-negative")
     max_cells = min(total_cells, limit) if limit is not None else total_cells
     for idx, combo in enumerate(_build_combo_grid()):
-        if limit is not None and idx >= limit:
+        if idx >= max_cells:
             break
         name = _combo_name(combo)
         digest_text = hashlib.sha256(name.encode("utf8")).hexdigest()

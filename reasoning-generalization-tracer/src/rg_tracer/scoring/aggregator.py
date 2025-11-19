@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import math
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping
@@ -20,6 +21,7 @@ DEFAULT_GATES = {
     "numerical_accuracy": 2,
 }
 _LAST_CONFIG: Dict[str, object] = {}
+_LAST_CONFIG_LOCK = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -185,11 +187,7 @@ def _split_profile_payload(
         if "weights" in raw and isinstance(raw["weights"], Mapping):
             weights_source = raw["weights"].items()
         else:
-            weights_source = (
-                (key, value)
-                for key, value in raw.items()
-                if key != "bonuses" and (_is_number(value) or isinstance(value, bool))
-            )
+            weights_source = ((key, value) for key, value in raw.items() if key != "bonuses")
     else:
         bonuses_raw = {}
         weights_source = raw
@@ -210,23 +208,6 @@ def _split_profile_payload(
             except (TypeError, ValueError):
                 continue
     return weights, bonuses
-
-
-def _is_number(value: object) -> bool:
-    if isinstance(value, bool):
-        return False
-    if isinstance(value, (int, float)):
-        return True
-    if isinstance(value, str):
-        stripped = value.strip()
-        if not stripped:
-            return False
-        try:
-            float(stripped)
-        except ValueError:
-            return False
-        return True
-    return False
 
 
 def _parse_scalar_value(text: str) -> object:
@@ -255,20 +236,23 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, Profile]:
         path = Path(path)
     global _LAST_CONFIG
     text = path.read_text()
-    _LAST_CONFIG = {}
+    with _LAST_CONFIG_LOCK:
+        _LAST_CONFIG = {}
     try:
         profiles, config = _parse_profiles(text)
     except Exception:
-        _LAST_CONFIG = {}
+        with _LAST_CONFIG_LOCK:
+            _LAST_CONFIG = {}
         raise
-    _LAST_CONFIG = copy.deepcopy(config)
+    with _LAST_CONFIG_LOCK:
+        _LAST_CONFIG = copy.deepcopy(config)
     return profiles
 
 
 def get_last_config() -> Dict[str, object]:
     """Return the configuration parsed during :func:`load_profiles`."""
-
-    return copy.deepcopy(_LAST_CONFIG)
+    with _LAST_CONFIG_LOCK:
+        return copy.deepcopy(_LAST_CONFIG)
 
 
 def apply_hard_gates(

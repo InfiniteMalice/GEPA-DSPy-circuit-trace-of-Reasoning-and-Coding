@@ -23,14 +23,23 @@ class HumanitiesProfile:
     weights: Mapping[str, float]
 
     def normalised_weights(self) -> Dict[str, float]:
-        total = sum(self.weights.get(axis, 0.0) for axis in HUMANITIES_AXES)
+        numeric_weights: Dict[str, float] = {}
+        for axis in HUMANITIES_AXES:
+            raw_value = self.weights.get(axis, 0.0)
+            if isinstance(raw_value, bool):
+                raise ValueError(
+                    f"Profile {self.name} has non-numeric weight for {axis!r}: {raw_value!r}"
+                )
+            try:
+                numeric_weights[axis] = float(raw_value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"Profile {self.name} has non-numeric weight for {axis!r}: {raw_value!r}"
+                ) from exc
+        total = sum(numeric_weights.values())
         if total <= 0:
             raise ValueError(f"Profile {self.name} has no positive weights")
-        weights = {
-            axis: self.weights.get(axis, 0.0) / total  # normalised axis weight
-            for axis in HUMANITIES_AXES
-        }
-        return weights
+        return {axis: weight / total for axis, weight in numeric_weights.items()}
 
 
 def _parse_profiles(text: str) -> Dict[str, HumanitiesProfile]:

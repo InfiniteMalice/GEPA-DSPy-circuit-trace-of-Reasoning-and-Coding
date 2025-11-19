@@ -54,7 +54,7 @@ _ASSERTIVE_TERMS = {
 
 
 def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
-    steps = [str(step).strip() for step in chain if str(step).strip()]
+    steps = [value for step in chain if (value := str(step).strip())]
     if not steps:
         steps = [""]
     cite_hits = 0
@@ -65,13 +65,12 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
     neutrality_hits = 0
     tags: List[StepTagMapping] = []
     for step in steps:
-        text = step  # ``steps`` already stores trimmed ``str`` values.
-        lowered = text.lower()
+        lowered = step.lower()
         step_tags: List[str] = []
-        has_citation = any(marker in text for marker in _CITATION_MARKERS)
+        has_citation = any(marker in step for marker in _CITATION_MARKERS)
         if has_citation:
             cite_hits += 1
-        double_quote_count = text.count('"')
+        double_quote_count = step.count('"')
         if double_quote_count // 2 > 0:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
@@ -91,12 +90,14 @@ def analyse_humanities_chain(chain: Iterable[str]) -> HumanitiesSignals:
         # quoted material that is out of context. Allowing both on the same
         # step is intentional so downstream tooling can reason about each
         # axis independently.
-        if ('"' in text) and not has_citation:
+        if ('"' in step) and not has_citation:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
-        tags.append({"step": text, "tags": step_tags})
+        tags.append({"step": step, "tags": step_tags})
     if counter_hits == 0 and tags:
+        # The absence of counter-evidence indicates the concluding step lacks
+        # explicit support, so tag the final statement once.
         unsupported = SemanticTag.UNSUPPORTED.value
         if unsupported not in tags[-1]["tags"]:
             tags[-1]["tags"].append(unsupported)

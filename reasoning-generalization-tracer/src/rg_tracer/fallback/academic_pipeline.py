@@ -24,15 +24,16 @@ def _load_records(path: str | Path) -> List[Mapping[str, object]]:
 
 
 def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
+    """Yield tag labels from polymorphic payloads.
+
+    Accepts plain strings or any iterable of strings; non-string values are
+    ignored so consumers always receive clean labels.
+    """
     raw_tags = entry.get("tags", [])
-    if isinstance(raw_tags, Mapping):
-        candidate = raw_tags.get("tags", [])
-    else:
-        candidate = raw_tags
-    if isinstance(candidate, str):
-        values: Iterable[object] = [candidate]
-    elif isinstance(candidate, Iterable):  # type: ignore[arg-type]
-        values = candidate  # pragma: no cover - typing guard
+    if isinstance(raw_tags, str):
+        values: Iterable[object] = [raw_tags]
+    elif isinstance(raw_tags, IterableABC):
+        values = raw_tags
     else:
         values = []
     for label in values:

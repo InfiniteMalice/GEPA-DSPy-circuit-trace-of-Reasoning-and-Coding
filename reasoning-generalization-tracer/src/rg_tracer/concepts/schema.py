@@ -52,12 +52,22 @@ class ConceptSpec:
                 RuntimeWarning,
                 stacklevel=2,
             )
+        validated_catalog: List[Mapping[str, Any]] = []
+        for entry in catalog:
+            if "id" not in entry:
+                warnings.warn(
+                    "feature_catalog entry missing 'id' field; skipping entry",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                continue
+            validated_catalog.append(entry)
         return cls(
             name=data["name"],
             definition=data.get("definition", ""),
             tests=tests,
             expected_substructures=list(data.get("expected_substructures", [])),
-            feature_catalog=catalog,
+            feature_catalog=validated_catalog,
         )
 
     def to_dict(self) -> Dict[str, Any]:

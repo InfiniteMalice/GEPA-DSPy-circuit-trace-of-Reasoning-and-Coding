@@ -31,7 +31,19 @@ jobs:
           RUN_DIR=$(rg-tracer self-play --profile proof_math --k 3 \
             --problem datasets/toy_math/addition_small.jsonl \
             --concept parity --sampler trm \
-            | python -c 'import json, sys; print(json.load(sys.stdin)["run_dir"])')
+            | python - <<'PY'
+          import json
+          import sys
+
+          try:
+              data = json.load(sys.stdin)
+          except json.JSONDecodeError as exc:  # pragma: no cover - CI guard
+              raise SystemExit(f"Failed to parse rg-tracer output: {exc}") from exc
+          if "run_dir" not in data:
+              raise SystemExit(f"Missing run_dir in output: {data}")
+          print(data["run_dir"])
+PY
+          ) || { echo "Failed to extract run_dir from rg-tracer output"; exit 1; }
           export RUN_DIR
           test -f "$RUN_DIR/summary.md"
           test -f "$RUN_DIR/semantics.jsonl"
