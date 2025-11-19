@@ -27,13 +27,54 @@ jobs:
         working-directory: reasoning-generalization-tracer
       - name: Smoke self-play
         run: |
-          OUTPUT=$(rg-tracer self-play --profile proof_math --k 3 \
+          set -euo pipefail
+          RUN_DIR=$(rg-tracer self-play --profile proof_math --k 3 \
             --problem datasets/toy_math/addition_small.jsonl \
-            --concept parity --sampler trm)
-          echo "Self-play output: $OUTPUT"
-          RUN_DIR=$(python -c 'import json,sys; print(json.loads(sys.argv[1])["run_dir"])' "$OUTPUT")
+            --concept parity --sampler trm \
+            | python - <<'PY'
+          import json
+          import sys
+
+          try:
+              data = json.load(sys.stdin)
+          except json.JSONDecodeError as exc:  # pragma: no cover - CI guard
+              raise SystemExit(f"Failed to parse rg-tracer output: {exc}") from exc
+          if "run_dir" not in data:
+              raise SystemExit(f"Missing run_dir in output: {data}")
+          print(data["run_dir"])
+PY
+          ) || { echo "Failed to extract run_dir from rg-tracer output"; exit 1; }
+          export RUN_DIR
           test -f "$RUN_DIR/summary.md"
           test -f "$RUN_DIR/semantics.jsonl"
+          test -f "$RUN_DIR/attr_metrics.jsonl"
+          test -d "$RUN_DIR/attr"
+          ls "$RUN_DIR/attr"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          run_dir = Path(os.environ["RUN_DIR"])
+          metrics_path = run_dir / "attr_metrics.jsonl"
+          lines = [
+              json.loads(line)
+              for line in metrics_path.read_text(encoding="utf8").splitlines()
+              if line.strip()
+          ]
+          assert lines, "attr_metrics.jsonl is empty"
+          for key in (
+              "delta_alignment",
+              "delta_repeatability",
+              "delta_sparsity",
+          ):
+              assert key in lines[0], lines[0]
+          attr_dir = run_dir / "attr"
+          files = list(attr_dir.iterdir())
+          assert files, "attr directory empty"
+          assert any(path.suffix == ".json" for path in files), files
+          PY
+          grep -q "Attribution Metrics" "$RUN_DIR/summary.md"
         working-directory: reasoning-generalization-tracer
       - name: Concept reward smoke
         run: |
@@ -47,7 +88,11 @@ jobs:
               "edges": [],
               "path_lengths": {"mean": 1.0},
           }
-          spec = ConceptSpec(name="parity", definition="", expected_substructures=["parity"])
+          spec = ConceptSpec(
+              name="parity",
+              definition="",
+              expected_substructures=["parity"],
+          )
           reward = compute_concept_reward(
               trace,
               spec,
@@ -58,6 +103,17 @@ jobs:
               },
           )
           assert reward > 0.3, reward
+          aligned = compute_concept_reward(
+              trace,
+              spec,
+              task_metrics={
+                  "concept_reuse": 1.0,
+                  "supporting_tasks": 1,
+                  "entailed_feature_ids": ["F1"],
+              },
+              alignment=0.5,
+          )
+          assert aligned > reward
           PY
         working-directory: reasoning-generalization-tracer
       - name: Smoke humanities CLI
@@ -67,6 +123,7 @@ jobs:
           test -s humanities.json
           python - <<'PY'
           import json
+
           data = json.load(open("humanities.json", "r", encoding="utf8"))
           assert data["records"], data
           assert any(record["abstained"] for record in data["records"])
@@ -77,7 +134,9 @@ jobs:
           python - <<'PY'
           from rg_tracer.fallback import run_academic_pipeline
 
-          output = run_academic_pipeline("datasets/humanities/sample_claims.jsonl")
+          output = run_academic_pipeline(
+              "datasets/humanities/sample_claims.jsonl"
+          )
           assert output["summary"]["count"] >= 2
           assert any(not rec["abstained"] for rec in output["records"])
           assert any(rec["abstained"] for rec in output["records"])

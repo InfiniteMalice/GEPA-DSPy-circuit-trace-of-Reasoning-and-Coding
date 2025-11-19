@@ -23,12 +23,23 @@ class HumanitiesProfile:
     weights: Mapping[str, float]
 
     def normalised_weights(self) -> Dict[str, float]:
-        total = sum(self.weights.get(axis, 0.0) for axis in HUMANITIES_AXES)
+        numeric_weights: Dict[str, float] = {}
+        for axis in HUMANITIES_AXES:
+            raw_value = self.weights.get(axis, 0.0)
+            if isinstance(raw_value, bool):
+                raise ValueError(
+                    f"Profile {self.name} has non-numeric weight for {axis!r}: {raw_value!r}"
+                )
+            try:
+                numeric_weights[axis] = float(raw_value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"Profile {self.name} has non-numeric weight for {axis!r}: {raw_value!r}"
+                ) from exc
+        total = sum(numeric_weights.values())
         if total <= 0:
             raise ValueError(f"Profile {self.name} has no positive weights")
-        return {
-            axis: self.weights.get(axis, 0.0) / total for axis in HUMANITIES_AXES
-        }
+        return {axis: weight / total for axis, weight in numeric_weights.items()}
 
 
 def _parse_profiles(text: str) -> Dict[str, HumanitiesProfile]:
@@ -64,7 +75,8 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, HumanitiesProfile
 
 def score_axes(metrics: Mapping[str, Mapping[str, object]]) -> HumanitiesScores:
     scores = {
-        axis: score_axis(axis, metrics.get(axis, {})) for axis in HUMANITIES_AXES
+        axis: score_axis(axis, metrics.get(axis, {}))  # aggregate per axis
+        for axis in HUMANITIES_AXES
     }
     return HumanitiesScores(scores=scores)
 
