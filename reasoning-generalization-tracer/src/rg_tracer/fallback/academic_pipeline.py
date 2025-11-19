@@ -31,8 +31,8 @@ def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
         candidate = raw_tags
     if isinstance(candidate, str):
         values: Iterable[object] = [candidate]
-    elif isinstance(candidate, IterableABC):
-        values = candidate
+    elif isinstance(candidate, Iterable):  # type: ignore[arg-type]
+        values = candidate  # pragma: no cover - typing guard
     else:
         values = []
     for label in values:

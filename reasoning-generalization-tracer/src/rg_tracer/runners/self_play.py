@@ -328,8 +328,7 @@ def _apply_attribution_rewards(
                 graphs: List[Mapping[str, object]] = []
                 for probe in probes:
                     payload = dict(probe)
-                    probe_index = int(payload.get("probe_index", 0))
-                    seed = idx * 997 + probe_index
+                    seed = idx * 997 + int(payload.get("probe_index", 0))
                     graph = attr_graphs.extract_graph(
                         model,
                         payload,
@@ -338,7 +337,7 @@ def _apply_attribution_rewards(
                         seed=seed,
                     )
                     graphs.append(graph)
-                    attr_path = attr_dir / f"candidate{idx}_probe{probe_index}.json"
+                    attr_path = attr_dir / f"candidate{idx}_probe{payload['probe_index']}.json"
                     with attr_path.open("w", encoding="utf8") as graph_handle:
                         json.dump(graph, graph_handle, indent=2)
                 metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept)
@@ -348,9 +347,7 @@ def _apply_attribution_rewards(
                     **metrics,
                 }
                 handle.write(json.dumps(record) + "\n")
-            except (
-                Exception
-            ) as exc:  # pragma: no cover - attribution failure per candidate  # noqa: BLE001
+            except Exception as exc:  # pragma: no cover - attribution failure per candidate
                 detail = traceback.format_exc()
                 warnings.warn(
                     (
@@ -503,7 +500,7 @@ def run_self_play(
 
         trace_obj = raw.get("trace")
         trace_json = trace_obj.to_json() if hasattr(trace_obj, "to_json") else trace_obj
-        semantics_map = _map_semantics_to_features(trace_json, semantic_dict)
+        semantics_map = _map_semantics_to_features(trace_json, semantic_dict) if trace_json else {}
         composite_value = float(eval_result["composite"])
         candidate = Candidate(
             text=abstention.text,
