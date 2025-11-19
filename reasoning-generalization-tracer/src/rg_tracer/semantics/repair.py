@@ -19,6 +19,20 @@ from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
 
+def _build_unit_pattern(unit_text: str) -> re.Pattern[str] | None:
+    """Return a regex that respects token boundaries for ``unit_text``."""
+
+    trimmed = unit_text.strip()
+    if not trimmed:
+        return None
+    escaped = re.escape(trimmed)
+    leading_alnum = trimmed[0].isalnum()
+    trailing_alnum = trimmed[-1].isalnum()
+    if leading_alnum and trailing_alnum:
+        return re.compile(rf"(?<![A-Za-z]){escaped}(?![A-Za-z])")
+    return re.compile(escaped)
+
+
 def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
         steps = [step.strip() for step in chain.split("\n") if step.strip()]
@@ -91,6 +105,8 @@ def repair_once(
     ]
     fix_tag: str | None = None
     for candidate in priority:
+        if candidate == SemanticTag.UNIT_MISMATCH.value and not expected_units:
+            continue
         if any(candidate in entry.get("tags", []) for entry in tags_list):
             fix_tag = candidate
             break
