@@ -20,6 +20,9 @@ llm = [
     "transformers>=4.35",
     "accelerate>=0.23",
 ]
+semantics = [
+    "regex>=2024.11,<2026",
+]
 
 [project.urls]
 Homepage = "https://github.com/openai/rg-tracer"
