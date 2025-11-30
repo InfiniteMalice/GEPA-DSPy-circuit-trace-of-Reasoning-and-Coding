@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 
@@ -26,6 +27,8 @@ def _load_lines(metrics_path: Path) -> list[dict[str, object]]:
             raise SystemExit(f"Failed to parse metrics line {raw!r}: {exc}") from exc
         if isinstance(data, dict):
             records.append(data)
+        else:
+            print(f"Warning: skipping non-dict metrics line: {raw!r}", file=sys.stderr)
     return records
 
 

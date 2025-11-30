@@ -249,6 +249,8 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         humanities_metrics = {
             "citation_coverage": signals.citation_coverage,
             "quote_presence": signals.quote_presence,
+            # Legacy alias for downstream consumers that still expect the
+            # quote_integrity field.
             "quote_integrity": signals.quote_presence,
             "counterevidence_ratio": signals.counterevidence_ratio,
             "hedge_rate": signals.hedge_rate,

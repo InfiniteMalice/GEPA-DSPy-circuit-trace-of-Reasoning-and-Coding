@@ -8,6 +8,9 @@ from typing import Iterable, List, Sequence, Tuple
 
 from .trm_model import TinyRecursionModel
 
+# Heuristic recovery knobs for parity-like recursion tasks. Applied when accuracy
+# regresses after training to pull the model back toward the stable parity
+# solution without a full restart.
 FALLBACK_HIDDEN_SCALE = 1.5
 FALLBACK_RECURSE_SCALE = -1.0
 FALLBACK_BIAS = 0.0
