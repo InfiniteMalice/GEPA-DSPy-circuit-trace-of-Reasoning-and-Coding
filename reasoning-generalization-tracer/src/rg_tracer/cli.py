@@ -19,6 +19,7 @@ def _make_concept(name: str | None) -> ConceptSpec | None:
         name=name,
         definition=f"Auto-generated concept for {name}",
         expected_substructures=[name],
+        feature_catalog=[{"id": name, "tags": [name]}],
     )
 
 
