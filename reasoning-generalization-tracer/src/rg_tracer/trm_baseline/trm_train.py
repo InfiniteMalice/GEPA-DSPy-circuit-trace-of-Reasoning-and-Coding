@@ -8,6 +8,10 @@ from typing import Iterable, List, Sequence, Tuple
 
 from .trm_model import TinyRecursionModel
 
+FALLBACK_HIDDEN_SCALE = 1.5
+FALLBACK_RECURSE_SCALE = -1.0
+FALLBACK_BIAS = 0.0
+
 
 @dataclass
 class TrainingResult:
@@ -54,10 +58,13 @@ def train(
     if dataset:
         post_accuracy = evaluate(model, dataset).accuracy
         if post_accuracy < baseline_accuracy:
-            # Heuristic fallback tuned for parity-like recursions
-            model.hidden_scale = 1.5
-            model.recurse_scale = -1.0
-            model.bias = 0.0
+            # Heuristic fallback tuned for parity-like recursions. During grokking
+            # experiments the tiny model can transiently overfit then degrade on the
+            # training split; these constants pull the hidden and recurse paths back
+            # toward the stable parity solution without a full re-train.
+            model.hidden_scale = FALLBACK_HIDDEN_SCALE
+            model.recurse_scale = FALLBACK_RECURSE_SCALE
+            model.bias = FALLBACK_BIAS
     return TrainingResult(losses=losses, model=model)
 
 

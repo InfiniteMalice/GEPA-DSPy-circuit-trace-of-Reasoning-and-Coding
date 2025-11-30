@@ -7,7 +7,7 @@ import traceback
 import warnings
 from collections.abc import Iterable, Mapping as MappingABC
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Sequence
 
@@ -137,7 +137,7 @@ def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
 
 
 def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     base = Path(base_dir or Path.cwd() / "runs") / timestamp
     base.mkdir(parents=True, exist_ok=True)
     return base
@@ -595,7 +595,7 @@ def run_self_play(
         handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):
             summary_row = (
-                "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | " "{repair} |\n"
+                "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | {repair} |\n"
             ).format(
                 idx=idx,
                 comp=candidate.composite,

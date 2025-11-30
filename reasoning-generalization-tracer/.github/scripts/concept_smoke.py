@@ -2,6 +2,8 @@
 """Smoke test concept reward alignment path."""
 from __future__ import annotations
 
+import sys
+
 from rg_tracer.concepts import ConceptSpec, compute_concept_reward
 
 
@@ -22,7 +24,8 @@ def main() -> int:
         },
     )
     if reward <= 0.3:
-        raise SystemExit(f"Unexpected reward {reward}")
+        print(f"Unexpected reward {reward}", file=sys.stderr)
+        return 1
     aligned = compute_concept_reward(
         trace,
         spec,
@@ -34,7 +37,8 @@ def main() -> int:
         alignment=0.5,
     )
     if aligned <= reward:
-        raise SystemExit("Alignment scaling did not increase reward")
+        print("Alignment scaling did not increase reward", file=sys.stderr)
+        return 1
     return 0
 
 

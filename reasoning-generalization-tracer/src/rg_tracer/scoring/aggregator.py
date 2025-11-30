@@ -172,7 +172,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
 def _require_numeric_weight(axis: object, value: object) -> float:
     axis_name = str(axis)
     if isinstance(value, bool):
-        raise ValueError(f"Weight for axis '{axis_name}' must be numeric")
+        raise TypeError(f"Weight for axis '{axis_name}' must be numeric, got bool")
     try:
         return float(value)
     except (TypeError, ValueError) as exc:  # pragma: no cover - defensive guard
@@ -190,11 +190,7 @@ def _split_profile_payload(
                 raise TypeError("weights section must be a mapping")
             weights_source = weights_value.items()
         else:
-            weights_source = (
-                (key, value)
-                for key, value in raw.items()
-                if key != "bonuses"
-            )
+            weights_source = ((key, value) for key, value in raw.items() if key != "bonuses")
     else:
         bonuses_raw = {}
         weights_source = raw

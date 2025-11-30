@@ -90,13 +90,13 @@ def test_split_profile_payload_rejects_non_numeric_weights():
 
 def test_split_profile_payload_rejects_bool_weights():
     payload = {"weights": {"rigor": True}}
-    with pytest.raises(ValueError, match="rigor"):
+    with pytest.raises(TypeError, match="rigor"):
         _split_profile_payload(payload)
 
 
 def test_split_profile_payload_rejects_bool_weights_legacy_shape():
     payload = {"rigor": True}
-    with pytest.raises(ValueError, match="rigor"):
+    with pytest.raises(TypeError, match="rigor"):
         _split_profile_payload(payload)
 
 

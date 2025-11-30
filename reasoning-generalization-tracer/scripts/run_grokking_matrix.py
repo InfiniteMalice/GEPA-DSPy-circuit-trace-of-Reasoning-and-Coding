@@ -7,6 +7,7 @@ import hashlib
 import itertools
 import json
 import numbers
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Tuple
@@ -105,16 +106,26 @@ def _write_summary(
         for name, metrics in rows:
             align_value = metrics.get("delta_alignment")
             align_display = f"{align_value:.3f}" if isinstance(align_value, (int, float)) else "n/a"
+            repeat = metrics.get("delta_repeatability")
+            repeat_value = repeat if isinstance(repeat, (int, float)) else 0.0
+            sparsity_val = metrics.get("delta_sparsity")
+            sparsity_value = sparsity_val if isinstance(sparsity_val, (int, float)) else 0.0
+            path_val = metrics.get("avg_path_length")
+            path_value = path_val if isinstance(path_val, (int, float)) else 0.0
+            branch_val = metrics.get("branching_factor")
+            branch_value = branch_val if isinstance(branch_val, (int, float)) else 0.0
+            rep_val = metrics.get("repeatability")
+            rep_value = rep_val if isinstance(rep_val, (int, float)) else 0.0
             handle.write(
                 "| {name} | {align} | {repeat:.3f} | {sparsity:.3f} | "
                 "{path:.3f} | {branch:.3f} | {rep:.3f} |\n".format(
                     name=name,
                     align=align_display,
-                    repeat=metrics.get("delta_repeatability", 0.0),
-                    sparsity=metrics.get("delta_sparsity", 0.0),
-                    path=metrics.get("avg_path_length", 0.0),
-                    branch=metrics.get("branching_factor", 0.0),
-                    rep=metrics.get("repeatability", 0.0),
+                    repeat=repeat_value,
+                    sparsity=sparsity_value,
+                    path=path_value,
+                    branch=branch_value,
+                    rep=rep_value,
                 )
             )
 
@@ -131,6 +142,8 @@ def run_matrix(
     total_cells = len(REGULARISATION) * len(STABILITY) * len(GRADIENT) * len(REASONING)
     if limit is not None and limit < 0:
         raise ValueError("--limit must be non-negative")
+    if limit == 0:
+        warnings.warn("--limit=0 produces an empty matrix run", RuntimeWarning, stacklevel=2)
     max_cells = min(total_cells, limit) if limit is not None else total_cells
     for idx, combo in enumerate(_build_combo_grid()):
         if idx >= max_cells:

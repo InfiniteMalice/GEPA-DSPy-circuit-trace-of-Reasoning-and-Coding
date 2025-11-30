@@ -219,6 +219,11 @@ def extract_graph(
     elif backend is None:
         resolved_name = str(backend_name).strip().lower()
         backend = get_backend(resolved_name)
+    elif not isinstance(backend, AttributionBackend):
+        raise TypeError(
+            "backend must be str, Mapping, AttributionBackend, or None; "
+            f"got {type(backend).__name__}"
+        )
     return backend.extract_graph(model, inputs, layers=layers, seed=seed)
 
 

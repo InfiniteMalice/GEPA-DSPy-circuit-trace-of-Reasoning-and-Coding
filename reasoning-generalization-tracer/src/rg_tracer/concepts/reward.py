@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable as IterableABC
-from typing import Any, Iterable, Mapping
+from collections.abc import Iterable as IterableABC, Mapping as MappingABC
+from typing import Any, Mapping
 
 from .schema import ConceptSpec
 
@@ -73,7 +73,12 @@ def _feature_tags(feature: Mapping[str, Any]) -> set[str]:
     if isinstance(raw, str):
         return {raw}
     if isinstance(raw, IterableABC):
-        return {str(tag) for tag in raw if isinstance(tag, str)}
+        tags: set[str] = set()
+        for tag in raw:
+            if tag is None or isinstance(tag, bool):
+                continue
+            tags.add(str(tag))
+        return tags
     return set()
 
 
@@ -153,10 +158,10 @@ def compute_concept_reward(
     raw_entailed = task_metrics.get("entailed_feature_ids") if task_metrics else None
     raw_contradictory = task_metrics.get("contradictory_feature_ids") if task_metrics else None
 
-    def _iter_ids(raw: object) -> Iterable[object]:
+    def _iter_ids(raw: object) -> IterableABC[object]:
         if raw is None:
             return ()
-        if isinstance(raw, Mapping):
+        if isinstance(raw, MappingABC):
             return raw.keys()
         if isinstance(raw, (str, bytes)):
             return (raw,)
