@@ -51,12 +51,12 @@ def path_sparsity(
     scores: List[float] = []
     for graph in graphs_seq:
         weights = _edge_weights(graph)
-        total = sum(abs(weight) for weight in weights)
+        total = sum(weights)
         if total <= 0:
             scores.append(0.0)
             continue
         denom = total if total > eps else total + eps
-        normed = [abs(weight) / denom for weight in weights]
+        normed = [weight / denom for weight in weights]
         scores.append(sum(value * value for value in normed))
     return float(sum(scores) / len(scores))
 
@@ -291,8 +291,8 @@ def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike | None) -> List[Gra
 def _filter_by_phase(
     graphs: Sequence[GraphLike] | GraphLike,
     phase: str,
-) -> List[GraphLike]:
-    filtered: List[GraphLike] = []
+) -> List[AttributionGraph]:
+    filtered: List[AttributionGraph] = []
     for graph in _ensure_graphs(_coerce_sequence(graphs)):
         if graph.meta.phase == phase:
             filtered.append(graph)
@@ -334,6 +334,7 @@ def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[tuple[str, 
 
 
 __all__ = [
+    "GraphLike",
     "average_branching_factor",
     "average_path_length",
     "concept_alignment",

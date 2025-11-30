@@ -43,7 +43,12 @@ _ALT_UNITS = {"meters", "seconds", "kg", "binary", "count", "mod", "ternary"}
 
 def _canonical_unit(value: str) -> str:
     trimmed = value.strip()
-    if len(trimmed) > 2 and trimmed.endswith("s") and trimmed[-2].isalpha():
+    if (
+        len(trimmed) > 2
+        and trimmed.endswith("s")
+        and trimmed[-2].isalpha()
+        and not trimmed.endswith("ss")
+    ):
         return trimmed[:-1]
     return trimmed
 

@@ -19,7 +19,13 @@ def test_weighted_geometric_mean_basic():
 
 
 def test_apply_hard_gates_enforces_threshold():
-    passes, failed = apply_hard_gates({"logical_validity": 4, "rigor": 2, "numerical_accuracy": 3})
+    passes, failed = apply_hard_gates(
+        {
+            "logical_validity": 4,
+            "rigor": 2,
+            "numerical_accuracy": 3,
+        }
+    )
     assert not passes
     assert failed["rigor"] == 2
 

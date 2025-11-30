@@ -85,7 +85,8 @@ def _write_cell_artifacts(
         with (cell_dir / f"{phase}_graph.json").open("w", encoding="utf8") as handle:
             json.dump(graph, handle, indent=2)
     with (cell_dir / "metrics.json").open("w", encoding="utf8") as handle:
-        handle.write(json.dumps(dict(metrics), indent=2) + "\n")
+        json.dump(dict(metrics), handle, indent=2)
+        handle.write("\n")
 
 
 def _write_summary(
