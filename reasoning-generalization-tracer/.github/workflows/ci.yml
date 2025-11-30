@@ -43,44 +43,7 @@ jobs:
           python .github/scripts/validate_metrics.py
         working-directory: reasoning-generalization-tracer
       - name: Concept reward smoke
-        run: |
-          python - <<'PY'
-from rg_tracer.concepts import ConceptSpec, compute_concept_reward
-
-          trace = {
-              "features": [
-                  {"id": "F1", "layer": 1, "importance": 0.7, "tags": ["parity"]}
-              ],
-              "edges": [],
-              "path_lengths": {"mean": 1.0},
-          }
-          spec = ConceptSpec(
-              name="parity",
-              definition="",
-              expected_substructures=["parity"],
-          )
-          reward = compute_concept_reward(
-              trace,
-              spec,
-              task_metrics={
-                  "concept_reuse": 1.0,
-                  "supporting_tasks": 1,
-                  "entailed_feature_ids": ["F1"],
-              },
-          )
-          assert reward > 0.3, reward
-          aligned = compute_concept_reward(
-              trace,
-              spec,
-              task_metrics={
-                  "concept_reuse": 1.0,
-                  "supporting_tasks": 1,
-                  "entailed_feature_ids": ["F1"],
-              },
-              alignment=0.5,
-          )
-          assert aligned > reward
-          PY
+        run: python .github/scripts/concept_smoke.py
         working-directory: reasoning-generalization-tracer
       - name: Smoke humanities CLI
         run: |

@@ -62,9 +62,11 @@ target Tiny Recursion Models and small transformers. Each run logs:
 
 Soft bonuses (configurable; e.g., +0.01 for alignment/repeat gains, +0.005 for
 sparsity drops) are added to composite scores after hard gates. Concept rewards
-are scaled by `(1 + 0.25 * alignment)` when semantic entailment holds. Metrics
-land in `runs/<timestamp>/attr_metrics.jsonl` (a JSONL file) while each probe
-graph is stored under `runs/<timestamp>/attr/`.
+are multiplied by `(1 + alignment_scale * clamp(alignment, 0, 1))`, where
+`alignment_scale` defaults to 0.25 and is clamped to `[0.0, 10.0]` via
+configuration; scaling applies whenever an alignment value is available.
+Metrics land in `runs/<timestamp>/attr_metrics.jsonl` (a JSONL file) while each
+probe graph is stored under `runs/<timestamp>/attr/`.
 
 ## Abstention at 0.75 Confidence
 
@@ -172,14 +174,9 @@ Each self-play run emits:
 
 ## Configuration
 
-When editing the default profiles in this repository, modify
-`src/rg_tracer/scoring/profiles.yaml`. After installation, the CLI loads the
-packaged `scoring/profiles.yaml`; pass `--profiles /path/to/custom.yaml` to use
-any other file.
-
 * **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (the file
   is installed as `scoring/profiles.yaml`, which is what the loader resolves) or
-  supply a custom file.
+  pass `--profiles /path/to/custom.yaml` to use any other file.
 * **Concept Rewards:** override weights via the `weights` parameter in
   `compute_concept_reward`.
 * **Abstention:** calibrate model confidences using `abstention/calibrate.py`.
@@ -242,14 +239,11 @@ python scripts/run_grokking_matrix.py --limit 2
 
 The resulting directory includes one folder per configuration with
 `pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
-alignment, and repeatability deltas. ΔAlignment only populates when concept
-feature catalogs are supplied; by default the sweep uses the mock backend and
-prints `n/a` to highlight the omission. Provide descriptors by editing the
-stub concept feature catalog (or wiring your own) whenever alignment deltas are
-needed. The default keeps CI runs quick while making the dependency explicit in
-the table. Look for stabilising trends across
-interventions—for example, compare `softmax` vs `stablemax` for the impact of
-numerically safe attention, inspect `sft_only` vs `srl_pretrain_then_sft` to see
-how supervised reasoning raises repeatability before accuracy improves, and
-toggle weight decay to confirm the shift from spiky memorisers to broader rule
-circuits.
+alignment, and repeatability deltas. ΔAlignment defaults to `n/a` because the
+sweep uses the mock backend and a stub concept catalog baked into the script;
+add real concept features and a non-null backend in code if you need alignment
+deltas. Look for stabilising trends across interventions—for example, compare
+`softmax` vs `stablemax` for the impact of numerically safe attention, inspect
+`sft_only` vs `srl_pretrain_then_sft` to see how supervised reasoning raises
+repeatability before accuracy improves, and toggle weight decay to confirm the
+shift from spiky memorisers to broader rule circuits.

@@ -160,7 +160,7 @@ def compute_concept_reward(
             return raw.keys()
         if isinstance(raw, (str, bytes)):
             return (raw,)
-        if isinstance(raw, Iterable):
+        if isinstance(raw, IterableABC):
             return raw
         return (raw,)
 

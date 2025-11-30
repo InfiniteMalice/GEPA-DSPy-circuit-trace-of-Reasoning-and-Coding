@@ -27,7 +27,7 @@ class HumanitiesProfile:
         for axis in HUMANITIES_AXES:
             raw_value = self.weights.get(axis, 0.0)
             if isinstance(raw_value, bool):
-                raise ValueError(
+                raise TypeError(
                     f"Profile {self.name} has non-numeric weight for {axis!r}: {raw_value!r}"
                 )
             try:
