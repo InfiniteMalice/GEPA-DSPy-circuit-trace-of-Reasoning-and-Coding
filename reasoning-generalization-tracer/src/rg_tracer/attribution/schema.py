@@ -73,12 +73,15 @@ class GraphMeta:
     extras: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        payload: Dict[str, Any] = {"token_positions": list(self.token_positions)}
+        reserved = {"token_positions", "logits_scale", "phase"}
+        payload: Dict[str, Any] = {
+            key: value for key, value in self.extras.items() if key not in reserved
+        }
+        payload["token_positions"] = list(self.token_positions)
         if self.logits_scale is not None:
             payload["logits_scale"] = float(self.logits_scale)
         if self.phase is not None:
             payload["phase"] = str(self.phase)
-        payload.update(self.extras)
         return payload
 
     @classmethod
