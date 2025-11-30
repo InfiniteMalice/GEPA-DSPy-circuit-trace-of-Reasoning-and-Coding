@@ -27,7 +27,7 @@ def temperature_scale(
 
     for temp in temps:
         loss = 0.0
-        for logit, label in zip(logits, labels):
+        for logit, label in zip(logits, labels, strict=True):
             scaled = 1 / (1 + math.exp(-logit / temp))
             loss -= label * math.log(_clip(scaled)) + (1 - label) * math.log(_clip(1 - scaled))
         loss /= max(1, len(labels))
