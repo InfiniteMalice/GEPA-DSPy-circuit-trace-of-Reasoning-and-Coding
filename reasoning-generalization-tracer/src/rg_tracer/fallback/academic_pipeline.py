@@ -43,7 +43,9 @@ def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
 
 
 def _count_tag(report_tags: Sequence[Mapping[str, object]], tag: SemanticTag) -> int:
-    return sum(1 for entry in report_tags if tag.value in set(_iter_tag_labels(entry)))
+    return sum(
+        1 for entry in report_tags if any(label == tag.value for label in _iter_tag_labels(entry))
+    )
 
 
 def _grade_ratio(value: float) -> float:

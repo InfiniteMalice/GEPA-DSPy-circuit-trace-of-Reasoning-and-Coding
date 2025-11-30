@@ -99,7 +99,7 @@ def analyse_humanities_chain(chain: Iterable[str] | str) -> HumanitiesSignals:
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
         tags.append({"step": step, "tags": step_tags})
-    if counter_hits == 0 and tags:
+    if counter_hits == 0:
         # The absence of counter-evidence indicates the concluding step lacks
         # explicit support, so tag the final statement once.
         unsupported = SemanticTag.UNSUPPORTED.value

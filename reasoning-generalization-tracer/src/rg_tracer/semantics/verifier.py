@@ -244,6 +244,7 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         humanities_metrics = {
             "citation_coverage": signals.citation_coverage,
             "quote_presence": signals.quote_presence,
+            "quote_integrity": signals.quote_presence,
             "counterevidence_ratio": signals.counterevidence_ratio,
             "hedge_rate": signals.hedge_rate,
             "fallacy_flags": signals.fallacy_flags,
@@ -259,6 +260,7 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         humanities_metrics = {
             "citation_coverage": 0.0,
             "quote_presence": 0.0,
+            "quote_integrity": 0.0,
             "counterevidence_ratio": 0.0,
             "hedge_rate": 0.0,
             "fallacy_flags": 0,

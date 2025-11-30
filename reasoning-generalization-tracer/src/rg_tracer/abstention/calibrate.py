@@ -49,7 +49,7 @@ def isotonic_calibration(
     labels_list = [int(label_value) for label_value in labels]
     if len(confidences_list) != len(labels_list):
         raise ValueError("confidences and labels length mismatch")
-    pairs = sorted(zip(confidences_list, labels_list, strict=True))
+    pairs = sorted(zip(confidences_list, labels_list))
     if not pairs:
         return lambda conf: conf
 
