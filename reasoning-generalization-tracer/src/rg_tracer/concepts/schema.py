@@ -55,7 +55,7 @@ class ConceptSpec:
         validated_catalog: List[Mapping[str, Any]] = []
         for entry in catalog:
             identifier = entry.get("id")
-            if identifier is None or str(identifier) == "":
+            if identifier is None or str(identifier).strip() == "":
                 warnings.warn(
                     "feature_catalog entry missing usable 'id' field; skipping entry",
                     RuntimeWarning,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable as IterableABC, Mapping as MappingABC
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 from .schema import ConceptSpec
 

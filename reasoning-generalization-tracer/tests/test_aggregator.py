@@ -82,6 +82,42 @@ def test_fallback_parser_handles_top_level_scalars(tmp_path, monkeypatch):
     assert config["alignment_scale"] == 0.25
 
 
+def test_fallback_parser_handles_nested_config_and_bonuses(tmp_path, monkeypatch):
+    from rg_tracer.scoring import aggregator as agg
+
+    monkeypatch.setattr(agg, "yaml", None)
+    path = tmp_path / "profiles.yaml"
+    yaml_text = (
+        "config:\n"
+        "  attr:\n"
+        "    thresholds:\n"
+        "      entropy:\n"
+        "        min: 0.1\n"
+        "profiles:\n"
+        "  demo:\n"
+        "    weights:\n"
+        "      rigor: 1\n"
+        "    bonuses:\n"
+        "      alignment_gain: 0.02\n"
+    )
+    path.write_text(yaml_text, encoding="utf8")
+    profiles = load_profiles(path)
+    assert set(profiles.keys()) == {"demo"}
+    config = get_last_config()
+    assert config["attr"]["thresholds"]["entropy"]["min"] == 0.1
+    assert profiles["demo"].bonuses["alignment_gain"] == 0.02
+
+
+def test_fallback_parser_raises_on_invalid_top_level(tmp_path, monkeypatch):
+    from rg_tracer.scoring import aggregator as agg
+
+    monkeypatch.setattr(agg, "yaml", None)
+    path = tmp_path / "profiles.yaml"
+    path.write_text("notes: unsupported\n", encoding="utf8")
+    with pytest.raises(ValueError, match="Unable to parse line"):
+        load_profiles(path)
+
+
 def test_split_profile_payload_rejects_non_numeric_weights():
     payload = {"weights": {"rigor": "not-a-number"}}
     with pytest.raises(ValueError, match="rigor"):

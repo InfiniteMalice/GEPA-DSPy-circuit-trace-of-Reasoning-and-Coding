@@ -117,16 +117,8 @@ def _write_summary(
             rep_val = metrics.get("repeatability")
             rep_value = rep_val if isinstance(rep_val, (int, float)) else 0.0
             handle.write(
-                "| {name} | {align} | {repeat:.3f} | {sparsity:.3f} | "
-                "{path:.3f} | {branch:.3f} | {rep:.3f} |\n".format(
-                    name=name,
-                    align=align_display,
-                    repeat=repeat_value,
-                    sparsity=sparsity_value,
-                    path=path_value,
-                    branch=branch_value,
-                    rep=rep_value,
-                )
+                f"| {name} | {align_display} | {repeat_value:.3f} | {sparsity_value:.3f} | "
+                f"{path_value:.3f} | {branch_value:.3f} | {rep_value:.3f} |\n"
             )
 
 
