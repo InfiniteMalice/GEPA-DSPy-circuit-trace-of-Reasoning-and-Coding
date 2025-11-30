@@ -17,7 +17,7 @@ def temperature_scale(
     confidences = [_clip(float(c)) for c in confidences]
     labels = [int(label_value) for label_value in labels]
     if len(confidences) != len(labels):
-        raise ValueError("confidences and labels must be the same length")
+        raise ValueError("confidences and labels length mismatch")
     logits = [math.log(c / (1 - c)) for c in confidences]
     temps = [0.5 + i * 0.05 for i in range(1, 101)]
     best_temp = 1.0
@@ -48,7 +48,7 @@ def isotonic_calibration(
     confidences_list = [float(conf) for conf in confidences]
     labels_list = [int(label_value) for label_value in labels]
     if len(confidences_list) != len(labels_list):
-        raise ValueError("confidences and labels must be the same length")
+        raise ValueError("confidences and labels length mismatch")
     pairs = sorted(zip(confidences_list, labels_list, strict=True))
     if not pairs:
         return lambda conf: conf

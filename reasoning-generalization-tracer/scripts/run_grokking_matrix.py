@@ -133,7 +133,7 @@ def run_matrix(
     rows: List[Tuple[str, Mapping[str, object]]] = []
     total_cells = len(REGULARISATION) * len(STABILITY) * len(GRADIENT) * len(REASONING)
     if limit is not None and limit < 0:
-        raise ValueError("--limit must be non-negative")
+        raise ValueError("limit must be non-negative")
     if limit == 0:
         warnings.warn("--limit=0 produces an empty matrix run", RuntimeWarning, stacklevel=2)
     max_cells = min(total_cells, limit) if limit is not None else total_cells
@@ -142,7 +142,7 @@ def run_matrix(
             break
         name = _combo_name(combo)
         digest_text = hashlib.sha256(name.encode("utf8")).hexdigest()
-        combo_digest = int(digest_text, 16)
+        combo_digest = int(digest_text, 16) % (2**32)
         seed = (combo_digest ^ idx) % 10_000
         print(f"Processing cell {idx + 1}/{max_cells}: {name}", flush=True)
         graphs = _extract_phase_graphs(combo_digest, name)

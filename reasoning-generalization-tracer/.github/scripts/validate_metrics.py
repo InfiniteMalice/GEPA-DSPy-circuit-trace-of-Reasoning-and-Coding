@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Iterable
 
 
 REQUIRED_KEYS: tuple[str, ...] = (
@@ -48,10 +47,10 @@ def main() -> int:
         raise SystemExit(f"Missing keys {missing} in metrics: {first}")
     if not attr_dir.exists():
         raise SystemExit(f"Missing attr directory: {attr_dir}")
-    json_files: Iterable[Path] = attr_dir.glob("*.json")
-    if not any(attr_dir.iterdir()):
+    entries = list(attr_dir.iterdir())
+    if not entries:
         raise SystemExit("attr directory empty")
-    if not any(True for _ in json_files):
+    if not any(path.suffix == ".json" for path in entries):
         raise SystemExit("attr directory lacks JSON files")
     summary_path = run_dir / "summary.md"
     if not summary_path.exists():

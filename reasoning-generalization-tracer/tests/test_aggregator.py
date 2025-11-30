@@ -108,6 +108,28 @@ def test_fallback_parser_handles_nested_config_and_bonuses(tmp_path, monkeypatch
     assert profiles["demo"].bonuses["alignment_gain"] == 0.02
 
 
+def test_fallback_parser_handles_empty_subsections(tmp_path, monkeypatch):
+    from rg_tracer.scoring import aggregator as agg
+
+    monkeypatch.setattr(agg, "yaml", None)
+    path = tmp_path / "profiles.yaml"
+    yaml_text = (
+        "config:\n"
+        "  attr:\n"
+        "    thresholds:\n"
+        "profiles:\n"
+        "  demo:\n"
+        "    weights:\n"
+        "      rigor: 1\n"
+        "    bonuses:\n"
+    )
+    path.write_text(yaml_text, encoding="utf8")
+    profiles = load_profiles(path)
+    assert profiles["demo"].bonuses == {}
+    config = get_last_config()
+    assert "thresholds" in config.get("attr", {})
+
+
 def test_fallback_parser_raises_on_invalid_top_level(tmp_path, monkeypatch):
     from rg_tracer.scoring import aggregator as agg
 
