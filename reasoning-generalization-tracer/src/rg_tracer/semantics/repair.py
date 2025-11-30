@@ -52,11 +52,12 @@ def _append_with_punctuation(text: str, suffix: str) -> str:
     suffix_text = suffix.strip()
     if not trimmed:
         return suffix_text
+    # Preserve ellipses such as "..." without dropping existing periods.
     if set(trimmed) <= {"."}:
         return f"{trimmed} {suffix_text}"
     punctuation_only = all(char in ".:;," for char in trimmed)
     if punctuation_only:
-        # Preserve ellipses, but drop bare separators such as ':' or ';'.
+        # Preserve ellipses ("..."), but drop bare separators such as ':' or ';'.
         return suffix_text if set(trimmed) - {"."} else f"{trimmed} {suffix_text}"
     trimmed = trimmed.rstrip(":;,") or trimmed
     terminal = trimmed[-1]

@@ -29,7 +29,8 @@ def temperature_scale(
         loss = 0.0
         for logit, label in zip(logits, labels, strict=True):
             scaled = 1 / (1 + math.exp(-logit / temp))
-            loss -= label * math.log(_clip(scaled)) + (1 - label) * math.log(_clip(1 - scaled))
+            loss -= label * math.log(_clip(scaled))
+            loss -= (1 - label) * math.log(_clip(1 - scaled))
         loss /= max(1, len(labels))
         if loss < best_loss:
             best_loss = loss
@@ -54,7 +55,7 @@ def isotonic_calibration(
             "confidences and labels length mismatch: "
             f"{len(confidences_list)} vs {len(labels_list)}"
         )
-    pairs = sorted(zip(confidences_list, labels_list))
+    pairs = sorted(zip(confidences_list, labels_list, strict=True))
     if not pairs:
         return lambda conf: conf
 

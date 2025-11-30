@@ -43,9 +43,10 @@ def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
 
 
 def _count_tag(report_tags: Sequence[Mapping[str, object]], tag: SemanticTag) -> int:
-    return sum(
-        1 for entry in report_tags if any(label == tag.value for label in _iter_tag_labels(entry))
-    )
+    def _entry_has_tag(entry: Mapping[str, object]) -> bool:
+        return any(label == tag.value for label in _iter_tag_labels(entry))
+
+    return sum(1 for entry in report_tags if _entry_has_tag(entry))
 
 
 def _grade_ratio(value: float) -> float:
@@ -69,7 +70,13 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
         quote_presence_value = report.get("quote_integrity")
     if quote_presence_value is None:
         quote_presence_value = report.get("quotes")
-    quote_presence = float(quote_presence_value or 0.0)
+    if isinstance(quote_presence_value, (int, float, bool, str)):
+        try:
+            quote_presence = float(quote_presence_value)
+        except (TypeError, ValueError):
+            quote_presence = 0.0
+    else:
+        quote_presence = 0.0
     counter = float(report.get("counterevidence_ratio", 0.0))
     hedge = float(report.get("hedge_rate", 0.0))
     fact_free = float(report.get("fact_free_ratio", 0.0))

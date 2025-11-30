@@ -72,6 +72,7 @@ def _parse_profiles(text: str) -> tuple[Dict[str, Profile], Dict[str, object]]:
 
 
 def _fallback_parse(text: str) -> Dict[str, object]:
+    """Parse profiles/config from YAML-like text when PyYAML is unavailable."""
     result: Dict[str, object] = {"profiles": {}}
     current_profile: str | None = None
     current_subsection: str | None = None
