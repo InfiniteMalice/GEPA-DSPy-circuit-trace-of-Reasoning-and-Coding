@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import random
 from collections.abc import Mapping as MappingABC
 from typing import Callable, Iterable, Mapping, MutableMapping, Sequence
@@ -31,9 +32,10 @@ def _strip_sample_index(graph_dict: Mapping[str, object]) -> dict[str, object]:
     return result
 
 
-class AttributionBackend:
+class AttributionBackend(ABC):
     """Base interface for attribution graph extraction backends."""
 
+    @abstractmethod
     def extract_graph(
         self,
         model: object,
@@ -42,7 +44,7 @@ class AttributionBackend:
         layers: Sequence[int] | None = None,
         seed: int | None = None,
     ) -> Mapping[str, object]:
-        raise NotImplementedError
+        ...
 
 
 class BackendNull(AttributionBackend):
