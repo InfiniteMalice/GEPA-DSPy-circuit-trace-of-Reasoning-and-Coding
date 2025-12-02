@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from statistics import mean
-from typing import Iterable, Sequence, Tuple
+from typing import Iterable, Mapping, Sequence, Tuple
 
 from ..scoring import axes
 from ..semantics import verify_chain
@@ -26,6 +26,8 @@ def evaluate(
     per_axis = {name: [] for name in axes.__all__}
     traces = []
     semantic_scores = []
+    parity_reason = "recursion accumulates parity"
+
     for seq, target in data:
         pred = model.predict(seq)
         total += 1
@@ -48,7 +50,8 @@ def evaluate(
         for axis_name, score in scores.items():
             per_axis[axis_name].append(score)
         chain_text = (
-            f"Sequence {seq} maps to activation {pred:.2f} because recursion accumulates parity."
+            f"Sequence {seq} maps to activation {pred:.2f} "
+            f"because {parity_reason}."
         )
         report = verify_chain(
             chain_text,
