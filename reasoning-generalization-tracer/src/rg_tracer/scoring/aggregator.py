@@ -213,6 +213,7 @@ def _split_profile_payload(
                 warnings.warn(
                     f"Skipping non-numeric bonus for axis '{axis}': {value!r}",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
                 continue
             try:
@@ -221,6 +222,7 @@ def _split_profile_payload(
                 warnings.warn(
                     f"Skipping non-numeric bonus for axis '{axis}': {value!r}",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
                 continue
     return weights, bonuses

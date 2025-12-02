@@ -26,10 +26,10 @@ def _ensure_graphs(graphs: Iterable[GraphLike]) -> List[AttributionGraph]:
 def _edge_weights(graph: AttributionGraph) -> List[float]:
     weights: List[float] = []
     for edge in graph.edges:
-        weight = safe_float(edge.attr)
+        weight = abs(safe_float(edge.attr))
         if not math.isfinite(weight):
             continue
-        if abs(weight) > 0.0:
+        if weight > 0.0:
             weights.append(weight)
     return weights
 

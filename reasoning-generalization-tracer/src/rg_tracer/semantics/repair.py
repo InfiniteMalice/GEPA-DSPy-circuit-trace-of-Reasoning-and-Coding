@@ -183,7 +183,9 @@ def repair_once(
                 steps[idx] = _append_with_punctuation(step, suffix)
             break
         if fix_tag == SemanticTag.UNCITED_CLAIM.value:
-            steps[idx] = f"{step} (Doe 2020, p. 14)"
+            citation = "(Doe 2020, p. 14)"
+            if citation.lower() not in step.lower():
+                steps[idx] = _append_with_punctuation(step, citation)
             break
         if fix_tag == SemanticTag.MISQUOTE.value:
             fixed = (

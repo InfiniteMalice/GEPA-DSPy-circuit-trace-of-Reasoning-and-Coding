@@ -120,7 +120,7 @@ Python 3.10+ is required. Circuit tracing depends on the
 [`circuit-tracer`](https://github.com/openai/circuit-tracer) project pinned in
 `pyproject.toml`. Installing the `semantics` extra pulls in the optional
 [`regex`](https://pypi.org/project/regex/) backend (pinned at
-`regex>=2024.11,<2026`) so token-boundary helpers can use `\p{L}` for
+`regex>=2025.11.3,<2026`) so token-boundary helpers can use `\p{L}` for
 non-ASCII scripts; without it the ASCII-safe fallbacks remain in use.
 
 ## Quickstart

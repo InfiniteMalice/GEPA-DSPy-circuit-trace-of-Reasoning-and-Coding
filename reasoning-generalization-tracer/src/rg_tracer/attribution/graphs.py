@@ -62,8 +62,7 @@ class BackendNull(AttributionBackend):
         rng = random.Random(seed or 0)
         samples = _coerce_sequence(inputs)
         graphs: list[AttributionGraph] = []
-        model_type = getattr(model, "__class__", type("obj", (), {}))
-        model_ref = getattr(model, "name", getattr(model_type, "__name__", "model"))
+        model_ref = getattr(model, "name", None) or type(model).__name__
         for index, sample in enumerate(samples):
             task_id = str(sample.get("task_id", f"probe_{index}"))
             phase = str(sample.get("phase", "post_grok"))
