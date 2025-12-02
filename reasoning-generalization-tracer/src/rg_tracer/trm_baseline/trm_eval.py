@@ -49,6 +49,7 @@ def evaluate(
         }
         for axis_name, score in scores.items():
             per_axis[axis_name].append(score)
+        parity_reason = "recursion accumulates parity"
         chain_text = (
             f"Sequence {seq} maps to activation {pred:.2f} "
             f"because {parity_reason}."
