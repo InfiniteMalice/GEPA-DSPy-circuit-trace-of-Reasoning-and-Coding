@@ -44,6 +44,30 @@ and penalising contradictory reuse. Circuit traces are produced via
 `circuit-tracer` (pinned) or the bundled stub; the adapter raises a clear error
 if the dependency is absent.
 
+## Attribution Graphs
+
+The attribution module extracts per-input graphs using pluggable adapters. The
+bundled `BackendNull` provides deterministic stubs for CI, while future hooks
+target Tiny Recursion Models and small transformers. Each run logs:
+
+* **Sparsity (HHI)** – how concentrated the attribution mass is over edges.
+* **Average Path Length** – attribution-weighted layer hops.
+* **Branching Factor** – effective fan-out of attribution flow.
+* **Repeatability** – Jaccard overlap of top edges across probes.
+* **Concept Alignment** – overlap@k with concept features from circuit traces.
+* **Δ Metrics** – sparsity drop, alignment gain, and repeatability gain
+  comparing `overfit` and `post_grok` phases. JSON records expose these as the
+  `delta_sparsity`, `delta_alignment`, and `delta_repeatability` keys alongside
+  the raw metrics so automation can consume them directly.
+
+Soft bonuses (configurable; e.g., +0.01 for alignment/repeat gains, +0.005 for
+sparsity drops) are added to composite scores after hard gates. Concept rewards
+are multiplied by `(1 + alignment_scale * clamp(alignment, 0, 1))`, where
+`alignment_scale` defaults to 0.25 and is clamped to `[0.0, 10.0]` via
+configuration; scaling applies whenever an alignment value is available.
+Metrics land in `runs/<timestamp>/attr_metrics.jsonl` (a JSONL file) while each
+probe graph is stored under `runs/<timestamp>/attr/`.
+
 ## Abstention at 0.75 Confidence
 
 The abstention policy enforces a calibrated threshold of `0.75`. Any candidate
@@ -73,7 +97,7 @@ normative/positive separation, uncertainty calibration, intellectual charity,
 rhetorical hygiene, reproducibility, synthesis, and epistemic neutrality. Hard
 gates enforce minimum thresholds on source handling, interpretive fidelity, and
 normative clarity before any reward is granted. Signals include citation
-coverage, quote integrity, counterevidence ratios, hedging, fallacy flags, and
+coverage, quote presence, counterevidence ratios, hedging, fallacy flags, and
 neutrality balance.
 
 ## Tiny Recursion Model Baseline
@@ -88,11 +112,16 @@ for toy tasks.
 
 ```bash
 pip install -e .
+# Optional: enable Unicode-aware semantic heuristics
+pip install -e ".[semantics]"
 ```
 
 Python 3.10+ is required. Circuit tracing depends on the
 [`circuit-tracer`](https://github.com/openai/circuit-tracer) project pinned in
-`pyproject.toml`.
+`pyproject.toml`. Installing the `semantics` extra pulls in the optional
+[`regex`](https://pypi.org/project/regex/) backend (pinned at
+`regex>=2025.11.3,<2026`) so token-boundary helpers can use `\p{L}` for
+non-ASCII scripts; without it the ASCII-safe fallbacks remain in use.
 
 ## Quickstart
 
@@ -137,10 +166,17 @@ Each self-play run emits:
 * `semantics.jsonl` – semantic report with contradiction rates, humanities metrics, repairs.
 * `summary.md` – table covering composite, concept reward, abstentions.
 * `best.json` – best-performing candidate under the chosen profile.
+* `attr/` – attribution graphs for top candidates (one JSON per probe).
+* `attr_metrics.jsonl` – attribution metric records stored alongside `attr/` in the
+  run directory root (not inside the folder). Each JSON line exposes
+  `delta_alignment`, `delta_repeatability`, and `delta_sparsity` keys plus the
+  raw summary metrics for the candidate.
 
 ## Configuration
 
-* **Profiles:** tweak weights in `profiles.yaml` or supply a custom file.
+* **Profiles:** tweak weights in `src/rg_tracer/scoring/profiles.yaml` (the file
+  is installed as `scoring/profiles.yaml`, which is what the loader resolves) or
+  pass `--profiles /path/to/custom.yaml` to use any other file.
 * **Concept Rewards:** override weights via the `weights` parameter in
   `compute_concept_reward`.
 * **Abstention:** calibrate model confidences using `abstention/calibrate.py`.
@@ -149,6 +185,31 @@ Each self-play run emits:
 * **Humanities Profiles:** adjust humanities weights in
   `humanities/profiles.yaml`.
 * **Fallback:** extend the Bayesian priors/likelihoods in `fallback/bayes.py`.
+* **Attribution:** tweak probe size, top-k, and backend via the `config.attr`
+  section in `src/rg_tracer/scoring/profiles.yaml` (packaged as
+  `scoring/profiles.yaml`). Per-profile bonuses live under
+  `profiles.*.bonuses`.
+  Example (mirroring `proof_math` defaults):
+  ```yaml
+  config:
+    attr:
+      probe_size: 4
+      topk: 2
+      backend: null
+  profiles:
+    proof_math:
+      bonuses:
+        alignment_gain: 0.01
+        repeatability_gain: 0.01
+        sparsity_drop: 0.005
+  ```
+
+## Release Notes
+
+* **Humanities quote metrics:** `quote_presence` is now the canonical field for
+  per-step quote coverage. Serialized reports still expose a legacy
+  `quote_integrity` key with the same value so downstream consumers can migrate
+  without breaking changes.
 
 ## Limitations
 
@@ -165,3 +226,24 @@ Each self-play run emits:
 2. Expand semantic verifier with learned contradiction detectors.
 3. Add richer datasets covering physics and program synthesis tasks.
 4. Expose a web dashboard for inspecting run artifacts.
+
+## Grokking Matrix Experiments
+
+Use `scripts/run_grokking_matrix.py` to sweep weight decay, stability methods,
+gradient orthogonalization, and supervised reasoning curricula. The script
+invokes attribution backends for each phase and writes per-cell metrics:
+
+```bash
+python scripts/run_grokking_matrix.py --limit 2
+```
+
+The resulting directory includes one folder per configuration with
+`pre_overfit`→`post_grok` graphs plus a `summary.md` aggregating sparsity,
+alignment, and repeatability deltas. ΔAlignment defaults to `n/a` because the
+sweep uses the mock backend and a stub concept catalog baked into the script;
+add real concept features and a non-null backend in code if you need alignment
+deltas. Look for stabilising trends across interventions—for example, compare
+`softmax` vs `stablemax` for the impact of numerically safe attention, inspect
+`sft_only` vs `srl_pretrain_then_sft` to see how supervised reasoning raises
+repeatability before accuracy improves, and toggle weight decay to confirm the
+shift from spiky memorisers to broader rule circuits.

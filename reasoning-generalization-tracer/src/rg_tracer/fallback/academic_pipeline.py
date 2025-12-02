@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable as IterableABC
 from pathlib import Path
 from statistics import mean
 from typing import Dict, Iterable, List, Mapping, Sequence
@@ -22,8 +23,30 @@ def _load_records(path: str | Path) -> List[Mapping[str, object]]:
     return records
 
 
-def _count_tag(report_tags: Sequence[Mapping[str, Iterable[str]]], tag: SemanticTag) -> int:
-    return sum(1 for entry in report_tags if tag.value in entry.get("tags", []))
+def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
+    """Yield clean tag labels from ``entry``.
+
+    ``entry["tags"]`` may be a single string or any iterable of strings. Other
+    payload shapes are treated as empty. Non-string elements are filtered out to
+    guarantee downstream consumers always receive string labels.
+    """
+    raw_tags = entry.get("tags", [])
+    if isinstance(raw_tags, str):
+        values: Iterable[object] = [raw_tags]
+    elif isinstance(raw_tags, IterableABC):
+        values = raw_tags
+    else:
+        values = []
+    for label in values:
+        if isinstance(label, str):
+            yield label
+
+
+def _count_tag(report_tags: Sequence[Mapping[str, object]], tag: SemanticTag) -> int:
+    def _entry_has_tag(entry: Mapping[str, object]) -> bool:
+        return any(label == tag.value for label in _iter_tag_labels(entry))
+
+    return sum(1 for entry in report_tags if _entry_has_tag(entry))
 
 
 def _grade_ratio(value: float) -> float:
@@ -42,7 +65,18 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     fallacy_flags = float(report.get("fallacy_flags", 0))
     neutral = float(report.get("neutrality_balance", 0.0))
     citation = float(report.get("citation_coverage", 0.0))
-    quotes = float(report.get("quote_integrity", 0.0))
+    quote_presence_value = report.get("quote_presence")
+    if quote_presence_value is None:
+        quote_presence_value = report.get("quote_integrity")
+    if quote_presence_value is None:
+        quote_presence_value = report.get("quotes")
+    if isinstance(quote_presence_value, (int, float, bool, str)):
+        try:
+            quote_presence = float(quote_presence_value)
+        except (TypeError, ValueError):
+            quote_presence = 0.0
+    else:
+        quote_presence = 0.0
     counter = float(report.get("counterevidence_ratio", 0.0))
     hedge = float(report.get("hedge_rate", 0.0))
     fact_free = float(report.get("fact_free_ratio", 0.0))
@@ -50,7 +84,7 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     entailed = float(report.get("entailed_steps_pct", 0.0))
     schema = float(report.get("schema_consistency_pct", 0.0))
     fallacy_ratio = 1.0 / (1.0 + fallacy_flags)
-    combined_sources = max(citation, quotes)
+    combined_sources = max(citation, quote_presence)
     metrics["source_handling"] = {
         "positive": _grade_ratio(citation),
         "coverage": _grade_ratio(combined_sources),
