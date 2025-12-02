@@ -55,7 +55,7 @@ def isotonic_calibration(
             "confidences and labels length mismatch: "
             f"{len(confidences_list)} vs {len(labels_list)}"
         )
-    pairs = sorted(zip(confidences_list, labels_list, strict=True))
+    pairs = sorted(zip(confidences_list, labels_list))
     if not pairs:
         return lambda conf: conf
 
