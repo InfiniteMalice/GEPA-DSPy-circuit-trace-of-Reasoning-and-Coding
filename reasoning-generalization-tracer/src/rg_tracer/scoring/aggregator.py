@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import math
 import threading
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping
@@ -72,7 +73,10 @@ def _parse_profiles(text: str) -> tuple[Dict[str, Profile], Dict[str, object]]:
 
 
 def _fallback_parse(text: str) -> Dict[str, object]:
-    """Parse profiles/config from YAML-like text when PyYAML is unavailable."""
+    """Parse profiles/config from YAML-like text when PyYAML is unavailable.
+
+    Note: expects two-space indentation for nested structures.
+    """
     result: Dict[str, object] = {"profiles": {}}
     current_profile: str | None = None
     current_subsection: str | None = None
@@ -206,10 +210,18 @@ def _split_profile_payload(
             if isinstance(value, str) and value.strip().lower() == "null":
                 continue
             if isinstance(value, bool):
+                warnings.warn(
+                    f"Skipping non-numeric bonus for axis '{axis}': {value!r}",
+                    RuntimeWarning,
+                )
                 continue
             try:
                 bonuses[str(axis)] = float(value)
             except (TypeError, ValueError):
+                warnings.warn(
+                    f"Skipping non-numeric bonus for axis '{axis}': {value!r}",
+                    RuntimeWarning,
+                )
                 continue
     return weights, bonuses
 

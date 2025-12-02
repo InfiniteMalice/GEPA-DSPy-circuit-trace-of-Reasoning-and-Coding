@@ -260,8 +260,13 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
         if signals.tags:
             for idx, entry in enumerate(signals.tags):
                 if idx < len(tags):
-                    merged = list(tags[idx].get("tags", []))
-                    merged.extend(entry.get("tags", []))
+                    existing = tags[idx].get("tags", [])
+                    incoming = entry.get("tags", [])
+                    merged: list[str] = []
+                    if isinstance(existing, list):
+                        merged.extend(existing)
+                    if isinstance(incoming, list):
+                        merged.extend(incoming)
                     tags[idx]["tags"] = list(dict.fromkeys(merged))
     else:
         humanities_metrics = {

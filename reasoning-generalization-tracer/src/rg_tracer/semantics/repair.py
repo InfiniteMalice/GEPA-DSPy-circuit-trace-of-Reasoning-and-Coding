@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Pattern
 
 try:  # pragma: no cover - optional regex backend for boundary repairs
     import regex as _regex_backend
@@ -67,7 +67,7 @@ def _append_with_punctuation(text: str, suffix: str) -> str:
     return f"{base}. {suffix_text}" if base else suffix_text
 
 
-def _compile_case_insensitive(pattern: object, *, flags: int) -> "re.Pattern[str]":
+def _compile_case_insensitive(pattern: Pattern[str], *, flags: int) -> Pattern[str]:
     """Recompile ``pattern`` with ``flags`` while respecting optional regex backend."""
 
     if (

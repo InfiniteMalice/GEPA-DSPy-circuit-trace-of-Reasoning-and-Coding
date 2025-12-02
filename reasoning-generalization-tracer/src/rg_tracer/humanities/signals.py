@@ -75,7 +75,7 @@ def analyse_humanities_chain(chain: Iterable[str] | str) -> HumanitiesSignals:
         if has_citation:
             cite_hits += 1
         double_quote_count = step.count('"')
-        if double_quote_count // 2 > 0:
+        if double_quote_count >= 2:
             quote_hits += 1
         if any(term in lowered for term in _COUNTER_TERMS):
             counter_hits += 1
