@@ -2,8 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Mapping
+import re
+from typing import Iterable, List, Mapping, Pattern
 
+try:  # pragma: no cover - optional regex backend for boundary repairs
+    import regex as _regex_backend
+except ImportError:  # pragma: no cover
+    _regex_backend = None
+
+if _regex_backend is not None:  # pragma: no cover - optional dependency
+    _REGEX_PATTERN_TYPE = getattr(_regex_backend, "Pattern", None)
+else:  # pragma: no cover - regex not installed
+    _REGEX_PATTERN_TYPE = None
+
+from .patterns import build_token_boundary_pattern
 from .taxonomy import SemanticTag
 
 
@@ -19,14 +31,52 @@ def _normalise_chain(chain: object) -> List[str]:
     return steps or [""]
 
 
+def _append_with_punctuation(text: str, suffix: str) -> str:
+    """Append ``suffix`` to ``text`` while handling terminal punctuation."""
+
+    trimmed = text.rstrip()
+    suffix_text = suffix.strip()
+    if not trimmed:
+        return suffix_text
+    # Preserve ellipses such as "..." without dropping existing periods.
+    if set(trimmed) <= {"."}:
+        return f"{trimmed} {suffix_text}"
+    punctuation_only = all(char in ".:;," for char in trimmed)
+    if punctuation_only:
+        # Preserve ellipses ("..."), but drop bare separators such as ':' or ';'.
+        return suffix_text if set(trimmed) - {"."} else f"{trimmed} {suffix_text}"
+    trimmed = trimmed.rstrip(":;,") or trimmed
+    terminal = trimmed[-1]
+    if terminal in {".", "?", "!"}:
+        return f"{trimmed} {suffix_text}"
+    base = trimmed.rstrip(".")
+    return f"{base}. {suffix_text}" if base else suffix_text
+
+
+def _compile_case_insensitive(pattern: Pattern[str], *, flags: int) -> Pattern[str]:
+    """Recompile ``pattern`` with ``flags`` while respecting optional regex backend."""
+
+    if (
+        _regex_backend is not None
+        and _REGEX_PATTERN_TYPE is not None
+        and isinstance(pattern, _REGEX_PATTERN_TYPE)
+    ):
+        return _regex_backend.compile(pattern.pattern, flags=flags)
+    return re.compile(pattern.pattern, flags=flags)
+
+
 def repair_once(
     chain: object,
-    tags: Iterable[Mapping[str, Iterable[str]]],
+    tags: Iterable[Mapping[str, object]],
     *,
     expected_units: str | None = None,
     preferred_variables: Iterable[str] | None = None,
 ) -> List[str]:
-    """Attempt a single targeted repair based on semantic tags."""
+    """Attempt targeted repairs for a single pass of semantic tags.
+
+    All tags other than ``UNIT_MISMATCH`` trigger at most one edit. Unit fixes may
+    adjust multiple steps when the report identifies several concrete mismatches.
+    """
     steps = _normalise_chain(chain)
     preferred = list(preferred_variables or [])
     replacement_var = preferred[0] if preferred else "x"
@@ -42,53 +92,108 @@ def repair_once(
     ]
     fix_tag: str | None = None
     for candidate in priority:
+        if candidate == SemanticTag.UNIT_MISMATCH.value and not expected_units:
+            continue
         if any(candidate in entry.get("tags", []) for entry in tags_list):
             fix_tag = candidate
             break
     if fix_tag is None:
         return steps
-    for entry in tags_list:
+    if fix_tag == SemanticTag.UNIT_MISMATCH.value:
+        ordered_entries = sorted(
+            tags_list,
+            key=lambda item: bool(item.get("incorrect_unit")),
+            reverse=True,
+        )
+    else:
+        ordered_entries = tags_list
+    for entry in ordered_entries:
         if fix_tag not in entry.get("tags", []):
             continue
-        step = str(entry.get("step", ""))
+        step = str(entry.get("step", "")).strip()
         try:
             idx = steps.index(step)
         except ValueError:
             continue
         if fix_tag == SemanticTag.VARIABLE_DRIFT.value:
-            steps[idx] = step.replace("y", replacement_var)
-            break
-        if fix_tag == SemanticTag.UNIT_MISMATCH.value and expected_units:
-            replacements = {"meters", "meter", "seconds", "second", "kg", "kilogram"}
+            offending_token = str(entry.get("offending_token", "")).strip()
+            candidate = offending_token
+            if not candidate:
+                match = re.search(r"\b([A-Za-z])\b", step)
+                if match:
+                    candidate = match.group(1)
             new_step = step
-            for token in replacements:
-                if token in new_step:
-                    new_step = new_step.replace(token, expected_units)
-            if expected_units not in new_step:
-                new_step = f"{new_step} ({expected_units})"
+            if candidate:
+                pattern = build_token_boundary_pattern(candidate)
+                if pattern:
+                    new_step, replaced = pattern.subn(replacement_var, new_step, count=1)
+                    if replaced == 0:
+                        flags = pattern.flags | re.IGNORECASE
+                        pattern_ci = _compile_case_insensitive(pattern, flags=flags)
+                        new_step, _ = pattern_ci.subn(replacement_var, new_step, count=1)
+                else:
+                    new_step = new_step.replace(candidate, replacement_var, 1)
+            else:
+                new_step = re.sub(r"\b[A-Za-z]\b", replacement_var, new_step, count=1)
             steps[idx] = new_step
             break
+        if fix_tag == SemanticTag.UNIT_MISMATCH.value and expected_units:
+            incorrect_unit = str(entry.get("incorrect_unit", "")).strip()
+            new_step = step
+            if incorrect_unit:
+                pattern = build_token_boundary_pattern(incorrect_unit)
+                if pattern:
+                    new_step, replaced = pattern.subn(expected_units, new_step, count=1)
+                    if replaced == 0:
+                        flags = pattern.flags | re.IGNORECASE
+                        pattern_ci = _compile_case_insensitive(pattern, flags=flags)
+                        new_step, _ = pattern_ci.subn(expected_units, new_step, count=1)
+            expected_trimmed = expected_units.strip()
+            if expected_trimmed:
+                expected_pattern = build_token_boundary_pattern(expected_trimmed)
+                if expected_pattern:
+                    flags = expected_pattern.flags | re.IGNORECASE
+                    matcher = _compile_case_insensitive(expected_pattern, flags=flags)
+                    has_expected = bool(matcher.search(new_step))
+                else:
+                    has_expected = expected_trimmed.lower() in new_step.lower()
+                if not has_expected:
+                    new_step = f"{new_step} ({expected_units})"
+            steps[idx] = new_step
+            if incorrect_unit:
+                continue
+            break
         if fix_tag == SemanticTag.UNSUPPORTED.value:
-            suffix = " because we justify the inference from previous steps."
-            if suffix.strip() not in step:
-                steps[idx] = f"{step}{suffix}"
+            suffix = "Because we justify the inference from previous steps."
+            if suffix.lower() not in step.lower():
+                steps[idx] = _append_with_punctuation(step, suffix)
             break
         if fix_tag == SemanticTag.UNCITED_CLAIM.value:
-            steps[idx] = f"{step} (Doe 2020, p. 14)"
+            citation = "(Doe 2020, p. 14)"
+            if citation.lower() not in step.lower():
+                steps[idx] = _append_with_punctuation(step, citation)
             break
         if fix_tag == SemanticTag.MISQUOTE.value:
-            steps[idx] = step.replace('"', '"').strip()
-            if "context" not in steps[idx].lower():
-                steps[idx] = f"{steps[idx]} [context clarified]"
+            fixed = (
+                step.replace("\u201c", '"')
+                .replace("\u201d", '"')
+                .replace("\u2018", "'")
+                .replace("\u2019", "'")
+                .strip()
+            )
+            if "[context clarified]" not in fixed.lower():
+                fixed = f"{fixed} [context clarified]"
+            steps[idx] = fixed
             break
         if fix_tag == SemanticTag.OVERCLAIMED_CAUSALITY.value:
-            if "may" not in step.lower():
-                steps[idx] = f"{step} This relationship may be correlational.".strip()
+            clarification = "This relationship may be correlational."
+            if clarification.lower() not in step.lower():
+                steps[idx] = _append_with_punctuation(step, clarification)
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            steps[idx] = (
-                f"{step} This recommendation is normative and contingent on shared values."
-            )
+            normative_suffix = "This recommendation is normative and contingent on shared values."
+            if normative_suffix.lower() not in step.lower():
+                steps[idx] = _append_with_punctuation(step, normative_suffix)
             break
     return steps
 
