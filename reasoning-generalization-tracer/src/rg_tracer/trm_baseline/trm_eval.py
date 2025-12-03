@@ -27,6 +27,8 @@ def evaluate(
     per_axis = {name: [] for name in axes.__all__}
     traces = []
     semantic_scores = []
+    parity_reason = "recursion accumulates parity"
+
     for seq, target in data:
         pred = model.predict(seq)
         total += 1
@@ -48,6 +50,7 @@ def evaluate(
         }
         for axis_name, score in scores.items():
             per_axis[axis_name].append(score)
+        parity_reason = "recursion accumulates parity"
         chain_text = (
             f"Sequence {seq} maps to activation {pred:.2f} "
             f"because {PARITY_REASON}."
