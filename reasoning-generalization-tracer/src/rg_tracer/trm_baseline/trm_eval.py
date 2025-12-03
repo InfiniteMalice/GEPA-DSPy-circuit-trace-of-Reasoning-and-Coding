@@ -6,6 +6,7 @@ from typing import Iterable, Mapping, Sequence, Tuple
 
 from ..scoring import axes
 from ..semantics import verify_chain
+from .trm_train import PARITY_REASON
 from .trm_model import TinyRecursionModel
 
 
@@ -52,7 +53,7 @@ def evaluate(
         parity_reason = "recursion accumulates parity"
         chain_text = (
             f"Sequence {seq} maps to activation {pred:.2f} "
-            f"because {parity_reason}."
+            f"because {PARITY_REASON}."
         )
         report = verify_chain(
             chain_text,

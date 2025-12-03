@@ -150,7 +150,14 @@ def compute_concept_reward(
     alignment: float | None = None,
     alignment_scale: float = 0.25,
 ) -> float:
-    """Aggregate core concept scores additively, then scale the sum by alignment."""
+    """Aggregate concept scores additively, then scale by alignment.
+
+    When ``alignment`` is provided, the additive score is multiplied by
+    ``1 + alignment_scale * clamp(alignment, 0, 1)``. The ``alignment`` input is
+    validated against an open interval (-1e6, 1e6) and clamped to [0, 1] before
+    scaling; ``alignment_scale`` is clamped to [0.0, 10.0] (default 0.25) so the
+    multiplier stays bounded. ``alignment=None`` skips scaling (multiplier = 1).
+    """
     if task_metrics is None:
         task_metrics = {}
     if weights is None:

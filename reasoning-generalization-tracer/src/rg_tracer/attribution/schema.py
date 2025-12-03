@@ -159,10 +159,10 @@ def normalise_graph(data: Mapping[str, Any]) -> AttributionGraph:
 def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
     """Merge multiple graphs by averaging edge attributions and activations."""
 
-    graphs = list(graphs)
-    if not graphs:
+    graphs_list = list(graphs)
+    if not graphs_list:
         return AttributionGraph(model_ref="unknown", task_id="unknown", nodes=[], edges=[])
-    normalised = [normalise_graph(graph) for graph in graphs]
+    normalised = [normalise_graph(graph) for graph in graphs_list]
     base = normalised[0]
     node_attrs: MutableMapping[str, List[float]] = {}
     edge_attrs: MutableMapping[tuple[str, str], List[float]] = {}

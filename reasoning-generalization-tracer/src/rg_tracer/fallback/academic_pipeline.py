@@ -73,7 +73,7 @@ def _build_metrics(report: Mapping[str, object]) -> Dict[str, Dict[str, float]]:
     if isinstance(quote_presence_value, (int, float, bool, str)):
         try:
             quote_presence = float(quote_presence_value)
-        except (TypeError, ValueError):
+        except ValueError:
             quote_presence = 0.0
     else:
         quote_presence = 0.0

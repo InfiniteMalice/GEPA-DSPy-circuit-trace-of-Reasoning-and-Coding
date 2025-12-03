@@ -233,7 +233,7 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
     score = 4
     if contradiction_rate > 0 or not unit_check_pass:
         score = 0
-    elif contradiction_rate > 0.1 or fact_free_ratio > 0.3:
+    elif fact_free_ratio > 0.3:
         score = 1
     elif entailed_steps_pct < 0.5 or variable_drift > 1:
         score = 2

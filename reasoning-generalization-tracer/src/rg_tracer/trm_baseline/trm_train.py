@@ -14,6 +14,7 @@ from .trm_model import TinyRecursionModel
 FALLBACK_HIDDEN_SCALE = 1.5
 FALLBACK_RECURSE_SCALE = -1.0
 FALLBACK_BIAS = 0.0
+PARITY_REASON = "recursion accumulates parity"
 
 
 @dataclass
@@ -86,6 +87,7 @@ __all__ = [
     "FALLBACK_HIDDEN_SCALE",
     "FALLBACK_RECURSE_SCALE",
     "FALLBACK_BIAS",
+    "PARITY_REASON",
     "TrainingResult",
     "generate_parity_data",
     "generate_carry_data",
