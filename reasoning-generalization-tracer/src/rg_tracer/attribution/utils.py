@@ -20,11 +20,10 @@ def safe_float(value: Any, default: float = 0.0) -> float:
 
     try:
         result = float(value)
-        if not math.isfinite(result):
-            return default
-        return result
     except (OverflowError, TypeError, ValueError):
         return default
+    else:
+        return result if math.isfinite(result) else default
 
 
 __all__ = ["safe_float", "safe_int"]

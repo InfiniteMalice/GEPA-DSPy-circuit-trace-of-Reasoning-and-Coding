@@ -83,6 +83,9 @@ def quickstart_trainer(task: str = "parity", samples: int = 64, length: int = 4)
 
 
 __all__ = [
+    "FALLBACK_HIDDEN_SCALE",
+    "FALLBACK_RECURSE_SCALE",
+    "FALLBACK_BIAS",
     "TrainingResult",
     "generate_parity_data",
     "generate_carry_data",
