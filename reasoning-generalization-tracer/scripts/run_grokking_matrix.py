@@ -8,9 +8,9 @@ import itertools
 import json
 import numbers
 import warnings
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Tuple
 
 from rg_tracer.attribution import graphs as attr_graphs
 from rg_tracer.attribution import metrics as attr_metrics
@@ -33,9 +33,9 @@ def _build_combo_grid() -> Iterable[Mapping[str, str]]:
         yield dict(zip(keys, combo, strict=True))
 
 
-def _extract_phase_graphs(combo_digest: int, combo_name: str) -> List[Mapping[str, object]]:
+def _extract_phase_graphs(combo_digest: int, combo_name: str) -> list[Mapping[str, object]]:
     backend = attr_graphs.get_backend("null")
-    graphs: List[Mapping[str, object]] = []
+    graphs: list[Mapping[str, object]] = []
     for index, phase in enumerate(PHASES):
         payload = {
             "task_id": f"phase_{phase}_{combo_digest}",
@@ -56,8 +56,8 @@ def _extract_phase_graphs(combo_digest: int, combo_name: str) -> List[Mapping[st
 
 
 def _summarise_metrics(
-    graphs: List[Mapping[str, object]],
-) -> Dict[str, object]:
+    graphs: list[Mapping[str, object]],
+) -> dict[str, object]:
     metrics = {
         "sparsity": attr_metrics.path_sparsity(graphs),
         "avg_path_length": attr_metrics.average_path_length(graphs),
@@ -77,7 +77,7 @@ def _summarise_metrics(
 
 def _write_cell_artifacts(
     cell_dir: Path,
-    graphs: List[Mapping[str, object]],
+    graphs: list[Mapping[str, object]],
     metrics: Mapping[str, object],
 ) -> None:
     cell_dir.mkdir(parents=True, exist_ok=True)
@@ -91,7 +91,7 @@ def _write_cell_artifacts(
 
 def _write_summary(
     summary_path: Path,
-    rows: List[Tuple[str, Mapping[str, object]]],
+    rows: list[tuple[str, Mapping[str, object]]],
 ) -> None:
     with summary_path.open("w", encoding="utf8") as handle:
         header = (
@@ -131,7 +131,7 @@ def run_matrix(
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     root = output_dir / f"grokking_matrix_{timestamp}"
     root.mkdir(parents=True, exist_ok=True)
-    rows: List[Tuple[str, Mapping[str, object]]] = []
+    rows: list[tuple[str, Mapping[str, object]]] = []
     total_cells = len(REGULARISATION) * len(STABILITY) * len(GRADIENT) * len(REASONING)
     if limit is not None and limit < 0:
         raise ValueError("limit must be non-negative")
@@ -158,14 +158,14 @@ def run_matrix(
     return root
 
 
-def parse_args(argv: List[str] | None = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="runs/matrix", help="Directory for experiment outputs")
     parser.add_argument("--limit", type=int, help="Optional limit on number of matrix cells")
     return parser.parse_args(argv)
 
 
-def main(argv: List[str] | None = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     output_dir = Path(args.output).resolve()
     run_dir = run_matrix(output_dir=output_dir, limit=args.limit)

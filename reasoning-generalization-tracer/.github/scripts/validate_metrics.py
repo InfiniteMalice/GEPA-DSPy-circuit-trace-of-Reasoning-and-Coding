@@ -44,6 +44,7 @@ def main() -> int:
     lines = _load_lines(metrics_path)
     if not lines:
         raise SystemExit("attr_metrics.jsonl is empty")
+    # CI writes homogeneous metric rows; validate the first one as a schema proxy.
     first = lines[0]
     missing = [key for key in REQUIRED_KEYS if key not in first]
     if missing:

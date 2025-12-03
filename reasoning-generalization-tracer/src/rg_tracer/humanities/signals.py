@@ -94,14 +94,18 @@ def analyse_humanities_chain(chain: Iterable[str] | str) -> HumanitiesSignals:
         # quoted material that is out of context. Allowing both on the same
         # step is intentional so downstream tooling can reason about each
         # axis independently.
+        if double_quote_count >= 2:
+            quote_hits += 1
         if ('"' in step) and not has_citation:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
             neutrality_hits += 1
         tags.append({"step": step, "tags": step_tags})
+
     if counter_hits == 0:
         # The absence of counter-evidence indicates the concluding step lacks
-        # explicit support, so tag the final statement once.
+        # explicit support, so tag the final statement once. The duplicate check
+        # guards against future additions of UNSUPPORTED elsewhere.
         unsupported = SemanticTag.UNSUPPORTED.value
         if unsupported not in tags[-1]["tags"]:
             tags[-1]["tags"].append(unsupported)
