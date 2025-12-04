@@ -1,26 +1,27 @@
-# GEPA-DSPy Circuit Tracing Rules
+# Beads Instructions
 
-These rules apply to the entire repository. All code changes must follow them.
+These instructions mirror `AGENTS.md` so beads can track repository rules. Update
+`AGENTS.md` first and copy changes here to keep both files in sync.
 
-## Critical Rules
-1. **Python files use a 100 character line limit.** No exceptions.
-2. **Import organization** must follow the pattern:
-    ```python
-    # Standard library
-    import json
-    from typing import Any, Dict, List
-    
-    # Third-party (DSPy together)
-    import dspy
-    from dspy import ChainOfThought as CoT
-    from dspy import Signature as Sig
-    import numpy as np
-    
-    # Local
-    from .tracer import CircuitTracer
-    ```
-3. **No unused imports.** Verify every DSPy module imported is used.
-4. **Black formatting** with `black --line-length 100 .`.
+## GEPA-DSPy Circuit Tracing Rules
+- Python files use a 100 character line limit. No exceptions.
+- Imports must be organized as:
+  ```python
+  # Standard library
+  import json
+  from typing import Any, Dict, List
+
+  # Third-party (DSPy together)
+  import dspy
+  from dspy import ChainOfThought as CoT
+  from dspy import Signature as Sig
+  import numpy as np
+
+  # Local
+  from .tracer import CircuitTracer
+  ```
+- No unused imports. Verify every DSPy module imported is used.
+- Black formatting with `black --line-length 100 .`.
 
 ## DSPy-Specific Guidance
 - Use short signature names (e.g., `class ReasonSig(Sig):`).
