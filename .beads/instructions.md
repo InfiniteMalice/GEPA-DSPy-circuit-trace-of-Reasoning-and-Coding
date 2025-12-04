@@ -1,26 +1,27 @@
-# GEPA-DSPy Circuit Tracing Rules
+# Beads Instructions
 
-These rules apply to the entire repository. All code changes must follow them.
+These instructions mirror `AGENTS.md` so beads can track repository rules. Update
+`AGENTS.md` first and copy changes here to keep both files in sync.
 
-## Critical Rules
-1. **Python files use a 100 character line limit.** No exceptions.
-2. **Import organization** must follow the pattern:
-    ```python
-    # Standard library
-    import json
-    from typing import Any, Dict, List
-    
-    # Third-party (DSPy together)
-    import dspy
-    from dspy import ChainOfThought as CoT
-    from dspy import Signature as Sig
-    import numpy as np
-    
-    # Local
-    from .tracer import CircuitTracer
-    ```
-3. **No unused imports.** Verify every DSPy module imported is used.
-4. **Black formatting** with `black --line-length 100 .`.
+## GEPA-DSPy Circuit Tracing Rules
+- Python files use a 100 character line limit. No exceptions.
+- Imports must be organized as:
+  ```python
+  # Standard library
+  import json
+  from typing import Any, Dict, List
+
+  # Third-party (DSPy together)
+  import dspy
+  from dspy import ChainOfThought as CoT
+  from dspy import Signature as Sig
+  import numpy as np
+
+  # Local
+  from .tracer import CircuitTracer
+  ```
+- No unused imports. Verify every DSPy module imported is used.
+- Black formatting with `black --line-length 100 .`.
 
 ## DSPy-Specific Guidance
 - Use short signature names (e.g., `class ReasonSig(Sig):`).
@@ -40,14 +41,10 @@ These rules apply to the entire repository. All code changes must follow them.
 - Forgetting to break long `predict()` or similar calls across multiple lines.
 - Importing entire `dspy.teleprompt` modules instead of specific classes.
 
-## Beads Usage
-- Repository rules are mirrored in `.beads/instructions.md` for beads tracking.
-- Update this file first and copy changes into `.beads/instructions.md` to keep the two
-  instruction sets synchronized.
-- Install beads with
+## Beads Setup Notes
+- Run beads installer when network access allows:
   `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`
-  when network access allows.
-- If installation fails because GitHub is blocked, retry when access is restored.
+- Current attempts fail because GitHub access is blocked by a proxy (HTTP 403).
 - Until the installer works, keep a manual bead log in `.beads/database.md`:
   - Document installer status (e.g., proxy 403) so future attempts have context.
   - Record current repo standards (line length, import order) and notable
