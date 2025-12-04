@@ -45,3 +45,8 @@ These instructions mirror `AGENTS.md` so beads can track repository rules. Updat
 - Run beads installer when network access allows:
   `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`
 - Current attempts fail because GitHub access is blocked by a proxy (HTTP 403).
+- Until the installer works, keep a manual bead log in `.beads/database.md`:
+  - Document installer status (e.g., proxy 403) so future attempts have context.
+  - Record current repo standards (line length, import order) and notable
+    checkpoints from the codebase (key packages, datasets, tests) to seed the
+    database once beads is available.

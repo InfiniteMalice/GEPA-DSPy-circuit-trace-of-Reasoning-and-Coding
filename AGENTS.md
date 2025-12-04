@@ -48,3 +48,8 @@ These rules apply to the entire repository. All code changes must follow them.
   `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`
   when network access allows.
 - If installation fails because GitHub is blocked, retry when access is restored.
+- Until the installer works, keep a manual bead log in `.beads/database.md`:
+  - Document installer status (e.g., proxy 403) so future attempts have context.
+  - Record current repo standards (line length, import order) and notable
+    checkpoints from the codebase (key packages, datasets, tests) to seed the
+    database once beads is available.
