@@ -3,7 +3,7 @@
 These rules apply to the entire repository. All code changes must follow them.
 
 ## Critical Rules
-1. **100 character line limit.** No exceptions.
+1. **Python files use a 100 character line limit.** No exceptions.
 2. **Import organization** must follow the pattern:
     ```python
     # Standard library
@@ -29,7 +29,7 @@ These rules apply to the entire repository. All code changes must follow them.
 - Prefer aliases and shorter names over exceeding the line limit.
 
 ## Pre-Commit Checklist
-- [ ] Lines ≤ 100 characters.
+- [ ] Python lines ≤ 100 characters.
 - [ ] DSPy imports aliased and organized.
 - [ ] No unused signatures or modules.
 - [ ] Black formatted.
@@ -42,6 +42,8 @@ These rules apply to the entire repository. All code changes must follow them.
 
 ## Beads Usage
 - Repository rules are mirrored in `.beads/instructions.md` for beads tracking.
+- Update this file first and copy changes into `.beads/instructions.md` to keep the two
+  instruction sets synchronized.
 - Install beads with
   `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`
   when network access allows.

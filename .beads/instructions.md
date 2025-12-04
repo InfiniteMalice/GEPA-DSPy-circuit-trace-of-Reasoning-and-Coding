@@ -1,9 +1,10 @@
 # Beads Instructions
 
-These instructions mirror `AGENTS.md` so beads can track repository rules.
+These instructions mirror `AGENTS.md` so beads can track repository rules. Update
+`AGENTS.md` first and copy changes here to keep both files in sync.
 
 ## GEPA-DSPy Circuit Tracing Rules
-- 100 character line limit. No exceptions.
+- Python files use a 100 character line limit. No exceptions.
 - Imports must be organized as:
   ```python
   # Standard library
@@ -29,7 +30,7 @@ These instructions mirror `AGENTS.md` so beads can track repository rules.
 - Prefer aliases and shorter names over exceeding the line limit.
 
 ## Pre-Commit Checklist
-- [ ] Lines ≤ 100 characters.
+- [ ] Python lines ≤ 100 characters.
 - [ ] DSPy imports aliased and organized.
 - [ ] No unused signatures or modules.
 - [ ] Black formatted.
