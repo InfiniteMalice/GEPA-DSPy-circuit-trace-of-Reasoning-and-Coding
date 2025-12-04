@@ -39,3 +39,10 @@ These rules apply to the entire repository. All code changes must follow them.
 - Long signature field descriptions that exceed the line limit.
 - Forgetting to break long `predict()` or similar calls across multiple lines.
 - Importing entire `dspy.teleprompt` modules instead of specific classes.
+
+## Beads Usage
+- Repository rules are mirrored in `.beads/instructions.md` for beads tracking.
+- Install beads with
+  `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash`
+  when network access allows.
+- If installation fails because GitHub is blocked, retry when access is restored.
