@@ -3,7 +3,7 @@
 These rules apply to the entire repository. All code changes must follow them.
 
 ## Critical Rules
-1. **Python files use a 100 character line limit.** No exceptions.
+1. **Python files use a 100-character line limit.** No exceptions.
 2. **Import organization** must follow the pattern:
     ```python
     # Standard library
@@ -143,7 +143,7 @@ AI assistants often create planning and design documents during development:
 - DESIGN.md, CODEBASE_SUMMARY.md, INTEGRATION_PLAN.md
 - TESTING_GUIDE.md, TECHNICAL_DESIGN.md, and similar files
 
-**Best Practice: Use a dedicated directory for these ephemeral files**
+### Best Practice: Use a dedicated directory for these ephemeral files
 
 **Recommended approach:**
 - Create a `history/` directory in the project root.
@@ -152,7 +152,7 @@ AI assistants often create planning and design documents during development:
 - Only access `history/` when explicitly asked to review past planning.
 
 **Example .gitignore entry (optional):**
-```
+```gitignore
 # AI planning documents (ephemeral)
 history/
 ```

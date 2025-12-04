@@ -4,7 +4,7 @@ These instructions mirror `AGENTS.md` so beads can track repository rules. Updat
 `AGENTS.md` first and copy changes here to keep both files in sync.
 
 ## GEPA-DSPy Circuit Tracing Rules
-- Python files use a 100 character line limit. No exceptions.
+- Python files use a 100-character line limit. No exceptions.
 - Imports must be organized as:
   ```python
   # Standard library
@@ -144,7 +144,7 @@ AI assistants often create planning and design documents during development:
 - DESIGN.md, CODEBASE_SUMMARY.md, INTEGRATION_PLAN.md
 - TESTING_GUIDE.md, TECHNICAL_DESIGN.md, and similar files
 
-**Best Practice: Use a dedicated directory for these ephemeral files**
+### Best Practice: Use a dedicated directory for these ephemeral files
 
 **Recommended approach:**
 - Create a `history/` directory in the project root.
@@ -153,7 +153,7 @@ AI assistants often create planning and design documents during development:
 - Only access `history/` when explicitly asked to review past planning.
 
 **Example .gitignore entry (optional):**
-```
+```gitignore
 # AI planning documents (ephemeral)
 history/
 ```
