@@ -8,6 +8,8 @@ access is restored.
 - Python line length: 100 characters; follow the import ordering (stdlib, third-party DSPy, local).
 - Avoid unused imports and format with `black --line-length 100 .`.
 - Keep `.beads/instructions.md` mirrored with `AGENTS.md`; update `AGENTS.md` first.
+- Use bd for all issue tracking with `--json`, commit `.beads/issues.jsonl` alongside code, and
+  store AI planning docs in `history/` to keep the root clean.
 
 ## Repository Snapshot
 - Project root README highlights RG-Tracer as the main package and CLI under `reasoning-generalization-tracer/`.
@@ -23,3 +25,5 @@ access is restored.
 - Retry the official installer when GitHub access is available, then import these entries into the
   beads database.
 - Expand the snapshot with dataset coverage and configuration defaults once beads tooling is live.
+- Add bd issues to `.beads/issues.jsonl` once installation succeeds to capture open tasks, blockers,
+  and discovered-from links for RG-Tracer work.
