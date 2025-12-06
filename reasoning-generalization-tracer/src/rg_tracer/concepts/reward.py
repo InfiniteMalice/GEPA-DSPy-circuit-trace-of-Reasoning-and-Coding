@@ -6,6 +6,9 @@ import math
 from collections.abc import Iterable as IterableABC, Mapping as MappingABC
 from typing import Any, Iterable, Mapping
 
+from ..modules.grn import apply_grn
+from ..modules.torch_stub import torch
+
 from .schema import ConceptSpec
 
 DEFAULT_WEIGHTS = {
@@ -149,6 +152,8 @@ def compute_concept_reward(
     weights: Mapping[str, float] | None = None,
     alignment: float | None = None,
     alignment_scale: float = 0.25,
+    use_grn: bool = False,
+    grn_eps: float = 1e-6,
 ) -> float:
     """Aggregate concept scores additively, then scale by alignment.
 
@@ -183,6 +188,18 @@ def compute_concept_reward(
         entailed_ids,
         contradictory_ids,
     )
+    if use_grn and features:
+        importances = [
+            float(feature.get("importance", 0.0) or 0.0) for feature in features
+        ]
+        tensor = torch.tensor(importances, dtype=torch.float32)
+        normalised = apply_grn(tensor, eps=grn_eps).tolist()
+        aligned_features = []
+        for feature, importance in zip(features, normalised, strict=True):
+            updated = dict(feature)
+            updated["importance"] = float(importance)
+            aligned_features.append(updated)
+        features = aligned_features
     target_tags = set(concept_spec.expected_substructures)
     match = _compute_match(features, concept_spec)
     selectivity = _compute_selectivity(features, target_tags)
