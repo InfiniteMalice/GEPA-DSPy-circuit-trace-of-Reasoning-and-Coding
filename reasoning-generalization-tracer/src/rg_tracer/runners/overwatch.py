@@ -71,6 +71,8 @@ class OverwatchAgent:
             return OverwatchDecision(action="allow", reason=default_reason)
         try:
             data = json.loads(response)
+            if not isinstance(data, Mapping):
+                raise TypeError("LLM response must be a JSON object")
             action = str(data.get("action", "allow"))
             decision = OverwatchDecision(
                 action=action,
