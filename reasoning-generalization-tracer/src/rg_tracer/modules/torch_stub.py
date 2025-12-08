@@ -6,8 +6,10 @@ import importlib.util
 from typing import Any, Iterable
 
 if importlib.util.find_spec("torch"):
-    import torch  # type: ignore  # noqa: F401
+    import torch  # type: ignore
 else:  # pragma: no cover - fallback path
+    _SCALAR_INDEXING_ERROR = "SimpleTensor does not support indexing on scalars"
+    _SCALAR_ITERATION_ERROR = "SimpleTensor is not iterable"
 
     class SimpleTensor:
         def __init__(self, data: Any):
@@ -37,17 +39,17 @@ else:  # pragma: no cover - fallback path
         def __getitem__(self, index) -> "SimpleTensor":
             if isinstance(self.data, list):
                 return SimpleTensor(self.data[index])
-            raise TypeError("SimpleTensor does not support indexing on scalars")
+            raise TypeError(_SCALAR_INDEXING_ERROR)
 
         def __iter__(self):
             if isinstance(self.data, list):
                 return (SimpleTensor(item) for item in self.data)
-            raise TypeError("SimpleTensor is not iterable")
+            raise TypeError(_SCALAR_ITERATION_ERROR)
 
     class _TorchShim:
         float32 = float
 
-        def tensor(self, data: Any, dtype: object | None = None) -> SimpleTensor:
+        def tensor(self, data: Any, dtype: object | None = None) -> SimpleTensor:  # noqa: ARG002
             if isinstance(data, Iterable) and not isinstance(data, (str, bytes)):
                 return SimpleTensor([self._coerce(item) for item in data])
             return SimpleTensor(self._coerce(data))
@@ -61,4 +63,4 @@ else:  # pragma: no cover - fallback path
 
     torch = _TorchShim()
 
-__all__ = ["torch", "SimpleTensor"]
+__all__ = ["SimpleTensor", "torch"]

@@ -368,8 +368,6 @@ def rank_candidates(
             epsilon=epsilon,
             use_grn=use_grn,
         )
-        if "scores" not in evaluation:
-            evaluation["scores"] = dict(scores)
         results.append(evaluation)
     return sorted(results, key=lambda item: item["composite"], reverse=True)
 

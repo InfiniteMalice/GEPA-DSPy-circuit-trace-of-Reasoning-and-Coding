@@ -545,7 +545,7 @@ def run_self_play(
         }
         if overwatch_agent is not None:
             decision = overwatch_agent.review_step(
-                trajectory + [{"candidate_text": initial_text}],
+                [*trajectory, {"candidate_text": initial_text}],
                 axis_scores,
                 value_stub,
             )
@@ -616,7 +616,7 @@ def run_self_play(
             }
         if overwatch_agent is not None:
             final_decision = overwatch_agent.review_final(
-                trajectory + [{"candidate_text": text_after_repair}],
+                [*trajectory, {"candidate_text": text_after_repair}],
                 axis_scores,
                 value_payload,
             )
@@ -736,7 +736,9 @@ def run_self_play(
                         "value_decomp_user_deep": candidate.value_decomp.user_deep.as_dict(),
                         "value_decomp_user_shallow": candidate.value_decomp.user_shallow.as_dict(),
                         "value_decomp_output_deep": candidate.value_decomp.output_deep.as_dict(),
-                        "value_decomp_output_shallow": candidate.value_decomp.output_shallow.as_dict(),
+                        "value_decomp_output_shallow": (
+                            candidate.value_decomp.output_shallow.as_dict()
+                        ),
                         "value_decomp_dvgr": candidate.value_decomp.dvgr,
                         "value_decomp_score_decomp": candidate.value_decomp.score_decomp,
                     }
@@ -812,7 +814,9 @@ def run_self_play(
                     "value_decomp_user_deep": best.value_decomp.user_deep.as_dict(),
                     "value_decomp_user_shallow": best.value_decomp.user_shallow.as_dict(),
                     "value_decomp_output_deep": best.value_decomp.output_deep.as_dict(),
-                    "value_decomp_output_shallow": best.value_decomp.output_shallow.as_dict(),
+                    "value_decomp_output_shallow": (
+                        best.value_decomp.output_shallow.as_dict()
+                    ),
                     "value_decomp_dvgr": best.value_decomp.dvgr,
                     "value_decomp_score_decomp": best.value_decomp.score_decomp,
                 }

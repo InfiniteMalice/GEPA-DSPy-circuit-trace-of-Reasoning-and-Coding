@@ -51,7 +51,7 @@ def test_overwatch_rewrite_and_limits():
     )
     agent = OverwatchAgent(
         rewrite_config,
-        llm=lambda prompt: json.dumps(
+        llm=lambda _prompt: json.dumps(
             {"action": "rewrite_thought", "new_thought": "Aligned thought", "reason": "test"}
         ),
     )
@@ -64,7 +64,7 @@ def test_overwatch_rewrite_and_limits():
             allowed_actions=["rewrite_action", "abort_episode", "allow"],
             max_interventions_per_episode=1,
         ),
-        llm=lambda prompt: "unsafe sequence detected",
+        llm=lambda _prompt: "unsafe sequence detected",
     )
     first = abort_agent.review_step([{"prompt": "p"}], {}, {})
     assert first.action in {"rewrite_action", "allow"}
