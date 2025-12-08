@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from rg_tracer.abstention import apply_abstention
 from rg_tracer.modules.grn import apply_grn
 from rg_tracer.modules.torch_stub import torch
@@ -26,6 +28,12 @@ def test_apply_grn_normalises_rms():
 def test_abstention_with_grn_flag():
     result = apply_abstention("answer", 0.5, 1.0, True, use_grn=True)
     assert result.abstained
+
+
+def test_grn_affects_abstention_decision():
+    without_grn = apply_abstention("answer", 0.8, 2.5, True, use_grn=False)
+    with_grn = apply_abstention("answer", 0.8, 2.5, True, use_grn=True)
+    assert without_grn.abstained != with_grn.abstained
 
 
 def test_value_decomposition_components():
@@ -76,6 +84,8 @@ def test_self_play_with_grn_and_value_decomposition(tmp_path):
     problem_path = (
         Path(__file__).resolve().parents[1] / "datasets" / "toy_math" / "addition_small.jsonl"
     )
+    if not problem_path.exists():
+        pytest.skip(f"Test dataset not found: {problem_path}")
     overwatch_cfg = OverwatchConfig(
         enabled=True,
         allowed_actions=["observe", "rewrite_thought", "rewrite_action", "abort_episode"],

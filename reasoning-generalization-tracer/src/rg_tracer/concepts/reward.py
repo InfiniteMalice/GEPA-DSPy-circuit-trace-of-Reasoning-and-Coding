@@ -8,7 +8,6 @@ from typing import Any, Iterable, Mapping
 
 from ..modules.grn import apply_grn
 from ..modules.torch_stub import torch
-
 from .schema import ConceptSpec
 
 DEFAULT_WEIGHTS = {

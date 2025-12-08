@@ -76,6 +76,13 @@ class OverwatchAgent:
             lower = response.casefold()
             for keyword in self.config.intervene_on:
                 if keyword and keyword.casefold() in lower:
+                    if "rewrite_action" not in self.config.allowed_actions:
+                        return OverwatchDecision(
+                            action="allow",
+                            reason=(
+                                f"Heuristic match for {keyword} but 'rewrite_action' not allowed"
+                            ),
+                        )
                     return OverwatchDecision(
                         action="rewrite_action",
                         reason=f"Heuristic match for {keyword}",

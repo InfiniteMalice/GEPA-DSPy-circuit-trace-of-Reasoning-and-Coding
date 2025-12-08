@@ -69,6 +69,9 @@ _DEEP_KEYWORDS = {
     "requirements": "spec_faithfulness",
 }
 
+BREVITY_LINE_THRESHOLD = 2
+VERBOSITY_WORD_THRESHOLD = 80
+
 _SHALLOW_KEYWORDS = {
     "brief": "brevity",
     "short": "brevity",
@@ -109,7 +112,7 @@ def analyze_output_deep_values(output_text: str, scores: ScoreVector) -> DeepVal
     heuristic["spec_faithfulness"] = max(
         heuristic["spec_faithfulness"], scores.get("completeness", 0.0)
     )
-    heuristic["safety"] = max(heuristic["safety"], scores.get("efficiency", 0.0))
+    heuristic["safety"] = max(heuristic["safety"], scores.get("safety", 0.0))
     heuristic["non_deception"] = max(
         heuristic["non_deception"], scores.get("rigor", 0.0)
     )
@@ -118,9 +121,9 @@ def analyze_output_deep_values(output_text: str, scores: ScoreVector) -> DeepVal
 
 def analyze_output_shallow_features(output_text: str) -> ShallowFeatureVector:
     scores = _score_from_keywords(output_text, _SHALLOW_KEYWORDS)
-    if len(output_text.splitlines()) <= 2:
+    if len(output_text.splitlines()) <= BREVITY_LINE_THRESHOLD:
         scores["brevity"] = max(scores["brevity"], 0.5)
-    if len(output_text.split()) > 80:
+    if len(output_text.split()) > VERBOSITY_WORD_THRESHOLD:
         scores["verbosity"] = max(scores["verbosity"], 0.5)
     return ShallowFeatureVector(**scores)
 
