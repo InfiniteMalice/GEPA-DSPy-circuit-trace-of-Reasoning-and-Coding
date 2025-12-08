@@ -6,6 +6,7 @@ import math
 from collections.abc import Iterable as IterableABC, Mapping as MappingABC
 from typing import Any, Iterable, Mapping
 
+
 from ..modules.grn import apply_grn
 from .schema import ConceptSpec
 

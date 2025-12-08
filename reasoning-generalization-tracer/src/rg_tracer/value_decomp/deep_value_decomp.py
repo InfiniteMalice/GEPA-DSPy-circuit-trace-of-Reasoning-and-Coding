@@ -194,15 +194,15 @@ def decompose_score(
 
 
 __all__ = [
+    "BREVITY_LINE_THRESHOLD",
     "DeepValueVector",
     "ShallowFeatureVector",
     "ValueDecompResult",
-    "parse_user_deep_values",
-    "parse_user_shallow_prefs",
+    "VERBOSITY_WORD_THRESHOLD",
     "analyze_output_deep_values",
     "analyze_output_shallow_features",
     "compute_dvgr",
     "decompose_score",
-    "BREVITY_LINE_THRESHOLD",
-    "VERBOSITY_WORD_THRESHOLD",
+    "parse_user_deep_values",
+    "parse_user_shallow_prefs",
 ]

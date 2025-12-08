@@ -77,7 +77,7 @@ def test_overwatch_rewrite_and_limits():
         llm=lambda _prompt: "unsafe sequence detected",
     )
     first = abort_agent.review_step([{"prompt": "p"}], {}, {})
-    assert first.action in {"rewrite_action", "allow"}
+    assert first.action == "rewrite_action"
     second = abort_agent.review_final([{"prompt": "p"}], {}, {})
     assert second.action == "allow"
 

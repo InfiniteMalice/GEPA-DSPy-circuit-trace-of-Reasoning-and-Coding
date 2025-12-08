@@ -111,6 +111,8 @@ class OverwatchAgent:
         value_decomp: Mapping[str, object] | None,
         stage: str,
     ) -> OverwatchDecision:
+        if not self.config.enabled:
+            return OverwatchDecision(action="allow", reason="Overwatch disabled")
         if self._interventions >= self.config.max_interventions_per_episode:
             return OverwatchDecision(action="allow", reason="Max interventions reached")
         prompt = self._build_prompt(trajectory, scores, value_decomp, stage)
