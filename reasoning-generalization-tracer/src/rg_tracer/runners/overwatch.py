@@ -17,9 +17,15 @@ class OverwatchDecision:
 
 @dataclass
 class OverwatchConfig:
+    """Configuration for LLM overwatch.
+
+    The "allow" action is treated as a no-op and always permitted even if it is not explicitly
+    present in ``allowed_actions``.
+    """
+
     enabled: bool = False
     intervene_on: List[str] = field(default_factory=list)
-    allowed_actions: List[str] = field(default_factory=lambda: ["observe"])
+    allowed_actions: List[str] = field(default_factory=lambda: ["observe", "allow"])
     max_interventions_per_episode: int = 3
 
 

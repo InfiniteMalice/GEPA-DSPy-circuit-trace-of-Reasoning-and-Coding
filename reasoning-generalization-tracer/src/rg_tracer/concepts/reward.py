@@ -7,7 +7,6 @@ from collections.abc import Iterable as IterableABC, Mapping as MappingABC
 from typing import Any, Iterable, Mapping
 
 from ..modules.grn import apply_grn
-from ..modules.torch_stub import torch
 from .schema import ConceptSpec
 
 DEFAULT_WEIGHTS = {
@@ -191,8 +190,7 @@ def compute_concept_reward(
         importances = [
             float(feature.get("importance", 0.0) or 0.0) for feature in features
         ]
-        tensor = torch.tensor(importances, dtype=torch.float32)
-        normalised = apply_grn(tensor, eps=grn_eps).tolist()
+        normalised = apply_grn(importances, eps=grn_eps).tolist()
         aligned_features = []
         for feature, importance in zip(features, normalised, strict=True):
             updated = dict(feature)

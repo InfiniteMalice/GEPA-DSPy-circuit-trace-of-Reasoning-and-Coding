@@ -31,6 +31,7 @@ def test_abstention_with_grn_flag():
 
 
 def test_grn_affects_abstention_decision():
+    # These values are chosen so GRN normalization moves the threshold crossing
     without_grn = apply_abstention("answer", 0.8, 2.5, True, use_grn=False)
     with_grn = apply_abstention("answer", 0.8, 2.5, True, use_grn=True)
     assert without_grn.abstained != with_grn.abstained
@@ -72,6 +73,7 @@ def test_overwatch_rewrite_and_limits():
             allowed_actions=["rewrite_action", "abort_episode", "allow"],
             max_interventions_per_episode=1,
         ),
+        # LLM returns non-JSON, testing fallback behavior
         llm=lambda _prompt: "unsafe sequence detected",
     )
     first = abort_agent.review_step([{"prompt": "p"}], {}, {})

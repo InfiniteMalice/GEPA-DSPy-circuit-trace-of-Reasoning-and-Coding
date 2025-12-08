@@ -149,6 +149,38 @@ def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
     return frontier
 
 
+def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[str, object]:
+    record: Dict[str, object] = {
+        "text": candidate.text,
+        "confidence": candidate.confidence,
+        "axis_scores": candidate.axis_scores,
+        "base_composite": candidate.base_composite,
+        "composite": candidate.composite,
+        "passes_gates": candidate.passes_gates,
+        "failed_gates": candidate.failed_gates,
+        "concept_reward": candidate.concept_reward,
+        "abstained": candidate.abstained,
+        "problem_id": candidate.problem_id,
+        "attr_bonus": candidate.attr_bonus,
+        "attr_metrics": candidate.attr_metrics,
+        "grn_flags": candidate.grn_flags,
+        "overwatch_enabled": overwatch_enabled,
+        "overwatch_interventions": candidate.overwatch_interventions,
+    }
+    if candidate.value_decomp is not None:
+        record.update(
+            {
+                "value_decomp_user_deep": candidate.value_decomp.user_deep.as_dict(),
+                "value_decomp_user_shallow": candidate.value_decomp.user_shallow.as_dict(),
+                "value_decomp_output_deep": candidate.value_decomp.output_deep.as_dict(),
+                "value_decomp_output_shallow": candidate.value_decomp.output_shallow.as_dict(),
+                "value_decomp_dvgr": candidate.value_decomp.dvgr,
+                "value_decomp_score_decomp": candidate.value_decomp.score_decomp,
+            }
+        )
+    return record
+
+
 def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     base = Path(base_dir or Path.cwd() / "runs") / timestamp
@@ -713,36 +745,7 @@ def run_self_play(
     scores_path = run_dir / "scores.jsonl"
     with scores_path.open("w", encoding="utf8") as handle:
         for candidate in results:
-            record = {
-                "text": candidate.text,
-                "confidence": candidate.confidence,
-                "axis_scores": candidate.axis_scores,
-                "base_composite": candidate.base_composite,
-                "composite": candidate.composite,
-                "passes_gates": candidate.passes_gates,
-                "failed_gates": candidate.failed_gates,
-                "concept_reward": candidate.concept_reward,
-                "abstained": candidate.abstained,
-                "problem_id": candidate.problem_id,
-                "attr_bonus": candidate.attr_bonus,
-                "attr_metrics": candidate.attr_metrics,
-                "grn_flags": candidate.grn_flags,
-                "overwatch_enabled": overwatch_settings.enabled,
-                "overwatch_interventions": candidate.overwatch_interventions,
-            }
-            if candidate.value_decomp is not None:
-                record.update(
-                    {
-                        "value_decomp_user_deep": candidate.value_decomp.user_deep.as_dict(),
-                        "value_decomp_user_shallow": candidate.value_decomp.user_shallow.as_dict(),
-                        "value_decomp_output_deep": candidate.value_decomp.output_deep.as_dict(),
-                        "value_decomp_output_shallow": (
-                            candidate.value_decomp.output_shallow.as_dict()
-                        ),
-                        "value_decomp_dvgr": candidate.value_decomp.dvgr,
-                        "value_decomp_score_decomp": candidate.value_decomp.score_decomp,
-                    }
-                )
+            record = _candidate_to_record(candidate, overwatch_settings.enabled)
             handle.write(
                 json.dumps(record) + "\n"
             )
@@ -791,36 +794,7 @@ def run_self_play(
 
     best_path = run_dir / "best.json"
     with best_path.open("w", encoding="utf8") as handle:
-        best_record = {
-            "text": best.text,
-            "confidence": best.confidence,
-            "axis_scores": best.axis_scores,
-            "base_composite": best.base_composite,
-            "composite": best.composite,
-            "passes_gates": best.passes_gates,
-            "failed_gates": best.failed_gates,
-            "concept_reward": best.concept_reward,
-            "attr_bonus": best.attr_bonus,
-            "attr_metrics": best.attr_metrics,
-            "abstained": best.abstained,
-            "problem_id": best.problem_id,
-            "grn_flags": best.grn_flags,
-            "overwatch_enabled": overwatch_settings.enabled,
-            "overwatch_interventions": best.overwatch_interventions,
-        }
-        if best.value_decomp is not None:
-            best_record.update(
-                {
-                    "value_decomp_user_deep": best.value_decomp.user_deep.as_dict(),
-                    "value_decomp_user_shallow": best.value_decomp.user_shallow.as_dict(),
-                    "value_decomp_output_deep": best.value_decomp.output_deep.as_dict(),
-                    "value_decomp_output_shallow": (
-                        best.value_decomp.output_shallow.as_dict()
-                    ),
-                    "value_decomp_dvgr": best.value_decomp.dvgr,
-                    "value_decomp_score_decomp": best.value_decomp.score_decomp,
-                }
-            )
+        best_record = _candidate_to_record(best, overwatch_settings.enabled)
         json.dump(best_record, handle, indent=2)
 
     return {

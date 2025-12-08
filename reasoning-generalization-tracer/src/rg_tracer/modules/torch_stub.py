@@ -7,6 +7,7 @@ from typing import Any, Iterable
 
 if importlib.util.find_spec("torch"):
     import torch  # type: ignore
+    SimpleTensor = torch.Tensor  # type: ignore
 else:  # pragma: no cover - fallback path
     _SCALAR_INDEXING_ERROR = "SimpleTensor does not support indexing on scalars"
     _SCALAR_ITERATION_ERROR = "SimpleTensor is not iterable"
@@ -33,6 +34,10 @@ else:  # pragma: no cover - fallback path
 
         def item(self) -> float:
             if isinstance(self.data, list):
+                if len(self.data) != 1:
+                    raise ValueError(
+                        "only one element tensors can be converted to Python scalars"
+                    )
                 return SimpleTensor(self.data[0]).item()
             return float(self.data)
 
@@ -63,4 +68,4 @@ else:  # pragma: no cover - fallback path
 
     torch = _TorchShim()
 
-__all__ = ["SimpleTensor", "torch"]
+__all__ = ["SimpleTensor", "torch"] if "SimpleTensor" in globals() else ["torch"]

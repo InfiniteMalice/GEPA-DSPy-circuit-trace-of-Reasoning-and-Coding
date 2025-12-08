@@ -9,7 +9,8 @@ from .torch_stub import torch
 
 def _to_list(data: object) -> list[object]:
     if hasattr(data, "tolist"):
-        return list(data.tolist())  # type: ignore[union-attr]
+        converted = data.tolist()  # type: ignore[union-attr]
+        return converted if isinstance(converted, list) else [converted]
     if isinstance(data, Iterable) and not isinstance(data, (str, bytes)):
         return list(data)
     return [data]
@@ -23,7 +24,7 @@ def _normalise_vector(values: list[float], eps: float) -> list[float]:
     return [value / denom for value in values]
 
 
-def apply_grn(x: object, eps: float = 1e-6):
+def apply_grn(x: object, eps: float = 1e-6) -> "torch.Tensor":
     """Apply Global Response Normalization across the last dimension.
 
     Inputs can be a single vector or a batch of vectors.
