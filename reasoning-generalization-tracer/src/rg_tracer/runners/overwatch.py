@@ -35,6 +35,10 @@ class OverwatchAgent:
         self.llm = llm
         self._interventions = 0
 
+    def reset(self) -> None:
+        """Reset intervention counter for reuse across episodes."""
+        self._interventions = 0
+
     def _build_prompt(
         self,
         trajectory: List[Mapping[str, object]],
@@ -79,7 +83,12 @@ class OverwatchAgent:
                     )
             decision = OverwatchDecision(action="allow", reason=default_reason)
         if decision.action not in self.config.allowed_actions and decision.action != "allow":
-            return OverwatchDecision(action="allow", reason="Action not allowed")
+            return OverwatchDecision(
+                action="allow",
+                reason=(
+                    f"Action '{decision.action}' not allowed; original reason: {decision.reason}"
+                ),
+            )
         return decision
 
     def _maybe_intervene(

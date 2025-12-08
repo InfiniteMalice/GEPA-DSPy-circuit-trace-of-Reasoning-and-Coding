@@ -11,7 +11,7 @@ def _to_list(data: object) -> list[object]:
     if hasattr(data, "tolist"):
         return list(data.tolist())  # type: ignore[union-attr]
     if isinstance(data, Iterable) and not isinstance(data, (str, bytes)):
-        return [item for item in data]
+        return list(data)
     return [data]
 
 

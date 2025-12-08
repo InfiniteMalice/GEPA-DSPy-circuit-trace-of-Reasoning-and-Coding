@@ -15,7 +15,7 @@ from ..modules.torch_stub import torch
 
 try:  # pragma: no cover - optional dependency
     import yaml
-except Exception:  # pragma: no cover
+except (ImportError, ModuleNotFoundError):  # pragma: no cover
     yaml = None
 
 DEFAULT_EPSILON = 1e-3
@@ -283,6 +283,11 @@ def _maybe_apply_grn(
     use_grn: bool,
     eps: float,
 ) -> Dict[str, float]:
+    """Optionally apply GRN with the provided epsilon for stability.
+
+    Callers typically reuse the geometric-mean epsilon as a shared stability knob even though
+    the contexts differ.
+    """
     if not use_grn:
         return dict(axis_scores)
     ordered_axes = list(weights)
