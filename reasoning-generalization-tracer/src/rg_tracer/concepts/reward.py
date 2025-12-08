@@ -6,7 +6,6 @@ import math
 from collections.abc import Iterable as IterableABC, Mapping as MappingABC
 from typing import Any, Iterable, Mapping
 
-
 from ..modules.grn import apply_grn
 from .schema import ConceptSpec
 
@@ -188,9 +187,7 @@ def compute_concept_reward(
         contradictory_ids,
     )
     if use_grn and features:
-        importances = [
-            float(feature.get("importance", 0.0) or 0.0) for feature in features
-        ]
+        importances = [float(feature.get("importance", 0.0) or 0.0) for feature in features]
         normalised = apply_grn(importances, eps=grn_eps).tolist()
         aligned_features = []
         for feature, importance in zip(features, normalised, strict=True):

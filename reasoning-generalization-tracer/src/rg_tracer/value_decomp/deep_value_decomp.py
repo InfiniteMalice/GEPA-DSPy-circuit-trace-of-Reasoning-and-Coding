@@ -108,17 +108,13 @@ def parse_user_shallow_prefs(prompt: str) -> ShallowFeatureVector:
 
 def analyze_output_deep_values(output_text: str, scores: ScoreVector) -> DeepValueVector:
     heuristic = _score_from_keywords(output_text, _DEEP_KEYWORDS)
-    heuristic["correctness"] = max(
-        heuristic["correctness"], scores.get("logical_validity", 0.0)
-    )
+    heuristic["correctness"] = max(heuristic["correctness"], scores.get("logical_validity", 0.0))
     heuristic["spec_faithfulness"] = max(
         heuristic["spec_faithfulness"], scores.get("completeness", 0.0)
     )
     # Safety leans on explicit safety axes rather than efficiency to avoid conflating concerns.
     heuristic["safety"] = max(heuristic["safety"], scores.get("safety", 0.0))
-    heuristic["non_deception"] = max(
-        heuristic["non_deception"], scores.get("rigor", 0.0)
-    )
+    heuristic["non_deception"] = max(heuristic["non_deception"], scores.get("rigor", 0.0))
     return DeepValueVector(**heuristic)
 
 
@@ -131,9 +127,7 @@ def analyze_output_shallow_features(output_text: str) -> ShallowFeatureVector:
     return ShallowFeatureVector(**scores)
 
 
-def compute_dvgr(
-    examples: Iterable[Mapping[str, Any]], predictions: Iterable[str]
-) -> float:
+def compute_dvgr(examples: Iterable[Mapping[str, Any]], predictions: Iterable[str]) -> float:
     examples_list = list(examples)
     predictions_list = list(predictions)
     if len(examples_list) != len(predictions_list):
@@ -194,16 +188,16 @@ def decompose_score(
 
 
 __all__ = [
+    "analyze_output_deep_values",
+    "analyze_output_shallow_features",
     "BREVITY_LINE_THRESHOLD",
+    "compute_dvgr",
+    "decompose_score",
     "DeepValueVector",
+    "parse_user_deep_values",
+    "parse_user_shallow_prefs",
     "ScoreVector",
     "ShallowFeatureVector",
     "ValueDecompResult",
     "VERBOSITY_WORD_THRESHOLD",
-    "analyze_output_deep_values",
-    "analyze_output_shallow_features",
-    "compute_dvgr",
-    "decompose_score",
-    "parse_user_deep_values",
-    "parse_user_shallow_prefs",
 ]

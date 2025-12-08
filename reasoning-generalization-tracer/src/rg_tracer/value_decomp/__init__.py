@@ -2,6 +2,7 @@
 
 from .deep_value_decomp import (
     DeepValueVector,
+    ScoreVector,
     ShallowFeatureVector,
     ValueDecompResult,
     analyze_output_deep_values,
@@ -13,13 +14,14 @@ from .deep_value_decomp import (
 )
 
 __all__ = [
-    "DeepValueVector",
-    "ShallowFeatureVector",
-    "ValueDecompResult",
     "analyze_output_deep_values",
     "analyze_output_shallow_features",
     "compute_dvgr",
     "decompose_score",
+    "DeepValueVector",
     "parse_user_deep_values",
     "parse_user_shallow_prefs",
+    "ScoreVector",
+    "ShallowFeatureVector",
+    "ValueDecompResult",
 ]

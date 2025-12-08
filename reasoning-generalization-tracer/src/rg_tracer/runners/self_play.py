@@ -15,7 +15,7 @@ from ..abstention import apply_abstention
 from ..attribution import graphs as attr_graphs
 from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
-from .overwatch import OverwatchAgent, OverwatchConfig, OverwatchDecision
+from .overwatch import OverwatchAgent, OverwatchConfig
 from ..scoring import aggregator, axes
 from ..semantics import SemanticTag, repair_once, verify_chain
 from ..semantics.patterns import build_token_boundary_pattern
@@ -484,6 +484,14 @@ def _map_semantics_to_features(
     }
 
 
+def _resolve_grn_flag(
+    explicit_value: bool | None, profile_config: Mapping[str, object] | None, config_key: str
+) -> bool:
+    if explicit_value is not None:
+        return bool(explicit_value)
+    return bool((profile_config or {}).get(config_key, False))
+
+
 def run_self_play(
     problem_path: str | Path,
     *,
@@ -515,21 +523,11 @@ def run_self_play(
     if profile not in profiles:
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]
-    grn_scoring = (
-        bool(use_grn_for_scoring)
-        if use_grn_for_scoring is not None
-        else bool(profile_config.get("use_grn_for_scoring", False))
+    grn_scoring = _resolve_grn_flag(use_grn_for_scoring, profile_config, "use_grn_for_scoring")
+    grn_abstention = _resolve_grn_flag(
+        use_grn_for_abstention, profile_config, "use_grn_for_abstention"
     )
-    grn_abstention = (
-        bool(use_grn_for_abstention)
-        if use_grn_for_abstention is not None
-        else bool(profile_config.get("use_grn_for_abstention", False))
-    )
-    grn_probes = (
-        bool(use_grn_for_probes)
-        if use_grn_for_probes is not None
-        else bool(profile_config.get("use_grn_for_probes", False))
-    )
+    grn_probes = _resolve_grn_flag(use_grn_for_probes, profile_config, "use_grn_for_probes")
     grn_flags = {
         "scoring": grn_scoring,
         "abstention": grn_abstention,
@@ -746,9 +744,7 @@ def run_self_play(
     with scores_path.open("w", encoding="utf8") as handle:
         for candidate in results:
             record = _candidate_to_record(candidate, overwatch_settings.enabled)
-            handle.write(
-                json.dumps(record) + "\n"
-            )
+            handle.write(json.dumps(record) + "\n")
 
     semantics_path = run_dir / "semantics.jsonl"
     with semantics_path.open("w", encoding="utf8") as handle:
