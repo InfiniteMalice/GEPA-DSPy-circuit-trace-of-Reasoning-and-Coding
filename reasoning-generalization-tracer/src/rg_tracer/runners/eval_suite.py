@@ -33,6 +33,8 @@ def evaluate_dataset(
 ) -> Dict[str, object]:
     records = _load_records(dataset_pattern)
     profiles = aggregator.load_profiles()
+    profile_config = aggregator.get_last_config()
+    use_grn = bool(profile_config.get("use_grn_for_scoring", False))
     if profile not in profiles:
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]
@@ -47,7 +49,7 @@ def evaluate_dataset(
         scores = {axis: func(metrics.get(axis, {})) for axis, func in AXIS_FUNCTIONS.items()}
         for axis, score in scores.items():
             per_axis_scores[axis].append(score)
-        eval_result = aggregator.evaluate_profile(scores, profile_obj)
+        eval_result = aggregator.evaluate_profile(scores, profile_obj, use_grn=use_grn)
         composites.append(float(eval_result["composite"]))
         gate_passes += int(eval_result["passes_gates"])
         record_axis_scores.append(scores)
