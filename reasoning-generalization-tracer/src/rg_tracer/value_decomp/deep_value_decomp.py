@@ -196,6 +196,7 @@ def decompose_score(
 __all__ = [
     "BREVITY_LINE_THRESHOLD",
     "DeepValueVector",
+    "ScoreVector",
     "ShallowFeatureVector",
     "ValueDecompResult",
     "VERBOSITY_WORD_THRESHOLD",

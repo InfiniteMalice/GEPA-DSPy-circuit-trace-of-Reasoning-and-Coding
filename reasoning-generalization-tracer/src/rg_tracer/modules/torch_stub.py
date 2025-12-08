@@ -69,5 +69,6 @@ else:  # pragma: no cover - fallback path
     torch = _TorchShim()
 
 # ``SimpleTensor`` aliases ``torch.Tensor`` when the real library is available; otherwise the
-# shim-defined SimpleTensor is exported for compatibility.
+# shim-defined SimpleTensor is exported for compatibility so ``__all__`` is stable across
+# environments.
 __all__ = ["SimpleTensor", "torch"]

@@ -82,6 +82,16 @@ def test_overwatch_rewrite_and_limits():
     assert second.action == "allow"
 
 
+def test_overwatch_disabled_short_circuits_llm():
+    def _should_not_run(_prompt: str) -> str:  # pragma: no cover - defensive
+        raise AssertionError("LLM should not be called when overwatch is disabled")
+
+    agent = OverwatchAgent(OverwatchConfig(enabled=False), llm=_should_not_run)
+    decision = agent.review_step([{"prompt": "p"}], {}, {})
+    assert decision.action == "allow"
+    assert decision.reason == "Overwatch disabled"
+
+
 def test_self_play_with_grn_and_value_decomposition(tmp_path):
     problem_path = (
         Path(__file__).resolve().parents[1] / "datasets" / "toy_math" / "addition_small.jsonl"
