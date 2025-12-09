@@ -6,7 +6,7 @@ import json
 from collections.abc import Iterable as IterableABC
 from pathlib import Path
 from statistics import mean
-from typing import Dict, List, Mapping, Sequence
+from typing import Dict, Iterable, Iterator, List, Mapping, Sequence
 
 from ..abstention import ABSTENTION_THRESHOLD
 from ..humanities import HumanitiesProfile, evaluate_profile, load_profiles
@@ -23,7 +23,7 @@ def _load_records(path: str | Path) -> List[Mapping[str, object]]:
     return records
 
 
-def _iter_tag_labels(entry: Mapping[str, object]) -> Iterable[str]:
+def _iter_tag_labels(entry: Mapping[str, object]) -> Iterator[str]:
     """Yield clean tag labels from ``entry``.
 
     ``entry["tags"]`` may be a single string or any iterable of strings. Other
