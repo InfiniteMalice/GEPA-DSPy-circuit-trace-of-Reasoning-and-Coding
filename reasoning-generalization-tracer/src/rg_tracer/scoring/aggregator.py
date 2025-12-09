@@ -18,6 +18,9 @@ try:  # pragma: no cover - optional dependency
 except (ImportError, ModuleNotFoundError):  # pragma: no cover
     yaml = None
 
+from ..modules.grn import apply_grn
+from ..modules.torch_stub import torch
+
 DEFAULT_EPSILON = 1e-3
 DEFAULT_CONFIG = {
     "use_grn_for_scoring": False,
@@ -295,7 +298,13 @@ def _maybe_apply_grn(
         [float(axis_scores.get(axis, 0.0)) for axis in ordered_axes], dtype=torch.float32
     )
     normalised = apply_grn(tensor, eps=eps).tolist()
-    return {axis: float(value) for axis, value in zip(ordered_axes, normalised, strict=True)}
+    weighted_scores = {
+        axis: float(value) for axis, value in zip(ordered_axes, normalised, strict=True)
+    }
+    for axis, value in axis_scores.items():
+        if axis not in weighted_scores:
+            weighted_scores[axis] = float(value)
+    return weighted_scores
 
 
 def apply_hard_gates(
