@@ -9,7 +9,7 @@ from collections.abc import Iterable, Mapping as MappingABC
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Dict, List, Mapping, Sequence
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
 
 from ..abstention import apply_abstention
 from ..attribution import graphs as attr_graphs
@@ -820,4 +820,8 @@ def run_self_play(
     }
 
 
-__all__ = ["run_self_play", "pareto_frontier", "Candidate"]
+__all__ = [
+  "Candidate"
+  "pareto_frontier",
+  "run_self_play",
+]
