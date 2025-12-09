@@ -228,11 +228,11 @@ def decompose_score(
 
 __all__ = [
     "BREVITY_LINE_THRESHOLD",
+    "VERBOSITY_WORD_THRESHOLD",
     "DeepValueVector",
     "ScoreVector",
     "ShallowFeatureVector",
     "ValueDecompResult",
-    "VERBOSITY_WORD_THRESHOLD",
     "analyze_output_deep_values",
     "analyze_output_shallow_features",
     "compute_dvgr",
