@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple
 
+from ..modules.grn import apply_grn
+from ..modules.torch_stub import torch
+
 ABSTENTION_THRESHOLD = 0.75
+SEMANTIC_THRESHOLD = 2
 
 
 @dataclass
@@ -20,12 +24,25 @@ def apply_abstention(
     confidence: float,
     sem_score: float,
     gates_pass: bool = True,
+    *,
+    use_grn: bool = False,
+    grn_eps: float = 1e-6,
 ) -> AbstentionResult:
     """Return abstention result enforcing the 0.75 threshold and semantic gate."""
-    should_abstain = confidence < ABSTENTION_THRESHOLD or sem_score < 2 or not gates_pass
+    if use_grn:
+        vector = torch.tensor([confidence, sem_score], dtype=torch.float32)
+        vector = apply_grn(vector, eps=grn_eps)
+        confidence_value = float(vector[0].item())
+        sem_value = float(sem_score)
+    else:
+        confidence_value = float(confidence)
+        sem_value = float(sem_score)
+    should_abstain = (
+        confidence_value < ABSTENTION_THRESHOLD or sem_value < SEMANTIC_THRESHOLD or not gates_pass
+    )
     if should_abstain:
-        return AbstentionResult(text="I don't know.", abstained=True, confidence=confidence)
-    return AbstentionResult(text=output_text, abstained=False, confidence=confidence)
+        return AbstentionResult(text="I don't know.", abstained=True, confidence=confidence_value)
+    return AbstentionResult(text=output_text, abstained=False, confidence=confidence_value)
 
 
 def apply_abstention_tuple(
@@ -33,8 +50,18 @@ def apply_abstention_tuple(
     confidence: float,
     sem_score: float,
     gates_pass: bool = True,
+    *,
+    use_grn: bool = False,
+    grn_eps: float = 1e-6,
 ) -> Tuple[str, bool]:
-    result = apply_abstention(output_text, confidence, sem_score, gates_pass)
+    result = apply_abstention(
+        output_text,
+        confidence,
+        sem_score,
+        gates_pass,
+        use_grn=use_grn,
+        grn_eps=grn_eps,
+    )
     return result.text, result.abstained
 
 
@@ -43,4 +70,5 @@ __all__ = [
     "apply_abstention_tuple",
     "AbstentionResult",
     "ABSTENTION_THRESHOLD",
+    "SEMANTIC_THRESHOLD",
 ]

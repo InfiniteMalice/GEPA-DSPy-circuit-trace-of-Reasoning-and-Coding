@@ -15,10 +15,20 @@ from ..abstention import apply_abstention
 from ..attribution import graphs as attr_graphs
 from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
+from .overwatch import OverwatchAgent, OverwatchConfig
 from ..scoring import aggregator, axes
 from ..semantics import SemanticTag, repair_once, verify_chain
 from ..semantics.patterns import build_token_boundary_pattern
 from ..trm_baseline import TinyRecursionModel
+from ..value_decomp import (
+    ValueDecompResult,
+    analyze_output_deep_values,
+    analyze_output_shallow_features,
+    compute_dvgr,
+    decompose_score,
+    parse_user_deep_values,
+    parse_user_shallow_prefs,
+)
 
 AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
 ATTR_PHASES = ["pre_overfit", "overfit", "pre_grok", "post_grok"]
@@ -52,6 +62,9 @@ class Candidate:
     semantics_map: Dict[str, List[str]] = field(default_factory=dict)
     attr_metrics: Dict[str, float] | None = None
     attr_bonus: float = 0.0
+    value_decomp: ValueDecompResult | None = None
+    overwatch_interventions: List[Dict[str, object]] = field(default_factory=list)
+    grn_flags: Dict[str, bool] = field(default_factory=dict)
 
 
 class TRMSampler:
@@ -134,6 +147,38 @@ def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
             continue
         frontier.append(candidate)
     return frontier
+
+
+def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[str, object]:
+    record: Dict[str, object] = {
+        "text": candidate.text,
+        "confidence": candidate.confidence,
+        "axis_scores": candidate.axis_scores,
+        "base_composite": candidate.base_composite,
+        "composite": candidate.composite,
+        "passes_gates": candidate.passes_gates,
+        "failed_gates": candidate.failed_gates,
+        "concept_reward": candidate.concept_reward,
+        "abstained": candidate.abstained,
+        "problem_id": candidate.problem_id,
+        "attr_bonus": candidate.attr_bonus,
+        "attr_metrics": candidate.attr_metrics,
+        "grn_flags": candidate.grn_flags,
+        "overwatch_enabled": overwatch_enabled,
+        "overwatch_interventions": candidate.overwatch_interventions,
+    }
+    if candidate.value_decomp is not None:
+        record.update(
+            {
+                "value_decomp_user_deep": candidate.value_decomp.user_deep.as_dict(),
+                "value_decomp_user_shallow": candidate.value_decomp.user_shallow.as_dict(),
+                "value_decomp_output_deep": candidate.value_decomp.output_deep.as_dict(),
+                "value_decomp_output_shallow": candidate.value_decomp.output_shallow.as_dict(),
+                "value_decomp_dvgr": candidate.value_decomp.dvgr,
+                "value_decomp_score_decomp": candidate.value_decomp.score_decomp,
+            }
+        )
+    return record
 
 
 def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
@@ -439,6 +484,14 @@ def _map_semantics_to_features(
     }
 
 
+def _resolve_grn_flag(
+    explicit_value: bool | None, profile_config: Mapping[str, object] | None, config_key: str
+) -> bool:
+    if explicit_value is not None:
+        return bool(explicit_value)
+    return bool((profile_config or {}).get(config_key, False))
+
+
 def run_self_play(
     problem_path: str | Path,
     *,
@@ -447,7 +500,31 @@ def run_self_play(
     sampler: str = "trm",
     concept: ConceptSpec | None = None,
     output_dir: str | Path | None = None,
+    overwatch_config: OverwatchConfig | None = None,
+    value_decomp_enabled: bool | None = None,
+    log_dvgr_metrics: bool | None = None,
+    use_grn_for_scoring: bool | None = None,
+    use_grn_for_abstention: bool | None = None,
+    use_grn_for_probes: bool | None = None,
 ) -> Dict[str, object]:
+    """Run TRM self-play with optional GRN, value decomposition, and overwatch controls.
+
+    Args:
+        problem_path: Path to a JSONL dataset of problems.
+        profile: Name of the scoring profile to load from profiles.yaml.
+        k: Number of samples to generate.
+        sampler: Backend sampler identifier (only "trm" is supported currently).
+        concept: Optional concept specification for concept reward integration.
+        output_dir: Directory for run outputs; created if missing.
+        overwatch_config: Controls overwatch LLM monitoring/interventions when enabled.
+        value_decomp_enabled: Force-enable deep/shallow value decomposition; defaults to
+            profile configuration when omitted.
+        log_dvgr_metrics: Toggle DVGR metric logging when value decomposition is active.
+        use_grn_for_scoring: Override GRN application for scoring aggregation; falls back to
+            profile config when None.
+        use_grn_for_abstention: Override GRN usage for abstention thresholds.
+        use_grn_for_probes: Override GRN usage for probe/concept reward normalization.
+    """
     problem = _load_problem(problem_path)
     if sampler != "trm":
         raise ValueError(f"Unsupported sampler: {sampler}")
@@ -456,7 +533,8 @@ def run_self_play(
 
     profiles = aggregator.load_profiles()
     profile_config = aggregator.get_last_config()
-    raw_attr_config = profile_config.get("attr") if profile_config else {}
+    profile_config_safe: Mapping[str, object] = profile_config or {}
+    raw_attr_config = profile_config_safe.get("attr", {})
     if isinstance(raw_attr_config, MappingABC):
         attr_config: Mapping[str, object] = dict(raw_attr_config)
     else:
@@ -464,6 +542,28 @@ def run_self_play(
     if profile not in profiles:
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]
+    grn_scoring = _resolve_grn_flag(use_grn_for_scoring, profile_config_safe, "use_grn_for_scoring")
+    grn_abstention = _resolve_grn_flag(
+        use_grn_for_abstention, profile_config_safe, "use_grn_for_abstention"
+    )
+    grn_probes = _resolve_grn_flag(use_grn_for_probes, profile_config_safe, "use_grn_for_probes")
+    grn_flags = {
+        "scoring": grn_scoring,
+        "abstention": grn_abstention,
+        "probes": grn_probes,
+    }
+    value_decomp_active = (
+        bool(value_decomp_enabled)
+        if value_decomp_enabled is not None
+        else bool(profile_config_safe.get("enable_value_decomposition", False))
+    )
+    dvgr_logging = (
+        bool(log_dvgr_metrics)
+        if log_dvgr_metrics is not None
+        else bool(profile_config_safe.get("log_dvgr_metrics", False))
+    )
+    overwatch_settings = overwatch_config or OverwatchConfig()
+    overwatch_agent = OverwatchAgent(overwatch_settings) if overwatch_settings.enabled else None
     run_dir = _prepare_output_dir(output_dir)
 
     results: List[Candidate] = []
@@ -471,11 +571,46 @@ def run_self_play(
     problem_id = str(problem.get("id", "task"))
     expected_units = str(problem.get("units", "")) or None
     preferred_vars = problem.get("variables", [])
+    prompt_text = str(problem.get("prompt") or problem.get("statement") or problem)
+    user_deep_values = parse_user_deep_values(prompt_text)
+    user_shallow_values = parse_user_shallow_prefs(prompt_text)
 
     for raw in raw_candidates:
-        axis_scores = _compute_axis_scores(raw.get("metrics", {}))
-        eval_result = aggregator.evaluate_profile(axis_scores, profile_obj)
+        axis_scores_raw = _compute_axis_scores(raw.get("metrics", {}))
+        eval_result = aggregator.evaluate_profile(
+            axis_scores_raw,
+            profile_obj,
+            use_grn=grn_scoring,
+        )
+        axis_scores = eval_result.get("scores", axis_scores_raw)
+        gates_pass = bool(eval_result["passes_gates"])
         initial_text = raw.get("text", "")
+        trajectory: List[Mapping[str, object]] = [{"prompt": prompt_text}]
+        interventions: List[Dict[str, object]] = []
+        abort_requested = False
+        value_stub = {
+            "user_deep": user_deep_values.as_dict(),
+            "user_shallow": user_shallow_values.as_dict(),
+        }
+        if overwatch_agent is not None:
+            decision = overwatch_agent.review_step(
+                [*trajectory, {"candidate_text": initial_text}],
+                axis_scores,
+                value_stub,
+            )
+            interventions.append(
+                {
+                    "step": 0,
+                    "decision": decision.action,
+                    "reason": decision.reason,
+                    "pre_thought": initial_text,
+                    "post_thought": decision.new_thought or initial_text,
+                }
+            )
+            if decision.action == "rewrite_thought" and decision.new_thought:
+                initial_text = decision.new_thought
+            elif decision.action == "abort_episode":
+                abort_requested = True
         report = verify_chain(initial_text, problem)
         repairs_attempted = 0
         text_after_repair = initial_text
@@ -489,21 +624,79 @@ def run_self_play(
             )
             text_after_repair = "\n".join(repaired_steps)
             report = verify_chain(text_after_repair, problem)
-        gates_pass = bool(eval_result["passes_gates"])
+        trace_obj = raw.get("trace")
+        trace_json = trace_obj.to_json() if hasattr(trace_obj, "to_json") else trace_obj
+        semantics_map = _map_semantics_to_features(trace_json, report.as_dict())
+        output_deep = analyze_output_deep_values(text_after_repair, axis_scores)
+        output_shallow = analyze_output_shallow_features(text_after_repair)
+        dvgr_score: float | None = None
+        if dvgr_logging:
+            examples = problem.get("dvgr_examples") or []
+            if isinstance(examples, Iterable) and not isinstance(examples, (str, bytes)):
+                dvgr_score = compute_dvgr(list(examples), [text_after_repair])
+        score_decomp: Dict[str, float] | None = None
+        if value_decomp_active:
+            score_decomp = decompose_score(
+                axis_scores,
+                output_deep,
+                output_shallow,
+                use_grn=grn_scoring,
+                grn_eps=aggregator.DEFAULT_EPSILON,
+            )
+        value_decomp_result: ValueDecompResult | None = None
+        if value_decomp_active or dvgr_score is not None:
+            value_decomp_result = ValueDecompResult(
+                user_deep=user_deep_values,
+                user_shallow=user_shallow_values,
+                output_deep=output_deep,
+                output_shallow=output_shallow,
+                dvgr=dvgr_score,
+                score_decomp=score_decomp,
+            )
+        value_payload: Mapping[str, object] | None = None
+        if value_decomp_result is not None:
+            value_payload = {
+                "user_deep": value_decomp_result.user_deep.as_dict(),
+                "user_shallow": value_decomp_result.user_shallow.as_dict(),
+                "output_deep": value_decomp_result.output_deep.as_dict(),
+                "output_shallow": value_decomp_result.output_shallow.as_dict(),
+                "dvgr": value_decomp_result.dvgr,
+                "score_decomp": value_decomp_result.score_decomp,
+            }
+        if overwatch_agent is not None:
+            final_decision = overwatch_agent.review_final(
+                [*trajectory, {"candidate_text": text_after_repair}],
+                axis_scores,
+                value_payload,
+            )
+            interventions.append(
+                {
+                    "step": 1,
+                    "decision": final_decision.action,
+                    "reason": final_decision.reason,
+                    "pre_action": text_after_repair,
+                    "post_action": final_decision.new_action or text_after_repair,
+                }
+            )
+            if final_decision.action == "rewrite_action" and final_decision.new_action:
+                text_after_repair = final_decision.new_action
+            elif final_decision.action == "abort_episode":
+                abort_requested = True
+        if abort_requested:
+            gates_pass = False
         abstention = apply_abstention(
             text_after_repair,
             raw.get("confidence", 0.0),
             report.score,
             gates_pass,
+            use_grn=grn_abstention,
+            grn_eps=aggregator.DEFAULT_EPSILON,
         )
         semantic_dict = report.as_dict()
         semantic_dict["repairs_attempted"] = repairs_attempted
         semantic_dict["abstained"] = abstention.abstained
         semantics_logs.append(semantic_dict)
 
-        trace_obj = raw.get("trace")
-        trace_json = trace_obj.to_json() if hasattr(trace_obj, "to_json") else trace_obj
-        semantics_map = _map_semantics_to_features(trace_json, semantic_dict)
         composite_value = float(eval_result["composite"])
         candidate = Candidate(
             text=abstention.text,
@@ -520,6 +713,9 @@ def run_self_play(
             problem_id=problem_id,
             semantic_report=semantic_dict,
             semantics_map=semantics_map,
+            value_decomp=value_decomp_result,
+            overwatch_interventions=interventions,
+            grn_flags=dict(grn_flags),
         )
         results.append(candidate)
 
@@ -550,6 +746,8 @@ def run_self_play(
                 concept,
                 task_metrics=task_metrics,
                 alignment=alignment_value,
+                use_grn=grn_probes,
+                grn_eps=aggregator.DEFAULT_EPSILON,
             )
             candidate.composite = (
                 candidate.base_composite + candidate.attr_bonus + candidate.concept_reward
@@ -564,25 +762,8 @@ def run_self_play(
     scores_path = run_dir / "scores.jsonl"
     with scores_path.open("w", encoding="utf8") as handle:
         for candidate in results:
-            handle.write(
-                json.dumps(
-                    {
-                        "text": candidate.text,
-                        "confidence": candidate.confidence,
-                        "axis_scores": candidate.axis_scores,
-                        "base_composite": candidate.base_composite,
-                        "composite": candidate.composite,
-                        "passes_gates": candidate.passes_gates,
-                        "failed_gates": candidate.failed_gates,
-                        "concept_reward": candidate.concept_reward,
-                        "abstained": candidate.abstained,
-                        "problem_id": candidate.problem_id,
-                        "attr_bonus": candidate.attr_bonus,
-                        "attr_metrics": candidate.attr_metrics,
-                    }
-                )
-                + "\n"
-            )
+            record = _candidate_to_record(candidate, overwatch_settings.enabled)
+            handle.write(json.dumps(record) + "\n")
 
     semantics_path = run_dir / "semantics.jsonl"
     with semantics_path.open("w", encoding="utf8") as handle:
@@ -628,24 +809,8 @@ def run_self_play(
 
     best_path = run_dir / "best.json"
     with best_path.open("w", encoding="utf8") as handle:
-        json.dump(
-            {
-                "text": best.text,
-                "confidence": best.confidence,
-                "axis_scores": best.axis_scores,
-                "base_composite": best.base_composite,
-                "composite": best.composite,
-                "passes_gates": best.passes_gates,
-                "failed_gates": best.failed_gates,
-                "concept_reward": best.concept_reward,
-                "attr_bonus": best.attr_bonus,
-                "attr_metrics": best.attr_metrics,
-                "abstained": best.abstained,
-                "problem_id": best.problem_id,
-            },
-            handle,
-            indent=2,
-        )
+        best_record = _candidate_to_record(best, overwatch_settings.enabled)
+        json.dump(best_record, handle, indent=2)
 
     return {
         "run_dir": str(run_dir),
