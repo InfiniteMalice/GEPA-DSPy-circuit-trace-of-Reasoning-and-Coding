@@ -12,10 +12,20 @@ from typing import Dict, Iterable, List, Mapping
 
 try:  # pragma: no cover - optional dependency
     import yaml
-except Exception:  # pragma: no cover
+except (ImportError, ModuleNotFoundError):  # pragma: no cover
     yaml = None
 
+from ..modules.grn import apply_grn
+from ..modules.torch_stub import torch
+
 DEFAULT_EPSILON = 1e-3
+DEFAULT_CONFIG = {
+    "use_grn_for_scoring": False,
+    "use_grn_for_abstention": False,
+    "use_grn_for_probes": False,
+    "enable_value_decomposition": False,
+    "log_dvgr_metrics": False,
+}
 DEFAULT_GATES = {
     "logical_validity": 3,
     "rigor": 3,
@@ -255,8 +265,9 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, Profile]:
     global _LAST_CONFIG
     text = path.read_text()
     profiles, config = _parse_profiles(text)
+    merged_config = {**DEFAULT_CONFIG, **config}
     with _LAST_CONFIG_LOCK:
-        _LAST_CONFIG = copy.deepcopy(config)
+        _LAST_CONFIG = copy.deepcopy(merged_config)
     return profiles
 
 
@@ -264,6 +275,33 @@ def get_last_config() -> Dict[str, object]:
     """Return the configuration parsed during :func:`load_profiles`."""
     with _LAST_CONFIG_LOCK:
         return copy.deepcopy(_LAST_CONFIG)
+
+
+def _maybe_apply_grn(
+    axis_scores: Mapping[str, float],
+    weights: Mapping[str, float],
+    use_grn: bool,
+    eps: float,
+) -> Dict[str, float]:
+    """Optionally apply GRN with the provided epsilon for stability.
+
+    Callers typically reuse the geometric-mean epsilon as a shared stability knob even though
+    the contexts differ.
+    """
+    if not use_grn:
+        return dict(axis_scores)
+    ordered_axes = list(weights)
+    tensor = torch.tensor(
+        [float(axis_scores.get(axis, 0.0)) for axis in ordered_axes], dtype=torch.float32
+    )
+    normalised = apply_grn(tensor, eps=eps).tolist()
+    weighted_scores = {
+        axis: float(value) for axis, value in zip(ordered_axes, normalised, strict=True)
+    }
+    for axis, value in axis_scores.items():
+        if axis not in weighted_scores:
+            weighted_scores[axis] = float(value)
+    return weighted_scores
 
 
 def apply_hard_gates(
@@ -306,16 +344,20 @@ def evaluate_profile(
     profile: Profile,
     gates: Mapping[str, float] | None = None,
     epsilon: float = DEFAULT_EPSILON,
+    *,
+    use_grn: bool = False,
 ) -> Dict[str, object]:
     """Evaluate a profile returning composite score and gate diagnostics."""
     weights = profile.normalised_weights()
-    composite = weighted_geometric_mean(axis_scores, weights, epsilon=epsilon)
-    passes, failed = apply_hard_gates(axis_scores, gates)
+    scores_for_eval = _maybe_apply_grn(axis_scores, weights, use_grn, epsilon)
+    composite = weighted_geometric_mean(scores_for_eval, weights, epsilon=epsilon)
+    passes, failed = apply_hard_gates(scores_for_eval, gates)
     return {
         "profile": profile.name,
         "composite": composite,
         "passes_gates": passes,
         "failed_gates": failed,
+        "scores": scores_for_eval,
     }
 
 
@@ -324,12 +366,20 @@ def rank_candidates(
     profile: Profile,
     gates: Mapping[str, float] | None = None,
     epsilon: float = DEFAULT_EPSILON,
+    *,
+    use_grn: bool = False,
 ) -> list[Dict[str, object]]:
     """Evaluate and sort candidates by composite score descending."""
-    results = [
-        {**evaluate_profile(scores, profile, gates=gates, epsilon=epsilon), "scores": dict(scores)}
-        for scores in candidates
-    ]
+    results = []
+    for scores in candidates:
+        evaluation = evaluate_profile(
+            scores,
+            profile,
+            gates=gates,
+            epsilon=epsilon,
+            use_grn=use_grn,
+        )
+        results.append(evaluation)
     return sorted(results, key=lambda item: item["composite"], reverse=True)
 
 
@@ -343,4 +393,5 @@ __all__ = [
     "rank_candidates",
     "DEFAULT_GATES",
     "DEFAULT_EPSILON",
+    "DEFAULT_CONFIG",
 ]
