@@ -71,8 +71,9 @@ class OverwatchAgent:
             return OverwatchDecision(action="allow", reason=default_reason)
         try:
             data = json.loads(response)
-            if not isinstance(data, Mapping):
-                raise TypeError("LLM response must be a JSON object")
+        except json.JSONDecodeError:
+            data = None
+        if data is not None and isinstance(data, Mapping):
             action = str(data.get("action", "allow"))
             decision = OverwatchDecision(
                 action=action,
@@ -80,7 +81,7 @@ class OverwatchAgent:
                 new_thought=data.get("new_thought"),
                 new_action=data.get("new_action"),
             )
-        except (json.JSONDecodeError, TypeError):
+        else:
             lower = response.casefold()
             for keyword in self.config.intervene_on:
                 if keyword and keyword.casefold() in lower:
