@@ -227,17 +227,17 @@ def decompose_score(
 
 
 __all__ = [
-    "analyze_output_deep_values",
-    "analyze_output_shallow_features",
     "BREVITY_LINE_THRESHOLD",
-    "compute_dvgr",
-    "create_value_decomp_result",
-    "decompose_score",
+    "VERBOSITY_WORD_THRESHOLD",
     "DeepValueVector",
-    "parse_user_deep_values",
-    "parse_user_shallow_prefs",
     "ScoreVector",
     "ShallowFeatureVector",
     "ValueDecompResult",
-    "VERBOSITY_WORD_THRESHOLD",
+    "analyze_output_deep_values",
+    "analyze_output_shallow_features",
+    "compute_dvgr",
+    "create_value_decomp_result",
+    "decompose_score",
+    "parse_user_deep_values",
+    "parse_user_shallow_prefs",
 ]
