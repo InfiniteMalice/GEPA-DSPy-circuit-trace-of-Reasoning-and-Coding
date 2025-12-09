@@ -15,7 +15,7 @@ from ..modules.torch_stub import torch
 
 try:  # pragma: no cover - optional dependency
     import yaml
-except (ImportError, ModuleNotFoundError):  # pragma: no cover
+except ImportError:  # pragma: no cover
     yaml = None
 
 from ..modules.grn import apply_grn

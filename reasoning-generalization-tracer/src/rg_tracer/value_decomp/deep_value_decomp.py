@@ -59,6 +59,44 @@ class ValueDecompResult:
     score_decomp: Optional[Dict[str, float]]
 
 
+def create_value_decomp_result(
+    prompt: str,
+    output_text: str,
+    scores: ScoreVector,
+    *,
+    compute_score_decomp: bool = False,
+    dvgr_example: Mapping[str, Any] | None = None,
+    use_grn: bool = False,
+    grn_eps: float = 1e-6,
+) -> ValueDecompResult:
+    """Build a :class:`ValueDecompResult` from prompt/output pairs and optional DVGR context."""
+
+    user_deep = parse_user_deep_values(prompt)
+    user_shallow = parse_user_shallow_prefs(prompt)
+    output_deep = analyze_output_deep_values(output_text, scores)
+    output_shallow = analyze_output_shallow_features(output_text)
+    dvgr_score = None
+    if dvgr_example is not None:
+        dvgr_score = compute_dvgr([dvgr_example], [output_text])
+    score_decomp = None
+    if compute_score_decomp:
+        score_decomp = decompose_score(
+            scores,
+            output_deep,
+            output_shallow,
+            use_grn=use_grn,
+            grn_eps=grn_eps,
+        )
+    return ValueDecompResult(
+        user_deep=user_deep,
+        user_shallow=user_shallow,
+        output_deep=output_deep,
+        output_shallow=output_shallow,
+        dvgr=dvgr_score,
+        score_decomp=score_decomp,
+    )
+
+
 _DEEP_KEYWORDS = {
     "correct": "correctness",
     "accurate": "correctness",
@@ -150,6 +188,7 @@ def compute_dvgr(examples: Iterable[Mapping[str, Any]], predictions: Iterable[st
         output = prediction.casefold()
         deep_hit = deep_value and deep_value in output
         shallow_hit = shallow_feature and shallow_feature in output
+        # Reward deep-value fidelity over shallow-style matches.
         if deep_hit and not shallow_hit:
             correct += 1
         elif deep_hit and shallow_hit:
@@ -192,6 +231,7 @@ __all__ = [
     "analyze_output_shallow_features",
     "BREVITY_LINE_THRESHOLD",
     "compute_dvgr",
+    "create_value_decomp_result",
     "decompose_score",
     "DeepValueVector",
     "parse_user_deep_values",

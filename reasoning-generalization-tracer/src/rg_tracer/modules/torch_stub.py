@@ -30,6 +30,7 @@ else:  # pragma: no cover - fallback path
 
         @property
         def shape(self) -> tuple[int, ...]:
+            """Return shape for up to 2D tensors; deeper nesting is not fully supported."""
             if isinstance(self.data, list):
                 if self.data and isinstance(self.data[0], list):
                     return (len(self.data), len(self.data[0]))
