@@ -53,7 +53,9 @@ else:  # pragma: no cover - fallback path
     class _TorchShim:
         float32 = float
 
-        def tensor(self, data: Any, dtype: object | None = None) -> SimpleTensor:  # noqa: ARG002
+        def tensor(
+            self, data: Any, dtype: object | None = None
+        ) -> SimpleTensor:  # noqa: ARG002  # dtype ignored in shim
             if isinstance(data, Iterable) and not isinstance(data, (str, bytes)):
                 return SimpleTensor([self._coerce(item) for item in data])
             return SimpleTensor(self._coerce(data))

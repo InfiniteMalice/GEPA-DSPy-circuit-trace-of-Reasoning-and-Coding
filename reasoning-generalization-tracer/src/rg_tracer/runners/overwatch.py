@@ -120,7 +120,7 @@ class OverwatchAgent:
         prompt = self._build_prompt(trajectory, scores, value_decomp, stage)
         response = self.llm(prompt) if self.llm else None
         decision = self._interpret_response(response, f"No intervention for {stage}")
-        if decision.action != "allow":
+        if decision.action not in {"allow", "observe"}:
             self._interventions += 1
         return decision
 

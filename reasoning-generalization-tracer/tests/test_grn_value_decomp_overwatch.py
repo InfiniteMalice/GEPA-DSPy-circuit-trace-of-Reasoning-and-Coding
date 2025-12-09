@@ -74,12 +74,14 @@ def test_overwatch_rewrite_and_limits():
             allowed_actions=["rewrite_action", "abort_episode", "allow"],
             max_interventions_per_episode=1,
         ),
-        # LLM returns non-JSON, testing fallback behavior
+        # LLM returns non-JSON containing "unsafe"; triggers heuristic fallback to rewrite_action
         llm=lambda _prompt: "unsafe sequence detected",
     )
     first = abort_agent.review_step([{"prompt": "p"}], {}, {})
+    # Heuristic fallback matched "unsafe" keyword → rewrite_action
     assert first.action == "rewrite_action"
     second = abort_agent.review_final([{"prompt": "p"}], {}, {})
+    # max_interventions_per_episode=1 already consumed → forced allow
     assert second.action == "allow"
 
 

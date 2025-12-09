@@ -17,6 +17,7 @@ def _to_list(data: object) -> list[object]:
 
 
 def _normalise_vector(values: list[float], eps: float) -> list[float]:
+    """Normalize a vector by its RMS value: x / sqrt(mean(x^2) + eps)."""
     if not values:
         return values
     mean_sq = sum(value * value for value in values) / len(values)
