@@ -66,8 +66,8 @@ def apply_abstention_tuple(
 
 
 __all__ = [
-    "AbstentionResult",
     "ABSTENTION_THRESHOLD",
+    "AbstentionResult",
     "apply_abstention",
     "apply_abstention_tuple",
     "SEMANTIC_THRESHOLD",

@@ -28,6 +28,14 @@ else:  # pragma: no cover - fallback path
                 return 1
             return 0
 
+        @property
+        def shape(self) -> tuple[int, ...]:
+            if isinstance(self.data, list):
+                if self.data and isinstance(self.data[0], list):
+                    return (len(self.data), len(self.data[0]))
+                return (len(self.data),)
+            return ()
+
         def tolist(self) -> Any:
             if isinstance(self.data, list):
                 return [SimpleTensor(item).tolist() for item in self.data]

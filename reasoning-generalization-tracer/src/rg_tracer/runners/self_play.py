@@ -820,8 +820,4 @@ def run_self_play(
     }
 
 
-__all__ = [
-  "Candidate"
-  "pareto_frontier",
-  "run_self_play",
-]
+__all__ = ["Candidate", "pareto_frontier", "run_self_play"]

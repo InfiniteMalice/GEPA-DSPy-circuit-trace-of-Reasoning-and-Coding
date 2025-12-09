@@ -25,6 +25,15 @@ def test_apply_grn_normalises_rms():
     assert abs(rms - 1.0) < 1e-6
 
 
+def test_apply_grn_handles_empty_nested_list():
+    result = apply_grn([[]])
+    assert result.tolist() == [[]]
+    if hasattr(result, "shape"):
+        assert tuple(result.shape) == (1, 0)
+    if hasattr(result, "dtype"):
+        assert result.dtype == getattr(torch, "float32", None)
+
+
 def test_abstention_with_grn_flag():
     result = apply_abstention("answer", 0.5, 1.0, True, use_grn=True)
     assert result.abstained
