@@ -9,6 +9,7 @@ from ..modules.grn import apply_grn
 from ..modules.torch_stub import torch
 
 ABSTENTION_THRESHOLD = 0.75
+SEMANTIC_THRESHOLD = 2
 
 
 @dataclass
@@ -33,7 +34,9 @@ def apply_abstention(
         vector = apply_grn(vector, eps=grn_eps)
     confidence_value = float(vector[0].item())
     sem_value = float(vector[1].item())
-    should_abstain = confidence_value < ABSTENTION_THRESHOLD or sem_value < 2 or not gates_pass
+    should_abstain = (
+        confidence_value < ABSTENTION_THRESHOLD or sem_value < SEMANTIC_THRESHOLD or not gates_pass
+    )
     if should_abstain:
         return AbstentionResult(text="I don't know.", abstained=True, confidence=confidence_value)
     return AbstentionResult(text=output_text, abstained=False, confidence=confidence_value)
@@ -64,4 +67,5 @@ __all__ = [
     "apply_abstention_tuple",
     "AbstentionResult",
     "ABSTENTION_THRESHOLD",
+    "SEMANTIC_THRESHOLD",
 ]

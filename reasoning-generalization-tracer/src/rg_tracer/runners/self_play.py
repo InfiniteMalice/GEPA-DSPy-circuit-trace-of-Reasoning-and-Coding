@@ -533,7 +533,8 @@ def run_self_play(
 
     profiles = aggregator.load_profiles()
     profile_config = aggregator.get_last_config()
-    raw_attr_config = profile_config.get("attr") if profile_config else {}
+    profile_config_safe: Mapping[str, object] = profile_config or {}
+    raw_attr_config = profile_config_safe.get("attr") if profile_config_safe else {}
     if isinstance(raw_attr_config, MappingABC):
         attr_config: Mapping[str, object] = dict(raw_attr_config)
     else:
@@ -554,12 +555,12 @@ def run_self_play(
     value_decomp_active = (
         bool(value_decomp_enabled)
         if value_decomp_enabled is not None
-        else bool(profile_config.get("enable_value_decomposition", False))
+        else bool(profile_config_safe.get("enable_value_decomposition", False))
     )
     dvgr_logging = (
         bool(log_dvgr_metrics)
         if log_dvgr_metrics is not None
-        else bool(profile_config.get("log_dvgr_metrics", False))
+        else bool(profile_config_safe.get("log_dvgr_metrics", False))
     )
     overwatch_settings = overwatch_config or OverwatchConfig()
     overwatch_agent = OverwatchAgent(overwatch_settings) if overwatch_settings.enabled else None
