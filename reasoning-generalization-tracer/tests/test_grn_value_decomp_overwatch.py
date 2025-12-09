@@ -39,6 +39,11 @@ def test_grn_affects_abstention_decision():
     assert without_grn.abstained != with_grn.abstained
 
 
+def test_grn_can_preserve_non_abstention():
+    result = apply_abstention("answer", 2.0, 2.0, True, use_grn=True)
+    assert not result.abstained
+
+
 def test_value_decomposition_components():
     prompt = "Be correct, safe, and brief in style."
     deep = parse_user_deep_values(prompt)

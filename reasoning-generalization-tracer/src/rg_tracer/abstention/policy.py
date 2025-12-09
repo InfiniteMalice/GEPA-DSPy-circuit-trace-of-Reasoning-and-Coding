@@ -29,11 +29,14 @@ def apply_abstention(
     grn_eps: float = 1e-6,
 ) -> AbstentionResult:
     """Return abstention result enforcing the 0.75 threshold and semantic gate."""
-    vector = torch.tensor([confidence, sem_score], dtype=torch.float32)
     if use_grn:
+        vector = torch.tensor([confidence, sem_score], dtype=torch.float32)
         vector = apply_grn(vector, eps=grn_eps)
-    confidence_value = float(vector[0].item())
-    sem_value = float(vector[1].item())
+        confidence_value = float(vector[0].item())
+        sem_value = float(sem_score)
+    else:
+        confidence_value = float(confidence)
+        sem_value = float(sem_score)
     should_abstain = (
         confidence_value < ABSTENTION_THRESHOLD or sem_value < SEMANTIC_THRESHOLD or not gates_pass
     )
@@ -63,9 +66,9 @@ def apply_abstention_tuple(
 
 
 __all__ = [
-    "apply_abstention",
-    "apply_abstention_tuple",
     "AbstentionResult",
     "ABSTENTION_THRESHOLD",
+    "apply_abstention",
+    "apply_abstention_tuple",
     "SEMANTIC_THRESHOLD",
 ]

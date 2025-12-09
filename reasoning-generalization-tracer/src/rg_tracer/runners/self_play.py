@@ -534,7 +534,7 @@ def run_self_play(
     profiles = aggregator.load_profiles()
     profile_config = aggregator.get_last_config()
     profile_config_safe: Mapping[str, object] = profile_config or {}
-    raw_attr_config = profile_config_safe.get("attr") if profile_config_safe else {}
+    raw_attr_config = profile_config_safe.get("attr", {})
     if isinstance(raw_attr_config, MappingABC):
         attr_config: Mapping[str, object] = dict(raw_attr_config)
     else:
@@ -542,11 +542,11 @@ def run_self_play(
     if profile not in profiles:
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]
-    grn_scoring = _resolve_grn_flag(use_grn_for_scoring, profile_config, "use_grn_for_scoring")
+    grn_scoring = _resolve_grn_flag(use_grn_for_scoring, profile_config_safe, "use_grn_for_scoring")
     grn_abstention = _resolve_grn_flag(
-        use_grn_for_abstention, profile_config, "use_grn_for_abstention"
+        use_grn_for_abstention, profile_config_safe, "use_grn_for_abstention"
     )
-    grn_probes = _resolve_grn_flag(use_grn_for_probes, profile_config, "use_grn_for_probes")
+    grn_probes = _resolve_grn_flag(use_grn_for_probes, profile_config_safe, "use_grn_for_probes")
     grn_flags = {
         "scoring": grn_scoring,
         "abstention": grn_abstention,
@@ -820,4 +820,8 @@ def run_self_play(
     }
 
 
-__all__ = ["run_self_play", "pareto_frontier", "Candidate"]
+__all__ = [
+  "Candidate"
+  "pareto_frontier",
+  "run_self_play",
+]

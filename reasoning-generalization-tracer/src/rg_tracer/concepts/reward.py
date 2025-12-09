@@ -160,6 +160,11 @@ def compute_concept_reward(
     validated against an open interval (-1e6, 1e6) and clamped to [0, 1] before
     scaling; ``alignment_scale`` is clamped to [0.0, 10.0] (default 0.25) so the
     multiplier stays bounded. ``alignment=None`` skips scaling (multiplier = 1).
+
+    When ``use_grn`` is True, feature importances are RMS-normalised via
+    :func:`apply_grn` using ``grn_eps`` for numerical stability before combining
+    match/selectivity/parsimony/transfer components. This preserves feature
+    ordering while reweighting magnitudes for improved stability.
     """
     if task_metrics is None:
         task_metrics = {}
