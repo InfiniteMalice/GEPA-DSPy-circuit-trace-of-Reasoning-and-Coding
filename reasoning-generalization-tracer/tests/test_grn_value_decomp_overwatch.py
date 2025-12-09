@@ -33,6 +33,7 @@ def test_abstention_with_grn_flag():
 def test_grn_affects_abstention_decision():
     # These values are chosen so GRN normalization moves the threshold crossing
     # Without GRN the confidence stays above the threshold; with GRN it drops below and abstains.
+    # With [0.8, 2.5], RMS ≈ 1.86. After GRN: [0.43, 1.34]. Confidence 0.43 < 0.75 threshold.
     without_grn = apply_abstention("answer", 0.8, 2.5, True, use_grn=False)
     with_grn = apply_abstention("answer", 0.8, 2.5, True, use_grn=True)
     assert without_grn.abstained != with_grn.abstained

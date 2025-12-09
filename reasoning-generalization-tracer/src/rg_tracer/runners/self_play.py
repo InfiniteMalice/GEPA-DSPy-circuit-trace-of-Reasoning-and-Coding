@@ -507,6 +507,24 @@ def run_self_play(
     use_grn_for_abstention: bool | None = None,
     use_grn_for_probes: bool | None = None,
 ) -> Dict[str, object]:
+    """Run TRM self-play with optional GRN, value decomposition, and overwatch controls.
+
+    Args:
+        problem_path: Path to a JSONL dataset of problems.
+        profile: Name of the scoring profile to load from profiles.yaml.
+        k: Number of samples to generate.
+        sampler: Backend sampler identifier (only "trm" is supported currently).
+        concept: Optional concept specification for concept reward integration.
+        output_dir: Directory for run outputs; created if missing.
+        overwatch_config: Controls overwatch LLM monitoring/interventions when enabled.
+        value_decomp_enabled: Force-enable deep/shallow value decomposition; defaults to
+            profile configuration when omitted.
+        log_dvgr_metrics: Toggle DVGR metric logging when value decomposition is active.
+        use_grn_for_scoring: Override GRN application for scoring aggregation; falls back to
+            profile config when None.
+        use_grn_for_abstention: Override GRN usage for abstention thresholds.
+        use_grn_for_probes: Override GRN usage for probe/concept reward normalization.
+    """
     problem = _load_problem(problem_path)
     if sampler != "trm":
         raise ValueError(f"Unsupported sampler: {sampler}")
