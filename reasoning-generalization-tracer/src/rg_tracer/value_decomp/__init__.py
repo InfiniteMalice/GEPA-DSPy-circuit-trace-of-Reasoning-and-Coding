@@ -18,7 +18,7 @@ __all__ = [
     "DeepValueVector",
     "ScoreVector",
     "ShallowFeatureVector",
-    "ValueDecompResult",
+    "ValueDecompResult"
     "analyze_output_deep_values",
     "analyze_output_shallow_features",
     "compute_dvgr",

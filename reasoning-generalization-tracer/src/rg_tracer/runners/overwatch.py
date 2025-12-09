@@ -110,10 +110,18 @@ class OverwatchAgent:
                             action="abort_episode",
                             reason=f"Heuristic match for {keyword}",
                         )
+                    if action == "rewrite_action":
+                        return OverwatchDecision(
+                            action="rewrite_action",
+                            reason=f"Heuristic match for {keyword}",
+                            new_action="Adjusted for alignment.",
+                        )
                     return OverwatchDecision(
-                        action="rewrite_action",
-                        reason=f"Heuristic match for {keyword}",
-                        new_action="Adjusted for alignment.",
+                        action="allow",
+                        reason=(
+                            "Heuristic match but first allowed action is unrecognized: "
+                            f"{action}"
+                        ),
                     )
             decision = OverwatchDecision(action="allow", reason=default_reason)
         if decision.action not in self.config.allowed_actions and decision.action != "allow":
