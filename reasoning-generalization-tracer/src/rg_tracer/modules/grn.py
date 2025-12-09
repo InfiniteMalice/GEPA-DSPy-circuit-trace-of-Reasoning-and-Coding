@@ -29,6 +29,10 @@ def apply_grn(x: object, eps: float = 1e-6) -> "torch.Tensor":
     """Apply Global Response Normalization across the last dimension.
 
     Inputs can be a single vector or a batch of vectors.
+
+    For single-element vectors, RMS normalization returns ``value / sqrt(value**2 + eps)``,
+    which approaches the sign of the input for large magnitudes and approximately 1.0 when
+    |value| ≈ 1. Callers relying on absolute scale should account for this behavior.
     """
 
     values = _to_list(x)
