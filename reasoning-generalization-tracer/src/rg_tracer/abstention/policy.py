@@ -28,7 +28,11 @@ def apply_abstention(
     use_grn: bool = False,
     grn_eps: float = 1e-6,
 ) -> AbstentionResult:
-    """Return abstention result enforcing the 0.75 threshold and semantic gate."""
+    """Return abstention result enforcing the 0.75 threshold and semantic gate.
+
+    When ``use_grn`` is enabled, only the confidence dimension is RMS-normalised; the
+    semantic score remains on its original scale to preserve the existing gate semantics.
+    """
     if use_grn:
         vector = torch.tensor([confidence], dtype=torch.float32)
         vector = apply_grn(vector, eps=grn_eps)

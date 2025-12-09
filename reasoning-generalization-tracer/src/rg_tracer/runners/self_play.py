@@ -49,7 +49,7 @@ class Candidate:
     text: str
     confidence: float
     metrics: Dict[str, Mapping[str, object]]
-    axis_scores: Dict[str, int]
+    axis_scores: Dict[str, float]
     composite: float
     base_composite: float
     passes_gates: bool
@@ -122,15 +122,15 @@ class TRMSampler:
         return candidates
 
 
-def _compute_axis_scores(metrics: Mapping[str, Mapping[str, object]]) -> Dict[str, int]:
+def _compute_axis_scores(metrics: Mapping[str, Mapping[str, object]]) -> Dict[str, float]:
     scores = {}
     for axis_name, func in AXIS_FUNCTIONS.items():
         axis_metrics = metrics.get(axis_name, {})
-        scores[axis_name] = func(axis_metrics)
+        scores[axis_name] = float(func(axis_metrics))
     return scores
 
 
-def _dominates(a: Mapping[str, int], b: Mapping[str, int]) -> bool:
+def _dominates(a: Mapping[str, float], b: Mapping[str, float]) -> bool:
     ge_all = all(a.get(axis, 0) >= b.get(axis, 0) for axis in AXIS_FUNCTIONS)
     gt_any = any(a.get(axis, 0) > b.get(axis, 0) for axis in AXIS_FUNCTIONS)
     return ge_all and gt_any
@@ -583,6 +583,7 @@ def run_self_play(
             use_grn=grn_scoring,
         )
         axis_scores = eval_result.get("scores", axis_scores_raw)
+        axis_scores = {axis: float(value) for axis, value in axis_scores.items()}
         gates_pass = bool(eval_result["passes_gates"])
         initial_text = raw.get("text", "")
         trajectory: List[Mapping[str, object]] = [{"prompt": prompt_text}]
