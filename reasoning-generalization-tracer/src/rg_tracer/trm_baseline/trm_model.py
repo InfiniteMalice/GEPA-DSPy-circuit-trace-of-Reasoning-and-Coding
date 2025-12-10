@@ -38,9 +38,7 @@ class TinyRecursionModel:
         # Map tanh output [-1,1] to [0,1]
         return (value + 1) / 2
 
-    def _gradients(
-        self, seq: Sequence[int], target: float
-    ) -> Tuple[float, float, float]:
+    def _gradients(self, seq: Sequence[int], target: float) -> Tuple[float, float, float]:
         if not seq:
             pred = self.predict(seq)
             error = pred - target

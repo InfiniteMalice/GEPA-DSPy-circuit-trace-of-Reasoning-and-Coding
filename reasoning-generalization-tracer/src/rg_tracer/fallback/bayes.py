@@ -29,9 +29,7 @@ class BayesianPosition:
     decision_policy: str
 
 
-def compute_posterior(
-    prior: Prior, likelihoods: Iterable[Likelihood]
-) -> BayesianPosition:
+def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> BayesianPosition:
     prob_true = prior.probability
     prob_false = 1 - prob_true
     logit = prob_true / max(prob_false, 1e-9)
@@ -45,9 +43,7 @@ def compute_posterior(
             dominant = (ratio, like.evidence)
     posterior = logit / (1 + logit)
     posterior = min(max(posterior, 0.0), 1.0)
-    sensitivity = (
-        "Posterior sensitive to dominant likelihood." if dominant else "Stable"
-    )
+    sensitivity = "Posterior sensitive to dominant likelihood." if dominant else "Stable"
     dominant_desc = dominant[1] if dominant else "None"
     policy = "Gather more evidence"
     if posterior >= 0.75:

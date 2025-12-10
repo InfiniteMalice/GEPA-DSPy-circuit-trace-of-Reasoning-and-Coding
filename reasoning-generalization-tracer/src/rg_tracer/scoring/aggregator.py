@@ -26,14 +26,39 @@ DEFAULT_CONFIG = {
     "use_grn_for_probes": False,
     "enable_value_decomposition": False,
     "log_dvgr_metrics": False,
+    "abstention": {
+        "enabled": False,
+        "threshold": 0.75,
+        "reward_weights": {
+            "H": 1.0,
+            "A": 0.25,
+            "K_high": 2.0,
+            "K_low": 1.0,
+            "K_miscal": 2.0,
+        },
+    },
+    "thought_alignment": {
+        "theta_match": 0.8,
+        "theta_epistemic": 0.5,
+    },
 }
 DEFAULT_GATES = {
     "logical_validity": 3,
     "rigor": 3,
     "numerical_accuracy": 2,
 }
-_LAST_CONFIG: Dict[str, object] = {}
+_LAST_CONFIG: Dict[str, object] = copy.deepcopy(DEFAULT_CONFIG)
 _LAST_CONFIG_LOCK = threading.Lock()
+
+
+def _deep_merge(base: Mapping[str, object], override: Mapping[str, object]) -> Dict[str, object]:
+    merged: Dict[str, object] = copy.deepcopy(base)
+    for key, value in override.items():
+        if isinstance(value, Mapping) and isinstance(merged.get(key), Mapping):
+            merged[key] = _deep_merge(merged[key], value)  # type: ignore[arg-type]
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
 
 
 @dataclass(frozen=True)
@@ -134,12 +159,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             result["profiles"][current_profile] = {}
             continue
         # State: indent 4 under profiles marks nested subsection (e.g. bonuses).
-        if (
-            section == "profiles"
-            and indent == 4
-            and line.endswith(":")
-            and current_profile
-        ):
+        if section == "profiles" and indent == 4 and line.endswith(":") and current_profile:
             has_child = next_indent is not None and next_indent > indent
             if has_child:
                 current_subsection = line[:-1]
@@ -175,9 +195,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                     parent = _find_container(config_stack, indent, inclusive=False)
                     target: Dict[str, object] = {}
                     parent[key] = target
-                    config_stack = [
-                        entry for entry in config_stack if entry[0] < indent
-                    ]
+                    config_stack = [entry for entry in config_stack if entry[0] < indent]
                     config_stack.append((indent, target))
                 else:
                     container = _find_container(config_stack, indent, inclusive=False)
@@ -213,9 +231,7 @@ def _split_profile_payload(
                 raise TypeError("weights section must be a mapping")
             weights_source = weights_value.items()
         else:
-            weights_source = (
-                (key, value) for key, value in raw.items() if key != "bonuses"
-            )
+            weights_source = ((key, value) for key, value in raw.items() if key != "bonuses")
     else:
         bonuses_raw = {}
         weights_source = raw
@@ -275,7 +291,7 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, Profile]:
     global _LAST_CONFIG
     text = path.read_text()
     profiles, config = _parse_profiles(text)
-    merged_config = {**DEFAULT_CONFIG, **config}
+    merged_config = _deep_merge(DEFAULT_CONFIG, config)
     with _LAST_CONFIG_LOCK:
         _LAST_CONFIG = copy.deepcopy(merged_config)
     return profiles
