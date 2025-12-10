@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping
 
+from ..modules.grn import apply_grn
+from ..modules.torch_stub import torch
+
 try:  # pragma: no cover - optional dependency
     import yaml
 except ImportError:  # pragma: no cover
