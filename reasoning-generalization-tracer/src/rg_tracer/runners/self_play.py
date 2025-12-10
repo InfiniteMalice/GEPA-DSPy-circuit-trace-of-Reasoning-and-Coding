@@ -582,8 +582,8 @@ def run_self_play(
             profile_obj,
             use_grn=grn_scoring,
         )
-        axis_scores = eval_result.get("scores", axis_scores_raw)
-        axis_scores = {axis: float(value) for axis, value in axis_scores.items()}
+        scores_from_eval = eval_result.get("scores", axis_scores_raw)
+        axis_scores = {axis: float(value) for axis, value in scores_from_eval.items()}
         gates_pass = bool(eval_result["passes_gates"])
         initial_text = raw.get("text", "")
         trajectory: List[Mapping[str, object]] = [{"prompt": prompt_text}]

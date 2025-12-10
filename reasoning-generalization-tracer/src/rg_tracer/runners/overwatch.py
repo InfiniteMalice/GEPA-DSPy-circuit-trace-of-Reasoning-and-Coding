@@ -43,6 +43,7 @@ class OverwatchAgent:
 
     def reset(self) -> None:
         """Reset intervention counter for reuse across episodes."""
+
         self._interventions = 0
 
     def _build_prompt(
@@ -82,48 +83,7 @@ class OverwatchAgent:
                 new_action=str(data["new_action"]) if data.get("new_action") else None,
             )
         else:
-            lower = response.casefold()
-            for keyword in self.config.intervene_on:
-                if keyword and keyword.casefold() in lower:
-                    allowed_interventions = [
-                        action
-                        for action in self.config.allowed_actions
-                        if action not in {"allow", "observe"}
-                    ]
-                    if not allowed_interventions:
-                        return OverwatchDecision(
-                            action="allow",
-                            reason=(
-                                "Heuristic match but no intervention actions are permitted; "
-                                f"keyword={keyword}"
-                            ),
-                        )
-                    action = allowed_interventions[0]
-                    if action == "rewrite_thought":
-                        return OverwatchDecision(
-                            action="rewrite_thought",
-                            reason=f"Heuristic match for {keyword}",
-                            new_thought="Aligned thought for safety.",
-                        )
-                    if action == "abort_episode":
-                        return OverwatchDecision(
-                            action="abort_episode",
-                            reason=f"Heuristic match for {keyword}",
-                        )
-                    if action == "rewrite_action":
-                        return OverwatchDecision(
-                            action="rewrite_action",
-                            reason=f"Heuristic match for {keyword}",
-                            new_action="Adjusted for alignment.",
-                        )
-                    return OverwatchDecision(
-                        action="allow",
-                        reason=(
-                            "Heuristic match but first allowed action is unrecognized: "
-                            f"{action}"
-                        ),
-                    )
-            decision = OverwatchDecision(action="allow", reason=default_reason)
+            decision = self._apply_heuristic_fallback(response, default_reason)
         if decision.action not in self.config.allowed_actions and decision.action != "allow":
             return OverwatchDecision(
                 action="allow",
@@ -132,6 +92,54 @@ class OverwatchAgent:
                 ),
             )
         return decision
+
+    def _apply_heuristic_fallback(
+        self, response: str, default_reason: str
+    ) -> OverwatchDecision:
+        """Apply heuristic keyword matching when LLM returns non-JSON."""
+
+        lower = response.casefold()
+        for keyword in self.config.intervene_on:
+            if keyword and keyword.casefold() in lower:
+                allowed_interventions = [
+                    action
+                    for action in self.config.allowed_actions
+                    if action not in {"allow", "observe"}
+                ]
+                if not allowed_interventions:
+                    return OverwatchDecision(
+                        action="allow",
+                        reason=(
+                            "Heuristic match but no intervention actions are permitted; "
+                            f"keyword={keyword}"
+                        ),
+                    )
+                action = allowed_interventions[0]
+                if action == "rewrite_thought":
+                    return OverwatchDecision(
+                        action="rewrite_thought",
+                        reason=f"Heuristic match for {keyword}",
+                        new_thought="Aligned thought for safety.",
+                    )
+                if action == "abort_episode":
+                    return OverwatchDecision(
+                        action="abort_episode",
+                        reason=f"Heuristic match for {keyword}",
+                    )
+                if action == "rewrite_action":
+                    return OverwatchDecision(
+                        action="rewrite_action",
+                        reason=f"Heuristic match for {keyword}",
+                        new_action="Adjusted for alignment.",
+                    )
+                return OverwatchDecision(
+                    action="allow",
+                    reason=(
+                        "Heuristic match but first allowed action is unrecognized: "
+                        f"{action}"
+                    ),
+                )
+        return OverwatchDecision(action="allow", reason=default_reason)
 
     def _maybe_intervene(
         self,
