@@ -1,4 +1,8 @@
-from rg_tracer.humanities import analyse_humanities_chain, load_profiles, evaluate_profile
+from rg_tracer.humanities import (
+    analyse_humanities_chain,
+    load_profiles,
+    evaluate_profile,
+)
 
 
 def test_humanities_profiles_and_signals():

@@ -50,4 +50,7 @@ def test_academic_pipeline_outputs_bayesian_position(tmp_path):
     assert abstained and abstained[0]["decision"] == "I don't know."
     table = confident[0]["evidence_table"]
     assert table and table[0]["source"] == "Lee 1920"
-    assert confident[0]["decision_policy"] in {"Support with caveats", "Gather more evidence"}
+    assert confident[0]["decision_policy"] in {
+        "Support with caveats",
+        "Gather more evidence",
+    }

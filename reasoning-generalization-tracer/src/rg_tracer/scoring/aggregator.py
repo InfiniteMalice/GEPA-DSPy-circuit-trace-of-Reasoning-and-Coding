@@ -18,8 +18,6 @@ try:  # pragma: no cover - optional dependency
 except ImportError:  # pragma: no cover
     yaml = None
 
-from ..modules.grn import apply_grn
-from ..modules.torch_stub import torch
 
 DEFAULT_EPSILON = 1e-3
 DEFAULT_CONFIG = {
@@ -136,7 +134,12 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             result["profiles"][current_profile] = {}
             continue
         # State: indent 4 under profiles marks nested subsection (e.g. bonuses).
-        if section == "profiles" and indent == 4 and line.endswith(":") and current_profile:
+        if (
+            section == "profiles"
+            and indent == 4
+            and line.endswith(":")
+            and current_profile
+        ):
             has_child = next_indent is not None and next_indent > indent
             if has_child:
                 current_subsection = line[:-1]
@@ -172,7 +175,9 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                     parent = _find_container(config_stack, indent, inclusive=False)
                     target: Dict[str, object] = {}
                     parent[key] = target
-                    config_stack = [entry for entry in config_stack if entry[0] < indent]
+                    config_stack = [
+                        entry for entry in config_stack if entry[0] < indent
+                    ]
                     config_stack.append((indent, target))
                 else:
                     container = _find_container(config_stack, indent, inclusive=False)
@@ -208,7 +213,9 @@ def _split_profile_payload(
                 raise TypeError("weights section must be a mapping")
             weights_source = weights_value.items()
         else:
-            weights_source = ((key, value) for key, value in raw.items() if key != "bonuses")
+            weights_source = (
+                (key, value) for key, value in raw.items() if key != "bonuses"
+            )
     else:
         bonuses_raw = {}
         weights_source = raw
@@ -295,7 +302,8 @@ def _maybe_apply_grn(
         return dict(axis_scores)
     ordered_axes = list(weights)
     tensor = torch.tensor(
-        [float(axis_scores.get(axis, 0.0)) for axis in ordered_axes], dtype=torch.float32
+        [float(axis_scores.get(axis, 0.0)) for axis in ordered_axes],
+        dtype=torch.float32,
     )
     normalised = apply_grn(tensor, eps=eps).tolist()
     weighted_scores = {

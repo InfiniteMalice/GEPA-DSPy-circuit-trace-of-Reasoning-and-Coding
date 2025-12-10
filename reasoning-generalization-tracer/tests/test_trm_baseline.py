@@ -1,4 +1,9 @@
-from rg_tracer.trm_baseline import TinyRecursionModel, evaluate, generate_parity_data, train
+from rg_tracer.trm_baseline import (
+    TinyRecursionModel,
+    evaluate,
+    generate_parity_data,
+    train,
+)
 
 
 def test_trm_training_improves_accuracy():

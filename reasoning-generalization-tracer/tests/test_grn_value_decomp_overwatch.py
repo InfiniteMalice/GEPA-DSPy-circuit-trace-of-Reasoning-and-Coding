@@ -76,7 +76,11 @@ def test_overwatch_rewrite_and_limits():
     agent = OverwatchAgent(
         rewrite_config,
         llm=lambda _prompt: json.dumps(
-            {"action": "rewrite_thought", "new_thought": "Aligned thought", "reason": "test"}
+            {
+                "action": "rewrite_thought",
+                "new_thought": "Aligned thought",
+                "reason": "test",
+            }
         ),
     )
     step_decision = agent.review_step([{"prompt": "p"}], {}, {})
@@ -111,13 +115,21 @@ def test_overwatch_disabled_short_circuits_llm():
 
 def test_self_play_with_grn_and_value_decomposition(tmp_path):
     problem_path = (
-        Path(__file__).resolve().parents[1] / "datasets" / "toy_math" / "addition_small.jsonl"
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "toy_math"
+        / "addition_small.jsonl"
     )
     if not problem_path.exists():
         pytest.skip(f"Test dataset not found: {problem_path}")
     overwatch_cfg = OverwatchConfig(
         enabled=True,
-        allowed_actions=["observe", "rewrite_thought", "rewrite_action", "abort_episode"],
+        allowed_actions=[
+            "observe",
+            "rewrite_thought",
+            "rewrite_action",
+            "abort_episode",
+        ],
     )
     result = run_self_play(
         problem_path,

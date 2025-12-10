@@ -22,7 +22,11 @@ else:  # pragma: no cover - fallback path
 
         @property
         def ndim(self) -> int:
-            if isinstance(self.data, list) and self.data and isinstance(self.data[0], list):
+            if (
+                isinstance(self.data, list)
+                and self.data
+                and isinstance(self.data[0], list)
+            ):
                 return 1 + SimpleTensor(self.data[0]).ndim
             if isinstance(self.data, list):
                 return 1
@@ -45,7 +49,9 @@ else:  # pragma: no cover - fallback path
         def item(self) -> float:
             if isinstance(self.data, list):
                 if len(self.data) != 1:
-                    raise ValueError("only one element tensors can be converted to Python scalars")
+                    raise ValueError(
+                        "only one element tensors can be converted to Python scalars"
+                    )
                 return SimpleTensor(self.data[0]).item()
             return float(self.data)
 

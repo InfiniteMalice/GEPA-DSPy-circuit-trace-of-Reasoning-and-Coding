@@ -46,7 +46,9 @@ def evaluate_dataset(
 
     for record in records:
         metrics = record.get("metrics", {})
-        scores = {axis: func(metrics.get(axis, {})) for axis, func in AXIS_FUNCTIONS.items()}
+        scores = {
+            axis: func(metrics.get(axis, {})) for axis, func in AXIS_FUNCTIONS.items()
+        }
         for axis, score in scores.items():
             per_axis_scores[axis].append(score)
         eval_result = aggregator.evaluate_profile(scores, profile_obj, use_grn=use_grn)
@@ -56,7 +58,8 @@ def evaluate_dataset(
 
     summary = {
         "axis_means": {
-            axis: mean(values) if values else 0.0 for axis, values in per_axis_scores.items()
+            axis: mean(values) if values else 0.0
+            for axis, values in per_axis_scores.items()
         },
         "composite_mean": mean(composites) if composites else 0.0,
         "gate_pass_rate": gate_passes / len(records) if records else 0.0,
@@ -64,11 +67,15 @@ def evaluate_dataset(
     }
 
     if output_csv is not None:
-        fieldnames = ["record_id", "composite"] + [f"axis_{axis}" for axis in AXIS_FUNCTIONS]
+        fieldnames = ["record_id", "composite"] + [
+            f"axis_{axis}" for axis in AXIS_FUNCTIONS
+        ]
         with open(output_csv, "w", encoding="utf8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=fieldnames)
             writer.writeheader()
-            for record, scores, composite in zip(records, record_axis_scores, composites):
+            for record, scores, composite in zip(
+                records, record_axis_scores, composites
+            ):
                 row = {"record_id": record.get("id"), "composite": composite}
                 for axis in AXIS_FUNCTIONS:
                     row[f"axis_{axis}"] = scores.get(axis, 0)

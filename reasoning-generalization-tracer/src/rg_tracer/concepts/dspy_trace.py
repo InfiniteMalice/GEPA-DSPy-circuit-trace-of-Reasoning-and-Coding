@@ -87,7 +87,9 @@ class TraceRunner:
         features = _build_features(trace.get("features", []))
         edges = _build_edges(trace.get("edges", []))
         sparsity = float(trace.get("sparsity", 0.0))
-        path_lengths = {key: float(value) for key, value in trace.get("path_lengths", {}).items()}
+        path_lengths = {
+            key: float(value) for key, value in trace.get("path_lengths", {}).items()
+        }
         return CircuitTrace(
             model_ref=str(trace.get("model_ref", model_ref)),
             task_id=str(trace.get("task_id", task_id)),

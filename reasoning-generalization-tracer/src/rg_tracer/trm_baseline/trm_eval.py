@@ -35,7 +35,10 @@ def evaluate(
             correct += 1
         metrics = {
             "logical_validity": {"formal_proof": False, "contradictions": 0},
-            "numerical_accuracy": {"error_rate": abs(pred - target), "error_tolerance": 0.25},
+            "numerical_accuracy": {
+                "error_rate": abs(pred - target),
+                "error_tolerance": 0.25,
+            },
             "rigor": {"checked_steps": len(seq), "total_steps": len(seq)},
             "abstraction_generalization": {
                 "transfer_accuracy": pred if target else 1 - pred,
@@ -49,7 +52,9 @@ def evaluate(
         }
         for axis_name, score in scores.items():
             per_axis[axis_name].append(score)
-        chain_text = f"Sequence {seq} maps to activation {pred:.2f} " f"because {PARITY_REASON}."
+        chain_text = (
+            f"Sequence {seq} maps to activation {pred:.2f} " f"because {PARITY_REASON}."
+        )
         report = verify_chain(
             chain_text,
             {"concept": "parity", "units": "binary", "variables": ["x"]},
@@ -59,7 +64,9 @@ def evaluate(
             model.reset_history()
             _, trace = model.forward(seq)
             traces.append((seq, trace))
-    axis_scores = {axis: int(mean(values)) if values else 0 for axis, values in per_axis.items()}
+    axis_scores = {
+        axis: int(mean(values)) if values else 0 for axis, values in per_axis.items()
+    }
     accuracy = correct / total if total else 0.0
     return EvaluationResult(
         accuracy=accuracy,
