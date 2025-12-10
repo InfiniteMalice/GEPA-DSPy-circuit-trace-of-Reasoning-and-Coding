@@ -27,7 +27,6 @@ def evaluate(
     per_axis = {name: [] for name in axes.__all__}
     traces = []
     semantic_scores = []
-    parity_reason = "recursion accumulates parity"
 
     for seq, target in data:
         pred = model.predict(seq)
