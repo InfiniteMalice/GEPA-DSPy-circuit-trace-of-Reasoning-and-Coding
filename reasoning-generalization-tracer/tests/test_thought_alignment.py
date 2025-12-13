@@ -32,7 +32,7 @@ def test_honest_uncertainty_aligns():
 
 def test_random_speculation_unaligned():
     trace = "Random guess with no idea, or maybe something else entirely."
-    aligned, s_match, s_epi = classify_thought_alignment(trace, "42", None)
+    aligned, _s_match, s_epi = classify_thought_alignment(trace, "42", None)
     assert not aligned
     assert s_epi < 0.5
 

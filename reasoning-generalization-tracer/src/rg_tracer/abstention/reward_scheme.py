@@ -36,16 +36,22 @@ def _extract_prediction(prediction: Any, text: str | None) -> str | None:
     if not text:
         return None
     tokens = [tok.strip(". ,") for tok in text.split() if tok.strip()]
-    if tokens:
-        return tokens[-1].lower()
+    for token in reversed(tokens):
+        cleaned = token.lower()
+        if cleaned:
+            return cleaned
     return None
 
 
 def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Mapping[str, float]]:
     cfg = dict(config) if config is not None else aggregator.get_last_config()
     abst_cfg = cfg.get("abstention", {}) if isinstance(cfg, Mapping) else {}
+    if not isinstance(abst_cfg, Mapping):
+        abst_cfg = {}
     threshold = float(abst_cfg.get("threshold", ABSTENTION_THRESHOLD))
-    weights = abst_cfg.get("reward_weights", {}) if isinstance(abst_cfg, Mapping) else {}
+    weights = abst_cfg.get("reward_weights", {})
+    if not isinstance(weights, Mapping):
+        weights = {}
     defaults = {
         "H": 1.0,
         "A": 0.25,

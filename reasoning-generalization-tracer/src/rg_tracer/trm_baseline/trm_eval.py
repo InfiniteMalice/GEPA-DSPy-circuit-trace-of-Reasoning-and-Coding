@@ -62,7 +62,9 @@ def evaluate(
             model.reset_history()
             _, trace = model.forward(seq)
             traces.append((seq, trace))
-    axis_scores = {axis: int(mean(values)) if values else 0 for axis, values in per_axis.items()}
+    axis_scores: dict[str, int] = {}
+    for axis, values in per_axis.items():
+        axis_scores[axis] = int(mean(values)) if values else 0
     accuracy = correct / total if total else 0.0
     return EvaluationResult(
         accuracy=accuracy,

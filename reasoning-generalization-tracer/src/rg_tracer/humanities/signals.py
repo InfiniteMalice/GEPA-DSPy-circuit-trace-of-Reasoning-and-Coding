@@ -94,8 +94,6 @@ def analyse_humanities_chain(chain: Iterable[str] | str) -> HumanitiesSignals:
         # quoted material that is out of context. Allowing both on the same
         # step is intentional so downstream tooling can reason about each
         # axis independently.
-        if double_quote_count >= 2:
-            quote_hits += 1
         if ('"' in step) and not has_citation:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:

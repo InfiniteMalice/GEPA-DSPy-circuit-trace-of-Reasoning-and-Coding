@@ -68,7 +68,9 @@ def evaluate_dataset(
         with open(output_csv, "w", encoding="utf8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=fieldnames)
             writer.writeheader()
-            for record, scores, composite in zip(records, record_axis_scores, composites):
+            for record, scores, composite in zip(
+                records, record_axis_scores, composites, strict=True
+            ):
                 row = {"record_id": record.get("id"), "composite": composite}
                 for axis in AXIS_FUNCTIONS:
                     row[f"axis_{axis}"] = scores.get(axis, 0)

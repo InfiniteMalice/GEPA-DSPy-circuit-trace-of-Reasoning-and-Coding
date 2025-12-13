@@ -112,7 +112,8 @@ def compute_epistemic_score(trace: Any) -> float:
 
 def _get_thresholds() -> tuple[float, float]:
     cfg = aggregator.get_last_config() or {}
-    ta_cfg = cfg.get("thought_alignment", {}) if isinstance(cfg, Mapping) else {}
+    raw_ta_cfg = cfg.get("thought_alignment", {}) if isinstance(cfg, Mapping) else {}
+    ta_cfg = raw_ta_cfg if isinstance(raw_ta_cfg, Mapping) else {}
     theta_match = float(ta_cfg.get("theta_match", 0.8))
     theta_epistemic = float(ta_cfg.get("theta_epistemic", 0.5))
     return theta_match, theta_epistemic
