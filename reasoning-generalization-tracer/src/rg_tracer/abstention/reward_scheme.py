@@ -1,4 +1,4 @@
-"""Ten-case abstention reward scheme with epistemic grounding."""
+"""Eleven-case abstention reward scheme with epistemic grounding."""
 
 from __future__ import annotations
 
@@ -97,7 +97,7 @@ def _score_non_abstain(
             case_id = 7
     else:
         knowledge = 0.0
-        case_id = 7
+        case_id = 0
 
     components["knowledge"] = knowledge
     return case_id, components
@@ -119,10 +119,13 @@ def _score_abstain(
         components["abstention"] = weights.get("A", 0.0)
         components["miscalibration"] = -weights.get("K_miscal", 0.0)
         case_id = 9
-    else:
+    elif high_confidence:
         components["abstention"] = -weights.get("A", 0.0)
         components["miscalibration"] = -weights.get("K_miscal", 0.0)
         case_id = 10
+    else:
+        components["abstention"] = -weights.get("A", 0.0)
+        case_id = 11
     return case_id, components
 
 
@@ -136,7 +139,7 @@ def evaluate_abstention_reward(
     abstained: bool,
     config: Mapping[str, object] | None = None,
 ) -> RewardOutcome:
-    """Evaluate ten-case abstention reward with epistemic alignment."""
+    """Evaluate eleven-case abstention reward with epistemic alignment."""
 
     threshold, weights = _load_config(config)
     predicted_value = _extract_prediction(prediction, text)

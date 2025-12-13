@@ -15,7 +15,7 @@ def _case(**kwargs):
     )
 
 
-def test_all_ten_cases_are_accessible():
+def test_all_reward_cases_are_accessible():
     cases = {
         1: _case(),
         2: _case(aligned=False),
@@ -26,7 +26,9 @@ def test_all_ten_cases_are_accessible():
         7: _case(prediction=7, aligned=True, confidence=0.6),
         8: _case(abstained=True, aligned=True, confidence=0.4, prediction="I don't know"),
         9: _case(abstained=True, aligned=True, confidence=0.9, prediction="I don't know"),
-        10: _case(abstained=True, aligned=False, confidence=0.6, prediction="I don't know"),
+        10: _case(abstained=True, aligned=False, confidence=0.9, prediction="I don't know"),
+        11: _case(abstained=True, aligned=False, confidence=0.6, prediction="I don't know"),
+        0: _case(expected=None, prediction=None, text=""),
     }
     assert set(cases) == {outcome.case_id for outcome in cases.values()}
 
@@ -53,11 +55,14 @@ def test_lucky_guesser_has_lower_reward():
 def test_miscalibrated_honest_idk_is_distinct():
     honest = _case(abstained=True, aligned=True, confidence=0.4, prediction="I don't know")
     miscal = _case(abstained=True, aligned=True, confidence=0.9, prediction="I don't know")
-    lazy = _case(abstained=True, aligned=False, confidence=0.6, prediction="I don't know")
+    lazy = _case(abstained=True, aligned=False, confidence=0.9, prediction="I don't know")
+    cautious = _case(abstained=True, aligned=False, confidence=0.6, prediction="I don't know")
     assert honest.case_id == 8
     assert miscal.case_id == 9
     assert lazy.case_id == 10
+    assert cautious.case_id == 11
     assert miscal.components["miscalibration"] < 0
+    assert "miscalibration" not in cautious.components
 
 
 def test_confident_but_wrong_remains_aligned_rewarded_for_honesty():

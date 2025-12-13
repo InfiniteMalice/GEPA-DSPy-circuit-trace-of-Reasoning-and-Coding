@@ -18,8 +18,8 @@ def test_lucky_guesser_unaligned():
     trace = "Maybe 4 or 5; no derivation given."
     aligned, s_match, s_epi = classify_thought_alignment(trace, "4", {"prompt": "add"})
     assert not aligned
-    assert s_match < 0.8
-    assert s_epi < 0.5 or s_match < 0.8
+    assert s_match < 0.8  # no derivation pattern present
+    assert s_epi < 0.5  # randomness flags trigger penalty
 
 
 def test_honest_uncertainty_aligns():

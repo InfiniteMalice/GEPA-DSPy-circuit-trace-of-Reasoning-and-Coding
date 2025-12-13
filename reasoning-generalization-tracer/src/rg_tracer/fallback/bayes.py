@@ -30,11 +30,12 @@ class BayesianPosition:
 
 
 def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> BayesianPosition:
+    likes = list(likelihoods)
     prob_true = prior.probability
     prob_false = 1 - prob_true
     logit = prob_true / max(prob_false, 1e-9)
     dominant = None
-    for like in likelihoods:
+    for like in likes:
         if like.probability_if_false <= 0 or like.probability_if_true <= 0:
             continue
         ratio = like.probability_if_true / like.probability_if_false
@@ -52,7 +53,7 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
         policy = "Recommend caution"
     return BayesianPosition(
         prior=prior,
-        likelihoods=list(likelihoods),
+        likelihoods=likes,
         posterior=posterior,
         sensitivity_summary=sensitivity,
         dominant_evidence=dominant_desc,

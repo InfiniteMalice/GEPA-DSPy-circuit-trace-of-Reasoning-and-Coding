@@ -205,7 +205,9 @@ def repair_once(
                 steps[idx] = _append_with_punctuation(step, clarification)
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            normative_suffix = "This recommendation is normative and contingent on shared values."
+            normative_suffix = (
+                "This recommendation is normative and " "contingent on shared values."
+            )
             if normative_suffix.lower() not in step.lower():
                 steps[idx] = _append_with_punctuation(step, normative_suffix)
             break

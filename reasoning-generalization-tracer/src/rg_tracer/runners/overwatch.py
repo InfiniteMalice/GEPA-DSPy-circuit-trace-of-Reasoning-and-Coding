@@ -132,9 +132,7 @@ class OverwatchAgent:
                     )
                 return OverwatchDecision(
                     action="allow",
-                    reason=(
-                        "Heuristic match but first allowed action is unrecognized: " f"{action}"
-                    ),
+                    reason=f"Heuristic match but first allowed action is unrecognized: {action}",
                 )
         return OverwatchDecision(action="allow", reason=default_reason)
 
