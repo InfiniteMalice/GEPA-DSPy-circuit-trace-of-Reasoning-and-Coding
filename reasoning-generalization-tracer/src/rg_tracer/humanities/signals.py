@@ -84,9 +84,7 @@ def analyse_humanities_chain(chain: Iterable[str] | str) -> HumanitiesSignals:
         if any(term in lowered for term in _FALLACY_TERMS):
             fallacy_flags += 1
             step_tags.append(SemanticTag.RHETORICAL_EXCESS.value)
-        uncited_assertion = not has_citation and any(
-            term in lowered for term in _ASSERTIVE_TERMS
-        )
+        uncited_assertion = not has_citation and any(term in lowered for term in _ASSERTIVE_TERMS)
         if uncited_assertion:
             step_tags.append(SemanticTag.UNCITED_CLAIM.value)
         if double_quote_count % 2 == 1:
@@ -96,8 +94,6 @@ def analyse_humanities_chain(chain: Iterable[str] | str) -> HumanitiesSignals:
         # quoted material that is out of context. Allowing both on the same
         # step is intentional so downstream tooling can reason about each
         # axis independently.
-        if double_quote_count >= 2:
-            quote_hits += 1
         if ('"' in step) and not has_citation:
             step_tags.append(SemanticTag.QUOTE_OOC.value)
         if "balance" in lowered or "both" in lowered:
