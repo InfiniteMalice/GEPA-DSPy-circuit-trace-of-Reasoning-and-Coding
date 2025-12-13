@@ -124,7 +124,7 @@ def _score_abstain(
         components["miscalibration"] = -weights.get("K_miscal", 0.0)
         case_id = 10
     else:
-        components["abstention"] = -weights.get("A", 0.0)
+        components["abstention"] = weights.get("A", 0.0)
         case_id = 11
     return case_id, components
 

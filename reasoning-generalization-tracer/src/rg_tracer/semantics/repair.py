@@ -35,11 +35,11 @@ def _build_unit_pattern(unit_text: str) -> re.Pattern[str] | None:
 
 def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
-        steps = [step.strip() for step in chain.split("\n") if step.strip()]
+        steps = [value for step in chain.split("\n") if (value := step.strip())]
     elif isinstance(chain, Mapping) and "steps" in chain:
-        steps = [str(step).strip() for step in chain.get("steps", []) if str(step).strip()]
+        steps = [value for step in chain.get("steps", []) if (value := str(step).strip())]
     elif isinstance(chain, Iterable):
-        steps = [str(step).strip() for step in chain if str(step).strip()]
+        steps = [value for step in chain if (value := str(step).strip())]
     else:
         steps = [str(chain).strip()]
     return steps or [""]

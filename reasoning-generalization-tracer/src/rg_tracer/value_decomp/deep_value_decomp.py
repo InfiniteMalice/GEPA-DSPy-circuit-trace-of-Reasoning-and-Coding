@@ -186,7 +186,7 @@ def compute_dvgr(examples: Iterable[Mapping[str, Any]], predictions: Iterable[st
     pairs = list(zip(examples_list, predictions_list, strict=False))
     if not pairs:
         return 0.0
-    correct = 0
+    correct: float = 0.0
     for example, prediction in pairs:
         deep_value = str(example.get("deep_value", "")).casefold()
         shallow_feature = str(example.get("shallow_feature", "")).casefold()

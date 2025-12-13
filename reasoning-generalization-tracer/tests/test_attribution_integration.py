@@ -45,7 +45,10 @@ def test_attr_bonus_applies_when_alignment_grows():
         semantic_report={},
         semantics_map={"entailed_feature_ids": ["n2"], "contradictory_feature_ids": []},
     )
-    graphs = [_phase_graph("overfit", 0.1), _phase_graph("post_grok", 0.9)]
+    graphs = [
+        _phase_graph("overfit", 0.1),
+        _phase_graph("post_grok", 0.9),
+    ]
     bonuses = {
         "alignment_gain": 0.05,
         "repeatability_gain": 0.0,
@@ -94,7 +97,10 @@ def test_concept_reward_scales_with_alignment():
             "contradictory_feature_ids": [],
         },
     )
-    graphs = [_phase_graph("overfit", 0.1), _phase_graph("post_grok", 0.9)]
+    graphs = [
+        _phase_graph("overfit", 0.1),
+        _phase_graph("post_grok", 0.9),
+    ]
     bonuses = {
         "alignment_gain": 0.0,
         "repeatability_gain": 0.0,

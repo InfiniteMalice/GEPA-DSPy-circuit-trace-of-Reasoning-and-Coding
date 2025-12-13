@@ -53,7 +53,7 @@ def _canonical_unit(value: str) -> str:
 
 def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
-        steps = [step.strip() for step in chain.split("\n") if step.strip()]
+        steps = [value for step in chain.split("\n") if (value := step.strip())]
     elif isinstance(chain, Mapping) and "steps" in chain:
         steps = [value for step in chain.get("steps", []) if (value := str(step).strip())]
     elif isinstance(chain, Sequence):

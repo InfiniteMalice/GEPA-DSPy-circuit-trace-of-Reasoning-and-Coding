@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import sys
 from pathlib import Path
 
@@ -25,7 +26,7 @@ def reset_aggregator_defaults():
     from rg_tracer.scoring import aggregator
 
     with aggregator._LAST_CONFIG_LOCK:
-        aggregator._LAST_CONFIG = aggregator.DEFAULT_CONFIG
+        aggregator._LAST_CONFIG = copy.deepcopy(aggregator.DEFAULT_CONFIG)
     yield
     with aggregator._LAST_CONFIG_LOCK:
-        aggregator._LAST_CONFIG = aggregator.DEFAULT_CONFIG
+        aggregator._LAST_CONFIG = copy.deepcopy(aggregator.DEFAULT_CONFIG)

@@ -41,12 +41,8 @@ def apply_abstention(
     else:
         confidence_value = float(confidence)
         sem_value = float(sem_score)
-    should_abstain = any(
-        [
-            confidence_value < ABSTENTION_THRESHOLD,
-            sem_value < SEMANTIC_THRESHOLD,
-            not gates_pass,
-        ]
+    should_abstain = (
+        confidence_value < ABSTENTION_THRESHOLD or sem_value < SEMANTIC_THRESHOLD or not gates_pass
     )
     if should_abstain:
         return AbstentionResult(

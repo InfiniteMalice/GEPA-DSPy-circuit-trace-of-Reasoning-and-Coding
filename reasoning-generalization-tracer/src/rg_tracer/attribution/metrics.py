@@ -284,7 +284,9 @@ def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike | None) -> List[Gra
     if isinstance(graphs, (AttributionGraph, Mapping)):
         return [graphs]
     if isinstance(graphs, (str, bytes)):
-        raise TypeError("graphs must be mapping-like, AttributionGraph, or an iterable of graphs")
+        raise TypeError(
+            "graphs must be a graph (mapping/AttributionGraph) or an iterable of graphs"
+        )
     return [graph for graph in graphs if graph is not None]
 
 

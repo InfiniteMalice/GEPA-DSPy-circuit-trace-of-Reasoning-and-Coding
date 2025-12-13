@@ -63,6 +63,8 @@ def test_miscalibrated_honest_idk_is_distinct():
     assert cautious.case_id == 11
     assert miscal.components["miscalibration"] < 0
     assert "miscalibration" not in cautious.components
+    assert cautious.reward > 0
+    assert cautious.components.get("abstention", 0) > 0
 
 
 def test_confident_but_wrong_remains_aligned_rewarded_for_honesty():
