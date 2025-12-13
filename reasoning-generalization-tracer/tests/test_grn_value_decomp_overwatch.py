@@ -115,10 +115,7 @@ def test_overwatch_disabled_short_circuits_llm():
 
 def test_self_play_with_grn_and_value_decomposition(tmp_path):
     problem_path = (
-        Path(__file__).resolve().parents[1]
-        / "datasets"
-        / "toy_math"
-        / "addition_small.jsonl"
+        Path(__file__).resolve().parents[1] / "datasets" / "toy_math" / "addition_small.jsonl"
     )
     if not problem_path.exists():
         pytest.skip(f"Test dataset not found: {problem_path}")
