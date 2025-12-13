@@ -79,17 +79,12 @@ class OverwatchAgent:
             decision = OverwatchDecision(
                 action=action,
                 reason=str(data.get("reason", default_reason)),
-                new_thought=(
-                    str(data["new_thought"]) if data.get("new_thought") else None
-                ),
+                new_thought=(str(data["new_thought"]) if data.get("new_thought") else None),
                 new_action=str(data["new_action"]) if data.get("new_action") else None,
             )
         else:
             decision = self._apply_heuristic_fallback(response, default_reason)
-        if (
-            decision.action not in self.config.allowed_actions
-            and decision.action != "allow"
-        ):
+        if decision.action not in self.config.allowed_actions and decision.action != "allow":
             return OverwatchDecision(
                 action="allow",
                 reason=(
@@ -98,9 +93,7 @@ class OverwatchAgent:
             )
         return decision
 
-    def _apply_heuristic_fallback(
-        self, response: str, default_reason: str
-    ) -> OverwatchDecision:
+    def _apply_heuristic_fallback(self, response: str, default_reason: str) -> OverwatchDecision:
         """Apply heuristic keyword matching when LLM returns non-JSON."""
 
         lower = response.casefold()
@@ -139,10 +132,7 @@ class OverwatchAgent:
                     )
                 return OverwatchDecision(
                     action="allow",
-                    reason=(
-                        "Heuristic match but first allowed action is unrecognized: "
-                        f"{action}"
-                    ),
+                    reason=f"Heuristic match but first allowed action is unrecognized: {action}",
                 )
         return OverwatchDecision(action="allow", reason=default_reason)
 
