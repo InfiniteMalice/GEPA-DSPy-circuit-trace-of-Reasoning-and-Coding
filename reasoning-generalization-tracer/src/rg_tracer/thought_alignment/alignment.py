@@ -96,8 +96,6 @@ def compute_epistemic_score(trace: Any) -> float:
     for stabiliser in _UNCERTAINTY_STABILISERS:
         if stabiliser in text:
             score += 0.05
-    if "therefore" in text or "because" in text:
-        score += 0.08
 
     if any(flag in text for flag in _RANDOMNESS_FLAGS):
         score -= 0.35
@@ -120,13 +118,17 @@ def _get_thresholds() -> tuple[float, float]:
 
 
 def classify_thought_alignment(
-    trace: Any, answer: Any, context: Any | None = None
+    trace: Any,
+    answer: Any,
+    context: Any | None = None,
+    *,
+    thresholds: tuple[float, float] | None = None,
 ) -> tuple[bool, float, float]:
     """Classify thought alignment using match and epistemic thresholds."""
 
     s_match = compute_match_score(trace, answer, context)
     s_epistemic = compute_epistemic_score(trace)
-    theta_match, theta_epistemic = _get_thresholds()
+    theta_match, theta_epistemic = thresholds or _get_thresholds()
     thought_align = s_match >= theta_match and s_epistemic >= theta_epistemic
     return thought_align, s_match, s_epistemic
 

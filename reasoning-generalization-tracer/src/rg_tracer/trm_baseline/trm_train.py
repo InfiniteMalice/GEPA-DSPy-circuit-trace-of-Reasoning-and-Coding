@@ -72,7 +72,11 @@ def train(
     return TrainingResult(losses=losses, model=model)
 
 
-def quickstart_trainer(task: str = "parity", samples: int = 64, length: int = 4) -> TrainingResult:
+def quickstart_trainer(
+    task: str = "parity",
+    samples: int = 64,
+    length: int = 4,
+) -> TrainingResult:
     model = TinyRecursionModel()
     if task == "parity":
         data = generate_parity_data(samples, length=length)

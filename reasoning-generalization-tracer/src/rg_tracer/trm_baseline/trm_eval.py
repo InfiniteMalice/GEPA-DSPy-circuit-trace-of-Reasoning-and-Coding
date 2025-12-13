@@ -64,7 +64,7 @@ def evaluate(
             traces.append((seq, trace))
     axis_scores: dict[str, int] = {}
     for axis, values in per_axis.items():
-        axis_scores[axis] = int(round(mean(values))) if values else 0
+        axis_scores[axis] = round(mean(values)) if values else 0
     accuracy = correct / total if total else 0.0
     return EvaluationResult(
         accuracy=accuracy,

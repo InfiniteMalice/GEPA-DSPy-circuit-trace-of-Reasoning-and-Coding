@@ -24,6 +24,8 @@ def pytest_configure() -> None:
 def reset_aggregator_defaults():
     from rg_tracer.scoring import aggregator
 
-    aggregator._LAST_CONFIG = aggregator.DEFAULT_CONFIG
+    with aggregator._LAST_CONFIG_LOCK:
+        aggregator._LAST_CONFIG = aggregator.DEFAULT_CONFIG
     yield
-    aggregator._LAST_CONFIG = aggregator.DEFAULT_CONFIG
+    with aggregator._LAST_CONFIG_LOCK:
+        aggregator._LAST_CONFIG = aggregator.DEFAULT_CONFIG

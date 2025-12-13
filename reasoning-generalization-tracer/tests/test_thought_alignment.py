@@ -38,7 +38,7 @@ def test_random_speculation_unaligned():
 
 
 def test_confident_wrong_reasoning_can_align():
-    trace = "Therefore the sum yields 9 after consistent steps."  # incorrect vs expected 8
+    trace = "Therefore the sum yields 9 because the factors align after consistent steps."  # incorrect vs expected 8
     aligned, s_match, s_epi = classify_thought_alignment(trace, "9", {"expected_answer": 8})
     assert aligned
     assert s_match >= 0.8
