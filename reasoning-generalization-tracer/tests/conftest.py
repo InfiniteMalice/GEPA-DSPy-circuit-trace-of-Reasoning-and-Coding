@@ -15,12 +15,6 @@ if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
 
-def pytest_configure() -> None:
-    """Ensure the ``src`` directory is importable for tests."""
-    if src_path not in sys.path:
-        sys.path.insert(0, src_path)
-
-
 @pytest.fixture(autouse=True)
 def reset_aggregator_defaults():
     from rg_tracer.scoring import aggregator

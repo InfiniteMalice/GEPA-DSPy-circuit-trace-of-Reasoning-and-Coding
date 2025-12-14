@@ -18,20 +18,29 @@ _VACILLATION_PATTERNS = ("or maybe", "or perhaps", "alternatively")
 
 def _collect_text(blob: Any) -> str:
     parts: list[str] = []
+    seen: set[int] = set()
 
     def _walk(value: Any) -> None:
         if value is None:
             return
+        value_id = id(value)
+        if value_id in seen:
+            return
+        seen.add(value_id)
         if isinstance(value, str):
             if value.strip():
                 parts.append(value)
             return
         if isinstance(value, Mapping):
-            for entry in value.values():
+            for _, entry in sorted(value.items(), key=lambda item: str(item[0])):
                 _walk(entry)
             return
-        if isinstance(value, (list, tuple, set)):
+        if isinstance(value, (list, tuple)):
             for entry in value:
+                _walk(entry)
+            return
+        if isinstance(value, (set, frozenset)):
+            for entry in sorted(value, key=lambda item: str(item)):
                 _walk(entry)
             return
         parts.append(str(value))
@@ -43,7 +52,7 @@ def _collect_text(blob: Any) -> str:
 def _normalise_text(trace: Any, context: Any = None) -> str:
     trace_text = _collect_text(trace)
     context_text = _collect_text(context) if context is not None else ""
-    combined = " ".join([trace_text, context_text]).strip().lower()
+    combined = " ".join([trace_text, context_text]).strip().casefold()
     return re.sub(r"\s+", " ", combined)
 
 
@@ -59,15 +68,19 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
         return 0.0
 
     score = 0.25  # base credit for providing any trace
-    answer_token = str(answer).strip().lower()
+    answer_token = str(answer).strip().casefold()
+    derivation_found = False
+    endorsement_found = False
 
     if answer_token:
         derivation_pattern = rf"(=|->|=>|yields|gives)\s*{re.escape(answer_token)}"
         if re.search(derivation_pattern, text):
             score += 0.35
+            derivation_found = True
         if re.search(rf"(therefore|thus|so).*{re.escape(answer_token)}", text):
             score += 0.25
-        if answer_token in text:
+            endorsement_found = True
+        if answer_token in text and not (derivation_found or endorsement_found):
             score += 0.1
     else:
         score -= 0.1
@@ -75,7 +88,7 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
     unresolved_candidates = text.count(" or ") + text.count(" maybe ")
     score -= 0.1 * unresolved_candidates
 
-    if any(flag in text for flag in ("contradiction", "inconsistent")):
+    if any(flag in text for flag in _CONTRADICTION_FLAGS):
         score -= 0.2
 
     score = max(0.0, min(1.0, score))
@@ -120,6 +133,8 @@ def _get_thresholds() -> tuple[float, float]:
         theta_epistemic = float(ta_cfg.get("theta_epistemic", 0.5))
     except (TypeError, ValueError):
         theta_epistemic = 0.5
+    theta_match = max(0.0, min(1.0, theta_match))
+    theta_epistemic = max(0.0, min(1.0, theta_epistemic))
     return theta_match, theta_epistemic
 
 
@@ -134,7 +149,12 @@ def classify_thought_alignment(
 
     s_match = compute_match_score(trace, answer, context)
     s_epistemic = compute_epistemic_score(trace)
-    theta_match, theta_epistemic = thresholds or _get_thresholds()
+    resolved = thresholds if thresholds is not None else _get_thresholds()
+    if not (isinstance(resolved, tuple) and len(resolved) == 2):
+        raise ValueError("thresholds must be a (theta_match, theta_epistemic) tuple")
+    theta_match, theta_epistemic = (float(resolved[0]), float(resolved[1]))
+    theta_match = max(0.0, min(1.0, theta_match))
+    theta_epistemic = max(0.0, min(1.0, theta_epistemic))
     thought_align = s_match >= theta_match and s_epistemic >= theta_epistemic
     return thought_align, s_match, s_epistemic
 

@@ -93,7 +93,11 @@ class OverwatchAgent:
             )
         return decision
 
-    def _apply_heuristic_fallback(self, response: str, default_reason: str) -> OverwatchDecision:
+    def _apply_heuristic_fallback(
+        self,
+        response: str,
+        default_reason: str,
+    ) -> OverwatchDecision:
         """Apply heuristic keyword matching when LLM returns non-JSON."""
 
         lower = response.casefold()

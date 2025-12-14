@@ -1,3 +1,6 @@
+import copy
+
+from rg_tracer.scoring import aggregator
 from rg_tracer.abstention import evaluate_abstention_reward
 
 
@@ -5,6 +8,7 @@ BASE_TEXT = "Add 2 and 3 to get 5."
 
 
 def _case(**kwargs):
+    config = kwargs.get("config", copy.deepcopy(aggregator.DEFAULT_CONFIG))
     return evaluate_abstention_reward(
         expected_answer=kwargs.get("expected", 5),
         prediction=kwargs.get("prediction", 5),
@@ -12,6 +16,7 @@ def _case(**kwargs):
         confidence=kwargs.get("confidence", 0.9),
         aligned=kwargs.get("aligned", True),
         abstained=kwargs.get("abstained", False),
+        config=config,
     )
 
 

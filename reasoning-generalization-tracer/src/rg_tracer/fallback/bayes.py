@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List
+import math
+from typing import Iterable
 
 
 @dataclass
@@ -22,7 +23,7 @@ class Likelihood:
 @dataclass
 class BayesianPosition:
     prior: Prior
-    likelihoods: List[Likelihood]
+    likelihoods: list[Likelihood]
     posterior: float
     sensitivity_summary: str
     dominant_evidence: str
@@ -30,6 +31,8 @@ class BayesianPosition:
 
 
 def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> BayesianPosition:
+    if not math.isfinite(prior.probability) or not 0.0 <= prior.probability <= 1.0:
+        raise ValueError("prior.probability must be a finite value in [0.0, 1.0]")
     likes = list(likelihoods)
     prob_true = prior.probability
     prob_false = 1 - prob_true

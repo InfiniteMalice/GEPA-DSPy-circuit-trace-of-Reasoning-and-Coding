@@ -48,10 +48,14 @@ def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Map
     abst_cfg = cfg.get("abstention", {}) if isinstance(cfg, Mapping) else {}
     if not isinstance(abst_cfg, Mapping):
         abst_cfg = {}
-    threshold = float(abst_cfg.get("threshold", ABSTENTION_THRESHOLD))
-    weights = abst_cfg.get("reward_weights", {})
-    if not isinstance(weights, Mapping):
-        weights = {}
+    try:
+        threshold = float(abst_cfg.get("threshold", ABSTENTION_THRESHOLD))
+    except (TypeError, ValueError):
+        threshold = ABSTENTION_THRESHOLD
+    threshold = max(0.0, min(1.0, threshold))
+    raw_weights = abst_cfg.get("reward_weights", {})
+    if not isinstance(raw_weights, Mapping):
+        raw_weights = {}
     defaults = {
         "H": 1.0,
         "A": 0.25,
@@ -59,7 +63,12 @@ def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Map
         "K_low": 1.0,
         "K_miscal": 2.0,
     }
-    merged_weights = {**defaults, **weights}
+    merged_weights: Dict[str, float] = {}
+    for key, default_value in defaults.items():
+        try:
+            merged_weights[key] = float(raw_weights.get(key, default_value))
+        except (TypeError, ValueError):
+            merged_weights[key] = float(default_value)
     return threshold, merged_weights
 
 
@@ -145,8 +154,6 @@ def evaluate_abstention_reward(
     predicted_value = _extract_prediction(prediction, text)
     expected_value = _normalise_answer(expected_answer)
     correct: bool | None = None
-    if predicted_value is not None and expected_value is not None:
-        correct = predicted_value == expected_value
     high_confidence = confidence >= threshold
 
     if abstained:
@@ -154,6 +161,8 @@ def evaluate_abstention_reward(
             high_confidence=high_confidence, aligned=aligned, weights=weights
         )
     else:
+        if predicted_value is not None and expected_value is not None:
+            correct = predicted_value == expected_value
         case_id, components = _score_non_abstain(
             correct=correct, high_confidence=high_confidence, aligned=aligned, weights=weights
         )

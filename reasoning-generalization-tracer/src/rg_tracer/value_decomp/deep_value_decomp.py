@@ -151,13 +151,19 @@ def parse_user_shallow_prefs(prompt: str) -> ShallowFeatureVector:
 
 def analyze_output_deep_values(output_text: str, scores: ScoreVector) -> DeepValueVector:
     heuristic = _score_from_keywords(output_text, _DEEP_KEYWORDS)
-    heuristic["correctness"] = max(heuristic["correctness"], scores.get("logical_validity", 0.0))
+    heuristic["correctness"] = max(
+        heuristic["correctness"],
+        scores.get("logical_validity", 0.0),
+    )
     heuristic["spec_faithfulness"] = max(
         heuristic["spec_faithfulness"], scores.get("completeness", 0.0)
     )
     # Safety leans on explicit safety axes rather than efficiency to avoid conflating concerns.
     heuristic["safety"] = max(heuristic["safety"], scores.get("safety", 0.0))
-    heuristic["non_deception"] = max(heuristic["non_deception"], scores.get("rigor", 0.0))
+    heuristic["non_deception"] = max(
+        heuristic["non_deception"],
+        scores.get("rigor", 0.0),
+    )
     return DeepValueVector(**heuristic)
 
 

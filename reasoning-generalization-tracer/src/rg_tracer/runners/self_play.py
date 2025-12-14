@@ -562,11 +562,19 @@ def run_self_play(
     if profile not in profiles:
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]
-    grn_scoring = _resolve_grn_flag(use_grn_for_scoring, profile_config_safe, "use_grn_for_scoring")
+    grn_scoring = _resolve_grn_flag(
+        use_grn_for_scoring,
+        profile_config_safe,
+        "use_grn_for_scoring",
+    )
     grn_abstention = _resolve_grn_flag(
         use_grn_for_abstention, profile_config_safe, "use_grn_for_abstention"
     )
-    grn_probes = _resolve_grn_flag(use_grn_for_probes, profile_config_safe, "use_grn_for_probes")
+    grn_probes = _resolve_grn_flag(
+        use_grn_for_probes,
+        profile_config_safe,
+        "use_grn_for_probes",
+    )
     grn_flags = {
         "scoring": grn_scoring,
         "abstention": grn_abstention,
@@ -719,16 +727,19 @@ def run_self_play(
         thought_context = {
             "prompt": problem.get("prompt"),
             "expected_answer": problem.get("answer"),
-            "text": text_after_repair,
+            "text": abstention.text if abstention.abstained else text_after_repair,
         }
-        candidate_answer = raw.get("prediction", abstention.text)
+        model_prediction = raw.get("prediction")
+        # ``final_answer`` mirrors the surfaced output (abstention text when abstained).
+        final_answer = abstention.text if abstention.abstained else (model_prediction or "")
+        final_text = abstention.text if abstention.abstained else text_after_repair
         thought_align, s_match, s_epistemic = classify_thought_alignment(
-            trace_json, candidate_answer, thought_context
+            trace_json, final_answer, thought_context
         )
         reward_outcome = evaluate_abstention_reward(
             expected_answer=problem.get("answer"),
-            prediction=candidate_answer,
-            text=text_after_repair,
+            prediction=final_answer,
+            text=final_text,
             confidence=raw.get("confidence", 0.0),
             aligned=thought_align,
             abstained=abstention.abstained,

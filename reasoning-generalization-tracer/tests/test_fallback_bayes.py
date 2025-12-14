@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from rg_tracer.fallback import run_academic_pipeline
 from rg_tracer.fallback.bayes import Likelihood, Prior, compute_posterior
 
@@ -83,3 +85,9 @@ def test_compute_posterior_decision_policies():
 
     cautious = compute_posterior(prior, [cautious_like])
     assert cautious.decision_policy == "Recommend caution"
+
+
+def test_compute_posterior_validates_prior_probability():
+    prior = Prior(hypothesis="claim", probability=1.5)
+    with pytest.raises(ValueError):
+        compute_posterior(prior, [])
