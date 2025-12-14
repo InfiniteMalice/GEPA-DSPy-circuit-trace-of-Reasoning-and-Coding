@@ -92,3 +92,10 @@ def test_compute_posterior_validates_prior_probability(prob):
     prior = Prior(hypothesis="claim", probability=prob)
     with pytest.raises(ValueError):
         compute_posterior(prior, [])
+
+
+@pytest.mark.parametrize("prob", [0.0, 1.0])
+def test_compute_posterior_accepts_boundary_priors(prob):
+    prior = Prior(hypothesis="claim", probability=prob)
+    result = compute_posterior(prior, [])
+    assert result.posterior == prob

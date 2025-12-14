@@ -18,14 +18,17 @@ _THRESHOLDS_ERROR = "thresholds must be a (theta_match, theta_epistemic) tuple"
 
 
 def _compile_terms(terms: tuple[str, ...]) -> tuple[re.Pattern[str], ...]:
-    return tuple(re.compile(rf"(?<!\w){re.escape(term)}(?!\w)") for term in terms)
+    patterns: list[re.Pattern[str]] = []
+    for term in terms:
+        patterns.append(re.compile(rf"\b{re.escape(term)}\b"))
+    return tuple(patterns)
 
 
 _REASONING_PATTERNS = _compile_terms(_REASONING_CUES)
 _UNCERTAINTY_PATTERNS = _compile_terms(_UNCERTAINTY_STABILISERS)
 _RANDOMNESS_PATTERNS = _compile_terms(_RANDOMNESS_FLAGS)
 _CONTRADICTION_PATTERNS = _compile_terms(_CONTRADICTION_FLAGS)
-_VACILLATION_REGEXES = _compile_terms(_VACILLATION_PATTERNS)
+_VACILLATION_PATTERNS_COMPILED = _compile_terms(_VACILLATION_PATTERNS)
 
 
 def _contains_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
@@ -89,11 +92,11 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
     endorsement_found = False
 
     if answer_token:
-        derivation_pattern = rf"(=|->|=>|yields|gives)\s*{re.escape(answer_token)}\b"
+        derivation_pattern = rf"(?<!\w)(=|->|=>|yields|gives)\s*{re.escape(answer_token)}\b"
         if re.search(derivation_pattern, text):
             score += 0.35
             derivation_found = True
-        if re.search(rf"(therefore|thus|so).*\b{re.escape(answer_token)}\b", text):
+        if re.search(rf"(?<!\w)(therefore|thus|so).*\b{re.escape(answer_token)}\b", text):
             score += 0.25
             endorsement_found = True
         if re.search(rf"\b{re.escape(answer_token)}\b", text) and not (
@@ -132,7 +135,7 @@ def compute_epistemic_score(trace: Any) -> float:
         score -= 0.35
     if _contains_any(_CONTRADICTION_PATTERNS, text):
         score -= 0.2
-    if _contains_any(_VACILLATION_REGEXES, text):
+    if _contains_any(_VACILLATION_PATTERNS_COMPILED, text):
         score -= 0.15
 
     score = max(0.0, min(1.0, score))
@@ -170,7 +173,11 @@ def classify_thought_alignment(
     resolved = thresholds if thresholds is not None else _get_thresholds()
     if not (isinstance(resolved, tuple) and len(resolved) == 2):
         raise ValueError(_THRESHOLDS_ERROR)
-    theta_match, theta_epistemic = (float(resolved[0]), float(resolved[1]))
+    try:
+        theta_match = float(resolved[0])
+        theta_epistemic = float(resolved[1])
+    except (TypeError, ValueError):
+        raise ValueError(_THRESHOLDS_ERROR) from None
     theta_match = max(0.0, min(1.0, theta_match))
     theta_epistemic = max(0.0, min(1.0, theta_epistemic))
     thought_align = s_match >= theta_match and s_epistemic >= theta_epistemic

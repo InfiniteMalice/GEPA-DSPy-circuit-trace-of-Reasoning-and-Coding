@@ -8,6 +8,7 @@ from typing import Iterable
 
 
 PRIOR_PROBABILITY_INVALID = "prior.probability must be a finite value in [0.0, 1.0]"
+LIKELIHOOD_PROBABILITY_INVALID = "Likelihood.{} must be finite and in [0.0, 1.0]"
 
 
 @dataclass
@@ -52,7 +53,7 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
             (like.probability_if_false, "probability_if_false"),
         ):
             if not math.isfinite(value) or not 0.0 <= value <= 1.0:
-                raise ValueError(f"Likelihood.{name} must be finite and in [0.0, 1.0]")
+                raise ValueError(LIKELIHOOD_PROBABILITY_INVALID.format(name))
         if like.probability_if_true == 0.0 and like.probability_if_false > 0.0:
             log_odds = float("-inf")
             impact = float("inf")

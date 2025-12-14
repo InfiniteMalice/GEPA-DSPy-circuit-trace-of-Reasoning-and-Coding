@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 from statistics import mean
 from typing import Iterable, Mapping, Sequence, Tuple
 
@@ -64,7 +65,11 @@ def evaluate(
             traces.append((seq, trace))
     axis_scores: dict[str, int] = {}
     for axis, values in per_axis.items():
-        axis_scores[axis] = round(mean(values)) if values else 0
+        if not values:
+            axis_scores[axis] = 0
+            continue
+        rounded = Decimal(mean(values)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        axis_scores[axis] = int(rounded)
     accuracy = correct / total if total else 0.0
     return EvaluationResult(
         accuracy=accuracy,

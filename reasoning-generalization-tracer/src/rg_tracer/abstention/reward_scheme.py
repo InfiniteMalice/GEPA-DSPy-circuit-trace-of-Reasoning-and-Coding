@@ -36,7 +36,13 @@ def _extract_prediction(prediction: Any, text: str | None) -> str | None:
         return normalised
     if not text:
         return None
-    tokens = [tok.strip(".,!?;:()[]{}\"' ") for tok in text.split() if tok.strip()]
+    tokens = []
+    for tok in text.split():
+        if not tok.strip():
+            continue
+        cleaned = tok.strip(".,!?;:()[]{}\"' ")
+        if cleaned:
+            tokens.append(cleaned)
     return tokens[-1].casefold() if tokens else None
 
 

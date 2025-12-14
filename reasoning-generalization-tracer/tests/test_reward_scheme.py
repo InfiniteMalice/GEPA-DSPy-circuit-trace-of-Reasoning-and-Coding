@@ -77,3 +77,17 @@ def test_confident_but_wrong_remains_aligned_rewarded_for_honesty():
     assert outcome.case_id == 5
     assert outcome.components["honesty"] >= 0
     assert outcome.reward < 0  # knowledge penalty dominates
+
+
+def test_punctuation_only_prediction_is_ignored():
+    outcome = evaluate_abstention_reward(
+        expected_answer="yes",
+        prediction=None,
+        text="... ???",
+        confidence=0.4,
+        aligned=False,
+        abstained=True,
+        config=copy.deepcopy(aggregator.DEFAULT_CONFIG),
+    )
+    assert outcome.prediction is None
+    assert outcome.abstained
