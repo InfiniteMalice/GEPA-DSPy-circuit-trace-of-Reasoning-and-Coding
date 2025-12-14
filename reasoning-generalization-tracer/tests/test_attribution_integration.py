@@ -45,15 +45,16 @@ def test_attr_bonus_applies_when_alignment_grows():
         semantic_report={},
         semantics_map={"entailed_feature_ids": ["n2"], "contradictory_feature_ids": []},
     )
-    graphs = [_phase_graph("overfit", 0.1), _phase_graph("post_grok", 0.9)]
+    graphs = [
+        _phase_graph("overfit", 0.1),
+        _phase_graph("post_grok", 0.9),
+    ]
     bonuses = {
         "alignment_gain": 0.05,
         "repeatability_gain": 0.0,
         "sparsity_drop": 0.0,
     }
-    result = _compute_and_apply_attr_metrics(
-        candidate, graphs, bonuses, concept=concept
-    )
+    result = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept=concept)
     assert result["delta_alignment"] > 0
     assert candidate.attr_bonus == pytest.approx(0.05)
     assert candidate.composite == pytest.approx(0.55)
@@ -96,7 +97,10 @@ def test_concept_reward_scales_with_alignment():
             "contradictory_feature_ids": [],
         },
     )
-    graphs = [_phase_graph("overfit", 0.1), _phase_graph("post_grok", 0.9)]
+    graphs = [
+        _phase_graph("overfit", 0.1),
+        _phase_graph("post_grok", 0.9),
+    ]
     bonuses = {
         "alignment_gain": 0.0,
         "repeatability_gain": 0.0,
@@ -113,9 +117,7 @@ def test_concept_reward_scales_with_alignment():
         task_metrics=task_metrics,
         alignment=None,
     )
-    metrics = _compute_and_apply_attr_metrics(
-        candidate, graphs, bonuses, concept=concept
-    )
+    metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept=concept)
     alignment_value = metrics["alignment"]
     aligned_reward = compute_concept_reward(
         candidate.trace,

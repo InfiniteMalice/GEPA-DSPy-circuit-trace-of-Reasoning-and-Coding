@@ -103,11 +103,7 @@ class BackendNull(AttributionBackend):
                 ),
             ]
             if layers is not None:
-                edges = [
-                    edge
-                    for edge in edges
-                    if edge.src in node_ids and edge.dst in node_ids
-                ]
+                edges = [edge for edge in edges if edge.src in node_ids and edge.dst in node_ids]
             meta = GraphMeta(
                 token_positions=list(range(len(sample.get("tokens", [0])))),
                 logits_scale=1.0 + 0.1 * index,
@@ -146,9 +142,7 @@ class BackendHookedTransformer(AttributionBackend):
         layers: Sequence[int] | None = None,
         seed: int | None = None,
     ) -> Mapping[str, object]:
-        raise NotImplementedError(
-            "Hooked transformer attribution is not yet implemented."
-        )
+        raise NotImplementedError("Hooked transformer attribution is not yet implemented.")
 
 
 class BackendExternal(AttributionBackend):
