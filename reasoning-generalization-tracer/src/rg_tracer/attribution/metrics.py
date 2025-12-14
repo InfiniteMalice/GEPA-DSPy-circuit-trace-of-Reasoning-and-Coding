@@ -285,7 +285,7 @@ def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike | None) -> List[Gra
         return [graphs]
     if isinstance(graphs, (str, bytes)):
         raise TypeError(
-            "graphs must be mapping-like, AttributionGraph, or an iterable of graphs"
+            "graphs must be a graph (mapping/AttributionGraph) or an iterable of graphs"
         )
     return [graph for graph in graphs if graph is not None]
 
@@ -318,9 +318,7 @@ def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
     return {str(node.id) for node in ranked}
 
 
-def _edge_weight_map(
-    graph: AttributionGraph, *, top_k: int
-) -> dict[tuple[str, str], float]:
+def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[tuple[str, str], float]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
     weighted = []

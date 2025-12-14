@@ -33,9 +33,7 @@ def _build_combo_grid() -> Iterable[Mapping[str, str]]:
         yield dict(zip(keys, combo, strict=True))
 
 
-def _extract_phase_graphs(
-    combo_digest: int, combo_name: str
-) -> list[Mapping[str, object]]:
+def _extract_phase_graphs(combo_digest: int, combo_name: str) -> list[Mapping[str, object]]:
     backend = attr_graphs.get_backend("null")
     graphs: list[Mapping[str, object]] = []
     for index, phase in enumerate(PHASES):
@@ -46,9 +44,7 @@ def _extract_phase_graphs(
             "probe_index": index,
         }
         phase_key = f"{combo_digest}_{combo_name}_{phase}_{index}"
-        phase_seed = (
-            int(hashlib.sha256(phase_key.encode("utf8")).hexdigest(), 16) % 10_000
-        )
+        phase_seed = int(hashlib.sha256(phase_key.encode("utf8")).hexdigest(), 16) % 10_000
         graph = attr_graphs.extract_graph(
             model=None,
             inputs=payload,
@@ -110,25 +106,26 @@ def _write_summary(
         handle.write(separator)
         for name, metrics in rows:
             align_value = metrics.get("delta_alignment")
-            align_display = (
-                f"{align_value:.3f}" if isinstance(align_value, (int, float)) else "n/a"
-            )
+            if isinstance(align_value, numbers.Real):
+                align_display = f"{align_value:.3f}"
+            else:
+                align_display = "n/a"
             repeat = metrics.get("delta_repeatability")
-            repeat_value = repeat if isinstance(repeat, (int, float)) else 0.0
+            repeat_value = repeat if isinstance(repeat, numbers.Real) else 0.0
             sparsity_val = metrics.get("delta_sparsity")
-            sparsity_value = (
-                sparsity_val if isinstance(sparsity_val, (int, float)) else 0.0
-            )
+            sparsity_value = sparsity_val if isinstance(sparsity_val, numbers.Real) else 0.0
             path_val = metrics.get("avg_path_length")
-            path_value = path_val if isinstance(path_val, (int, float)) else 0.0
+            path_value = path_val if isinstance(path_val, numbers.Real) else 0.0
             branch_val = metrics.get("branching_factor")
-            branch_value = branch_val if isinstance(branch_val, (int, float)) else 0.0
+            branch_value = branch_val if isinstance(branch_val, numbers.Real) else 0.0
             rep_val = metrics.get("repeatability")
-            rep_value = rep_val if isinstance(rep_val, (int, float)) else 0.0
-            handle.write(
-                f"| {name} | {align_display} | {repeat_value:.3f} | {sparsity_value:.3f} | "
-                f"{path_value:.3f} | {branch_value:.3f} | {rep_value:.3f} |\n"
+            rep_value = rep_val if isinstance(rep_val, numbers.Real) else 0.0
+            row_text = (
+                f"| {name} | {align_display} | {repeat_value:.3f} | "
+                f"{sparsity_value:.3f} | {path_value:.3f} | "
+                f"{branch_value:.3f} | {rep_value:.3f} |\n"
             )
+            handle.write(row_text)
 
 
 def run_matrix(
@@ -144,9 +141,7 @@ def run_matrix(
     if limit is not None and limit < 0:
         raise ValueError("limit must be non-negative")
     if limit == 0:
-        warnings.warn(
-            "--limit=0 produces an empty matrix run", RuntimeWarning, stacklevel=2
-        )
+        warnings.warn("--limit=0 produces an empty matrix run", RuntimeWarning, stacklevel=2)
     max_cells = min(total_cells, limit) if limit is not None else total_cells
     for idx, combo in enumerate(_build_combo_grid()):
         if idx >= max_cells:
@@ -171,11 +166,11 @@ def run_matrix(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--output", default="runs/matrix", help="Directory for experiment outputs"
+        "--output",
+        default="runs/matrix",
+        help="Directory for experiment outputs",
     )
-    parser.add_argument(
-        "--limit", type=int, help="Optional limit on number of matrix cells"
-    )
+    parser.add_argument("--limit", type=int, help="Optional limit on number of matrix cells")
     return parser.parse_args(argv)
 
 
