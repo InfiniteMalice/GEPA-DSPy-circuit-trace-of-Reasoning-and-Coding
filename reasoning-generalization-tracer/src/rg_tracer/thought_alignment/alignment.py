@@ -14,6 +14,7 @@ _UNCERTAINTY_STABILISERS = ("probably", "likely", "seems", "suggests")
 _RANDOMNESS_FLAGS = ("random", "guess", "no idea", "unsure", "confused")
 _CONTRADICTION_FLAGS = ("contradiction", "inconsistent", "but then", "however")
 _VACILLATION_PATTERNS = ("or maybe", "or perhaps", "alternatively")
+_THRESHOLDS_ERROR = "thresholds must be a (theta_match, theta_epistemic) tuple"
 
 
 def _collect_text(blob: Any) -> str:
@@ -73,11 +74,11 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
     endorsement_found = False
 
     if answer_token:
-        derivation_pattern = rf"(=|->|=>|yields|gives)\s*{re.escape(answer_token)}"
+        derivation_pattern = rf"(=|->|=>|yields|gives)\s*{re.escape(answer_token)}\b"
         if re.search(derivation_pattern, text):
             score += 0.35
             derivation_found = True
-        if re.search(rf"(therefore|thus|so).*{re.escape(answer_token)}", text):
+        if re.search(rf"(therefore|thus|so).*{re.escape(answer_token)}\b", text):
             score += 0.25
             endorsement_found = True
         if answer_token in text and not (derivation_found or endorsement_found):
@@ -151,7 +152,7 @@ def classify_thought_alignment(
     s_epistemic = compute_epistemic_score(trace)
     resolved = thresholds if thresholds is not None else _get_thresholds()
     if not (isinstance(resolved, tuple) and len(resolved) == 2):
-        raise ValueError("thresholds must be a (theta_match, theta_epistemic) tuple")
+        raise ValueError(_THRESHOLDS_ERROR)
     theta_match, theta_epistemic = (float(resolved[0]), float(resolved[1]))
     theta_match = max(0.0, min(1.0, theta_match))
     theta_epistemic = max(0.0, min(1.0, theta_epistemic))

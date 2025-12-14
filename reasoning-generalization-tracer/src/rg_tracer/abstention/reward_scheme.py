@@ -36,11 +36,7 @@ def _extract_prediction(prediction: Any, text: str | None) -> str | None:
     if not text:
         return None
     tokens = [tok.strip(". ,") for tok in text.split() if tok.strip()]
-    for token in reversed(tokens):
-        cleaned = token.lower()
-        if cleaned:
-            return cleaned
-    return None
+    return tokens[-1].lower() if tokens else None
 
 
 def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Mapping[str, float]]:

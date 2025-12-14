@@ -106,7 +106,10 @@ def _write_summary(
         handle.write(separator)
         for name, metrics in rows:
             align_value = metrics.get("delta_alignment")
-            align_display = f"{align_value:.3f}" if isinstance(align_value, (int, float)) else "n/a"
+            if isinstance(align_value, (int, float)):
+                align_display = f"{align_value:.3f}"
+            else:
+                align_display = "n/a"
             repeat = metrics.get("delta_repeatability")
             repeat_value = repeat if isinstance(repeat, (int, float)) else 0.0
             sparsity_val = metrics.get("delta_sparsity")

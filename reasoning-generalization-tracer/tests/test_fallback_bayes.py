@@ -88,6 +88,8 @@ def test_compute_posterior_decision_policies():
 
 
 def test_compute_posterior_validates_prior_probability():
-    prior = Prior(hypothesis="claim", probability=1.5)
-    with pytest.raises(ValueError):
-        compute_posterior(prior, [])
+    invalid_probabilities = [1.5, -0.1, float("nan"), float("inf")]
+    for prob in invalid_probabilities:
+        prior = Prior(hypothesis="claim", probability=prob)
+        with pytest.raises(ValueError):
+            compute_posterior(prior, [])
