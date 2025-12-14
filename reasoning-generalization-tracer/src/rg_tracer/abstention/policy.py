@@ -41,9 +41,9 @@ def apply_abstention(
     else:
         confidence_value = float(confidence)
         sem_value = float(sem_score)
-    should_abstain = (
-        confidence_value < ABSTENTION_THRESHOLD or sem_value < SEMANTIC_THRESHOLD or not gates_pass
-    )
+    low_confidence = confidence_value < ABSTENTION_THRESHOLD
+    low_semantic = sem_value < SEMANTIC_THRESHOLD
+    should_abstain = low_confidence or low_semantic or not gates_pass
     if should_abstain:
         return AbstentionResult(
             text="I don't know.",

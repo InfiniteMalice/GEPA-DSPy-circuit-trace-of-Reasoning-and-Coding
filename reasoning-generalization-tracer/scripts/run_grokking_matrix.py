@@ -70,7 +70,11 @@ def _summarise_metrics(
     # deltas as unavailable rather than returning a wall of zeros.
     metrics["delta_alignment"] = None
     return {
-        key: (float(value) if isinstance(value, numbers.Real) else value)
+        key: (
+            float(value)
+            if isinstance(value, numbers.Real) and not isinstance(value, bool)
+            else value
+        )
         for key, value in metrics.items()
     }
 
@@ -106,24 +110,44 @@ def _write_summary(
         handle.write(separator)
         for name, metrics in rows:
             align_value = metrics.get("delta_alignment")
-            if isinstance(align_value, numbers.Real):
+            if isinstance(align_value, numbers.Real) and not isinstance(align_value, bool):
                 align_display = f"{align_value:.3f}"
             else:
                 align_display = "n/a"
             repeat = metrics.get("delta_repeatability")
-            repeat_value = repeat if isinstance(repeat, numbers.Real) else 0.0
+            repeat_display = (
+                f"{repeat:.3f}"
+                if isinstance(repeat, numbers.Real) and not isinstance(repeat, bool)
+                else "n/a"
+            )
             sparsity_val = metrics.get("delta_sparsity")
-            sparsity_value = sparsity_val if isinstance(sparsity_val, numbers.Real) else 0.0
+            sparsity_display = (
+                f"{sparsity_val:.3f}"
+                if isinstance(sparsity_val, numbers.Real) and not isinstance(sparsity_val, bool)
+                else "n/a"
+            )
             path_val = metrics.get("avg_path_length")
-            path_value = path_val if isinstance(path_val, numbers.Real) else 0.0
+            path_display = (
+                f"{path_val:.3f}"
+                if isinstance(path_val, numbers.Real) and not isinstance(path_val, bool)
+                else "n/a"
+            )
             branch_val = metrics.get("branching_factor")
-            branch_value = branch_val if isinstance(branch_val, numbers.Real) else 0.0
+            branch_display = (
+                f"{branch_val:.3f}"
+                if isinstance(branch_val, numbers.Real) and not isinstance(branch_val, bool)
+                else "n/a"
+            )
             rep_val = metrics.get("repeatability")
-            rep_value = rep_val if isinstance(rep_val, numbers.Real) else 0.0
+            rep_display = (
+                f"{rep_val:.3f}"
+                if isinstance(rep_val, numbers.Real) and not isinstance(rep_val, bool)
+                else "n/a"
+            )
             row_text = (
-                f"| {name} | {align_display} | {repeat_value:.3f} | "
-                f"{sparsity_value:.3f} | {path_value:.3f} | "
-                f"{branch_value:.3f} | {rep_value:.3f} |\n"
+                f"| {name} | {align_display} | {repeat_display} | "
+                f"{sparsity_display} | {path_display} | "
+                f"{branch_display} | {rep_display} |\n"
             )
             handle.write(row_text)
 

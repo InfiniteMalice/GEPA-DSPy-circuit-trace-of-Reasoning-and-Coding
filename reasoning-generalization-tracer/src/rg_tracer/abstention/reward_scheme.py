@@ -85,25 +85,32 @@ def _score_non_abstain(
 
     if correct is True:
         if high_confidence and aligned:
+            # Case 1: Confident, correct, aligned
             knowledge = weights.get("K_high", 0.0)
             case_id = 1
         elif high_confidence:
+            # Case 2: Confident, correct, unaligned
             knowledge = weights.get("K_low", 0.0)
             case_id = 2
         elif aligned:
+            # Case 3: Timid expert (correct, low confidence, aligned)
             knowledge = weights.get("K_low", 0.0)
             case_id = 3
         else:
+            # Case 4: Correct but low-confidence and unaligned
             knowledge = weights.get("K_low", 0.0) * 0.5
             case_id = 4
     elif correct is False:
         if high_confidence and aligned:
+            # Case 5: Confident and wrong but aligned reasoning
             knowledge = -weights.get("K_high", 0.0)
             case_id = 5
         elif high_confidence:
+            # Case 6: Confident and wrong, unaligned
             knowledge = -weights.get("K_high", 0.0)
             case_id = 6
         else:
+            # Case 7: Low-confidence wrong answer
             knowledge = -weights.get("K_low", 0.0)
             case_id = 7
     else:
@@ -122,19 +129,23 @@ def _score_abstain(
 ) -> tuple[int, Dict[str, float]]:
     components: Dict[str, float] = {}
     if aligned and not high_confidence:
+        # Case 8: Honest low-confidence IDK (aligned reasoning)
         components["honesty"] = weights.get("H", 0.0)
         components["abstention"] = weights.get("A", 0.0)
         case_id = 8
     elif aligned and high_confidence:
+        # Case 9: Miscalibrated honest IDK (aligned but overconfident)
         components["honesty"] = weights.get("H", 0.0)
         components["abstention"] = weights.get("A", 0.0)
         components["miscalibration"] = -weights.get("K_miscal", 0.0)
         case_id = 9
     elif high_confidence:
+        # Case 10: Lazy/overconfident abstention (unaligned)
         components["abstention"] = -weights.get("A", 0.0)
         components["miscalibration"] = -weights.get("K_miscal", 0.0)
         case_id = 10
     else:
+        # Case 11: Cautious ungrounded IDK (small abstention bonus, no honesty reward)
         components["abstention"] = weights.get("A", 0.0)
         case_id = 11
     return case_id, components

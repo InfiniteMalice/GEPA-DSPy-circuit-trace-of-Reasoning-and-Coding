@@ -15,21 +15,17 @@ _RANDOMNESS_FLAGS = ("random", "guess", "no idea", "unsure", "confused")
 _CONTRADICTION_FLAGS = ("contradiction", "inconsistent", "but then", "however")
 _VACILLATION_PATTERNS = ("or maybe", "or perhaps", "alternatively")
 _THRESHOLDS_ERROR = "thresholds must be a (theta_match, theta_epistemic) tuple"
-_REASONING_PATTERNS = tuple(
-    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _REASONING_CUES
-)
-_UNCERTAINTY_PATTERNS = tuple(
-    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _UNCERTAINTY_STABILISERS
-)
-_RANDOMNESS_PATTERNS = tuple(
-    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _RANDOMNESS_FLAGS
-)
-_CONTRADICTION_PATTERNS = tuple(
-    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _CONTRADICTION_FLAGS
-)
-_VACILLATION_REGEXES = tuple(
-    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _VACILLATION_PATTERNS
-)
+
+
+def _compile_terms(terms: tuple[str, ...]) -> tuple[re.Pattern[str], ...]:
+    return tuple(re.compile(rf"(?<!\w){re.escape(term)}(?!\w)") for term in terms)
+
+
+_REASONING_PATTERNS = _compile_terms(_REASONING_CUES)
+_UNCERTAINTY_PATTERNS = _compile_terms(_UNCERTAINTY_STABILISERS)
+_RANDOMNESS_PATTERNS = _compile_terms(_RANDOMNESS_FLAGS)
+_CONTRADICTION_PATTERNS = _compile_terms(_CONTRADICTION_FLAGS)
+_VACILLATION_REGEXES = _compile_terms(_VACILLATION_PATTERNS)
 
 
 def _contains_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:

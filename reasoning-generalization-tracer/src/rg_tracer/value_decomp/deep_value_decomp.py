@@ -135,7 +135,7 @@ def _score_from_keywords(text: str, keywords: Mapping[str, str]) -> Dict[str, fl
     lowered = text.casefold()
     scores: Dict[str, float] = {value: 0.0 for value in keywords.values()}
     for token, key in keywords.items():
-        pattern = rf"(?<!\\w){re.escape(token)}(?!\\w)"
+        pattern = rf"(?<!\w){re.escape(token)}(?!\w)"
         if re.search(pattern, lowered):
             scores[key] = max(scores[key], 1.0)
     return scores
