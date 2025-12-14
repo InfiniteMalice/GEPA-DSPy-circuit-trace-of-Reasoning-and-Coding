@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 from statistics import mean
 from typing import Iterable, Mapping, Sequence, Tuple
 
@@ -52,9 +53,7 @@ def evaluate(
         }
         for axis_name, score in scores.items():
             per_axis[axis_name].append(score)
-        chain_text = (
-            f"Sequence {seq} maps to activation {pred:.2f} " f"because {PARITY_REASON}."
-        )
+        chain_text = f"Sequence {seq} maps to activation {pred:.2f} because {PARITY_REASON}."
         report = verify_chain(
             chain_text,
             {"concept": "parity", "units": "binary", "variables": ["x"]},
@@ -64,9 +63,13 @@ def evaluate(
             model.reset_history()
             _, trace = model.forward(seq)
             traces.append((seq, trace))
-    axis_scores = {
-        axis: int(mean(values)) if values else 0 for axis, values in per_axis.items()
-    }
+    axis_scores: dict[str, int] = {}
+    for axis, values in per_axis.items():
+        if not values:
+            axis_scores[axis] = 0
+            continue
+        rounded = Decimal(mean(values)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        axis_scores[axis] = int(rounded)
     accuracy = correct / total if total else 0.0
     return EvaluationResult(
         accuracy=accuracy,
