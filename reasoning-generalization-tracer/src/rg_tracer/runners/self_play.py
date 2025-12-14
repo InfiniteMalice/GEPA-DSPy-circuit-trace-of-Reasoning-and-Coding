@@ -66,7 +66,7 @@ class Candidate:
     value_decomp: ValueDecompResult | None = None
     overwatch_interventions: List[Dict[str, object]] = field(default_factory=list)
     grn_flags: Dict[str, bool] = field(default_factory=dict)
-    predicted_answer: str | None = None
+    predicted_answer: object | None = None
     thought_alignment: bool | None = None
     thought_scores: Dict[str, float] = field(default_factory=dict)
     reward: float = 0.0
@@ -726,7 +726,6 @@ def run_self_play(
         semantic_dict["abstained"] = abstention.abstained
         thought_context = {
             "prompt": problem.get("prompt"),
-            "expected_answer": problem.get("answer"),
             "text": abstention.text if abstention.abstained else text_after_repair,
         }
         model_prediction = raw.get("prediction")
@@ -737,7 +736,7 @@ def run_self_play(
             final_answer = model_prediction if model_prediction is not None else ""
         final_text = abstention.text if abstention.abstained else text_after_repair
         thought_align, s_match, s_epistemic = classify_thought_alignment(
-            trace_json, final_answer, thought_context
+            text_after_repair, final_answer, thought_context
         )
         reward_outcome = evaluate_abstention_reward(
             expected_answer=problem.get("answer"),

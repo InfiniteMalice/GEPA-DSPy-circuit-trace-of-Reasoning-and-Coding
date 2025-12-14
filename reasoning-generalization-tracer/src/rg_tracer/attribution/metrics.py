@@ -321,18 +321,18 @@ def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
 def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[tuple[str, str], float]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
-    weighted = []
+    mass_by_pair: dict[tuple[str, str], float] = {}
     for edge in graph.edges:
         mass = abs(safe_float(edge.attr))
         if not math.isfinite(mass) or mass <= 0:
             continue
-        weighted.append((edge, mass))
-    weighted.sort(key=lambda item: item[1], reverse=True)
-    ranked = weighted[:top_k]
+        key = (edge.src, edge.dst)
+        mass_by_pair[key] = mass_by_pair.get(key, 0.0) + mass
+    ranked = sorted(mass_by_pair.items(), key=lambda item: item[1], reverse=True)[:top_k]
     total = sum(mass for _, mass in ranked)
     if total <= 0:
         return {}
-    return {(edge.src, edge.dst): mass / total for edge, mass in ranked}
+    return {pair: mass / total for pair, mass in ranked}
 
 
 __all__ = [

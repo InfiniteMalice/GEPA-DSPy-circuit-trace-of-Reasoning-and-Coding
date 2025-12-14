@@ -42,23 +42,31 @@ def _collect_text(blob: Any) -> str:
     def _walk(value: Any) -> None:
         if value is None:
             return
-        value_id = id(value)
-        if value_id in seen:
-            return
-        seen.add(value_id)
         if isinstance(value, str):
             if value.strip():
                 parts.append(value)
             return
         if isinstance(value, Mapping):
+            value_id = id(value)
+            if value_id in seen:
+                return
+            seen.add(value_id)
             for _, entry in sorted(value.items(), key=lambda item: str(item[0])):
                 _walk(entry)
             return
         if isinstance(value, (list, tuple)):
+            value_id = id(value)
+            if value_id in seen:
+                return
+            seen.add(value_id)
             for entry in value:
                 _walk(entry)
             return
         if isinstance(value, (set, frozenset)):
+            value_id = id(value)
+            if value_id in seen:
+                return
+            seen.add(value_id)
             for entry in sorted(value, key=lambda item: str(item)):
                 _walk(entry)
             return
@@ -87,7 +95,10 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
         return 0.0
 
     score = 0.25  # base credit for providing any trace
-    answer_token = str(answer).strip().casefold()
+    if answer is None:
+        answer_token = ""
+    else:
+        answer_token = str(answer).strip().casefold()
     derivation_found = False
     endorsement_found = False
 

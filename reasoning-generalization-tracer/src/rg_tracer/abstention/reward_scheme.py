@@ -40,9 +40,9 @@ def _extract_prediction(prediction: Any, text: str | None) -> str | None:
     for tok in text.split():
         if not tok.strip():
             continue
-        cleaned = tok.strip(".,!?;:()[]{}\"' ")
-        if cleaned:
-            tokens.append(cleaned)
+        stripped = tok.strip(".,!?;:()[]{}\"' ")
+        if stripped:
+            tokens.append(stripped)
     return tokens[-1].casefold() if tokens else None
 
 
@@ -120,6 +120,7 @@ def _score_non_abstain(
             knowledge = -weights.get("K_low", 0.0)
             case_id = 7
     else:
+        # Case 0: Cannot determine correctness (missing prediction or expected answer)
         knowledge = 0.0
         case_id = 0
 

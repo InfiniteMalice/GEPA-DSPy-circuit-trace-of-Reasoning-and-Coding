@@ -8,7 +8,8 @@ BASE_TEXT = "Add 2 and 3 to get 5."
 
 
 def _case(**kwargs):
-    config = kwargs.get("config", copy.deepcopy(aggregator.DEFAULT_CONFIG))
+    raw_config = kwargs.get("config", aggregator.DEFAULT_CONFIG)
+    config = copy.deepcopy(raw_config)
     return evaluate_abstention_reward(
         expected_answer=kwargs.get("expected", 5),
         prediction=kwargs.get("prediction", 5),
@@ -77,6 +78,18 @@ def test_confident_but_wrong_remains_aligned_rewarded_for_honesty():
     assert outcome.case_id == 5
     assert outcome.components["honesty"] >= 0
     assert outcome.reward < 0  # knowledge penalty dominates
+
+
+def test_punctuation_only_prediction_returns_none():
+    outcome = _case(
+        prediction=None,
+        text="... ??? !!!",
+        abstained=True,
+        aligned=False,
+        confidence=0.6,
+    )
+    assert outcome.prediction is None
+    assert outcome.case_id == 11
 
 
 def test_punctuation_only_prediction_is_ignored():

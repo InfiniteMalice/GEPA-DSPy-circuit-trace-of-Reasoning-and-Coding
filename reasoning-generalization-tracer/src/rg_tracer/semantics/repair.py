@@ -142,7 +142,16 @@ def repair_once(
                 if pattern:
                     new_step, replaced = pattern.subn(replacement_var, new_step, count=1)
                     if replaced == 0:
-                        flags = pattern.flags | re.IGNORECASE
+                        ignorecase = (
+                            _regex_backend.IGNORECASE
+                            if (
+                                _regex_backend is not None
+                                and _REGEX_PATTERN_TYPE is not None
+                                and isinstance(pattern, _REGEX_PATTERN_TYPE)
+                            )
+                            else re.IGNORECASE
+                        )
+                        flags = pattern.flags | ignorecase
                         pattern_ci = _compile_case_insensitive(pattern, flags=flags)
                         new_step, _ = pattern_ci.subn(replacement_var, new_step, count=1)
                 else:

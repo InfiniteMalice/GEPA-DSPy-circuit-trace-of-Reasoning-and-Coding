@@ -79,7 +79,7 @@ class OverwatchAgent:
             decision = OverwatchDecision(
                 action=action,
                 reason=str(data.get("reason", default_reason)),
-                new_thought=(str(data["new_thought"]) if data.get("new_thought") else None),
+                new_thought=(str(data.get("new_thought")) if data.get("new_thought") else None),
                 new_action=str(data["new_action"]) if data.get("new_action") else None,
             )
         else:

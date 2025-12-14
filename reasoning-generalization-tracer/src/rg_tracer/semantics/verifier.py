@@ -55,7 +55,14 @@ def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
         steps = [value for step in chain.split("\n") if (value := step.strip())]
     elif isinstance(chain, Mapping) and "steps" in chain:
-        steps = [value for step in chain.get("steps", []) if (value := str(step).strip())]
+        raw_steps = chain.get("steps", [])
+        if (
+            raw_steps is None
+            or isinstance(raw_steps, (str, bytes))
+            or not isinstance(raw_steps, Sequence)
+        ):
+            raw_steps = [raw_steps]
+        steps = [value for step in raw_steps if (value := str(step).strip())]
     elif isinstance(chain, Sequence):
         steps = [value for step in chain if (value := str(step).strip())]
     else:

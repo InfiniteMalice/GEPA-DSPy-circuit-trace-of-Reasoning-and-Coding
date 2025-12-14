@@ -9,6 +9,7 @@ from typing import Iterable
 
 PRIOR_PROBABILITY_INVALID = "prior.probability must be a finite value in [0.0, 1.0]"
 LIKELIHOOD_PROBABILITY_INVALID = "Likelihood.{} must be finite and in [0.0, 1.0]"
+POSTERIOR_NON_FINITE = "Posterior became non-finite; check likelihood inputs."
 
 
 @dataclass
@@ -81,7 +82,7 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
             else (math.exp(log_odds) / (1.0 + math.exp(log_odds)))
         )
     if not math.isfinite(posterior):
-        raise ValueError("Posterior became non-finite; check likelihood inputs.")
+        raise ValueError(POSTERIOR_NON_FINITE)
     sensitivity = "Posterior sensitive to dominant likelihood." if dominant else "Stable"
     dominant_desc = dominant[1] if dominant else "None"
     policy = "Gather more evidence"
