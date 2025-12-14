@@ -731,7 +731,10 @@ def run_self_play(
         }
         model_prediction = raw.get("prediction")
         # ``final_answer`` mirrors the surfaced output (abstention text when abstained).
-        final_answer = abstention.text if abstention.abstained else (model_prediction or "")
+        if abstention.abstained:
+            final_answer = abstention.text
+        else:
+            final_answer = model_prediction if model_prediction is not None else ""
         final_text = abstention.text if abstention.abstained else text_after_repair
         thought_align, s_match, s_epistemic = classify_thought_alignment(
             trace_json, final_answer, thought_context

@@ -15,6 +15,25 @@ _RANDOMNESS_FLAGS = ("random", "guess", "no idea", "unsure", "confused")
 _CONTRADICTION_FLAGS = ("contradiction", "inconsistent", "but then", "however")
 _VACILLATION_PATTERNS = ("or maybe", "or perhaps", "alternatively")
 _THRESHOLDS_ERROR = "thresholds must be a (theta_match, theta_epistemic) tuple"
+_REASONING_PATTERNS = tuple(
+    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _REASONING_CUES
+)
+_UNCERTAINTY_PATTERNS = tuple(
+    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _UNCERTAINTY_STABILISERS
+)
+_RANDOMNESS_PATTERNS = tuple(
+    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _RANDOMNESS_FLAGS
+)
+_CONTRADICTION_PATTERNS = tuple(
+    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _CONTRADICTION_FLAGS
+)
+_VACILLATION_REGEXES = tuple(
+    re.compile(rf"(?<!\\w){re.escape(cue)}(?!\\w)") for cue in _VACILLATION_PATTERNS
+)
+
+
+def _contains_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
+    return any(pattern.search(text) for pattern in patterns)
 
 
 def _collect_text(blob: Any) -> str:
@@ -78,10 +97,12 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
         if re.search(derivation_pattern, text):
             score += 0.35
             derivation_found = True
-        if re.search(rf"(therefore|thus|so).*{re.escape(answer_token)}\b", text):
+        if re.search(rf"(therefore|thus|so).*\b{re.escape(answer_token)}\b", text):
             score += 0.25
             endorsement_found = True
-        if answer_token in text and not (derivation_found or endorsement_found):
+        if re.search(rf"\b{re.escape(answer_token)}\b", text) and not (
+            derivation_found or endorsement_found
+        ):
             score += 0.1
     else:
         score -= 0.1
@@ -89,7 +110,7 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
     unresolved_candidates = text.count(" or ") + text.count(" maybe ")
     score -= 0.1 * unresolved_candidates
 
-    if any(flag in text for flag in _CONTRADICTION_FLAGS):
+    if _contains_any(_CONTRADICTION_PATTERNS, text):
         score -= 0.2
 
     score = max(0.0, min(1.0, score))
@@ -104,18 +125,18 @@ def compute_epistemic_score(trace: Any) -> float:
         return 0.0
 
     score = 0.3
-    for cue in _REASONING_CUES:
-        if cue in text:
+    for pattern in _REASONING_PATTERNS:
+        if pattern.search(text):
             score += 0.12
-    for stabiliser in _UNCERTAINTY_STABILISERS:
-        if stabiliser in text:
+    for pattern in _UNCERTAINTY_PATTERNS:
+        if pattern.search(text):
             score += 0.05
 
-    if any(flag in text for flag in _RANDOMNESS_FLAGS):
+    if _contains_any(_RANDOMNESS_PATTERNS, text):
         score -= 0.35
-    if any(flag in text for flag in _CONTRADICTION_FLAGS):
+    if _contains_any(_CONTRADICTION_PATTERNS, text):
         score -= 0.2
-    if any(pattern in text for pattern in _VACILLATION_PATTERNS):
+    if _contains_any(_VACILLATION_REGEXES, text):
         score -= 0.15
 
     score = max(0.0, min(1.0, score))

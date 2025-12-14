@@ -176,6 +176,7 @@ def test_split_profile_payload_rejects_non_mapping_weights_section():
 
 
 def test_default_config_includes_abstention_and_alignment():
+    load_profiles()
     config = get_last_config()
     assert config["abstention"]["threshold"] == 0.75
     assert config["thought_alignment"]["theta_match"] == 0.8

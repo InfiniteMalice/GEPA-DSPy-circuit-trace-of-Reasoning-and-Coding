@@ -87,9 +87,8 @@ def test_compute_posterior_decision_policies():
     assert cautious.decision_policy == "Recommend caution"
 
 
-def test_compute_posterior_validates_prior_probability():
-    invalid_probabilities = [1.5, -0.1, float("nan"), float("inf")]
-    for prob in invalid_probabilities:
-        prior = Prior(hypothesis="claim", probability=prob)
-        with pytest.raises(ValueError):
-            compute_posterior(prior, [])
+@pytest.mark.parametrize("prob", [1.5, -0.1, float("nan"), float("inf"), float("-inf")])
+def test_compute_posterior_validates_prior_probability(prob):
+    prior = Prior(hypothesis="claim", probability=prob)
+    with pytest.raises(ValueError):
+        compute_posterior(prior, [])

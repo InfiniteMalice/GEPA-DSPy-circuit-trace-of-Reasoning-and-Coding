@@ -7,6 +7,9 @@ import math
 from typing import Iterable
 
 
+PRIOR_PROBABILITY_INVALID = "prior.probability must be a finite value in [0.0, 1.0]"
+
+
 @dataclass
 class Prior:
     hypothesis: str
@@ -32,21 +35,52 @@ class BayesianPosition:
 
 def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> BayesianPosition:
     if not math.isfinite(prior.probability) or not 0.0 <= prior.probability <= 1.0:
-        raise ValueError("prior.probability must be a finite value in [0.0, 1.0]")
+        raise ValueError(PRIOR_PROBABILITY_INVALID)
     likes = list(likelihoods)
     prob_true = prior.probability
     prob_false = 1 - prob_true
-    logit = prob_true / max(prob_false, 1e-9)
-    dominant = None
+    if prob_true == 0.0:
+        log_odds = float("-inf")
+    elif prob_true == 1.0:
+        log_odds = float("inf")
+    else:
+        log_odds = math.log(prob_true) - math.log(prob_false)
+    dominant: tuple[float, str] | None = None
     for like in likes:
-        if like.probability_if_false <= 0 or like.probability_if_true <= 0:
+        for value, name in (
+            (like.probability_if_true, "probability_if_true"),
+            (like.probability_if_false, "probability_if_false"),
+        ):
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"Likelihood.{name} must be finite and in [0.0, 1.0]")
+        if like.probability_if_true == 0.0 and like.probability_if_false > 0.0:
+            log_odds = float("-inf")
+            impact = float("inf")
+        elif like.probability_if_false == 0.0 and like.probability_if_true > 0.0:
+            log_odds = float("inf")
+            impact = float("inf")
+        elif like.probability_if_true > 0.0 and like.probability_if_false > 0.0:
+            log_ratio = math.log(like.probability_if_true) - math.log(like.probability_if_false)
+            log_odds += log_ratio
+            impact = abs(log_ratio)
+        else:
             continue
-        ratio = like.probability_if_true / like.probability_if_false
-        logit *= ratio
-        if dominant is None or ratio > dominant[0]:
-            dominant = (ratio, like.evidence)
-    posterior = logit / (1 + logit)
-    posterior = min(max(posterior, 0.0), 1.0)
+
+        if dominant is None or impact > dominant[0]:
+            dominant = (impact, like.evidence)
+
+    if log_odds == float("inf"):
+        posterior = 1.0
+    elif log_odds == float("-inf"):
+        posterior = 0.0
+    else:
+        posterior = (
+            1.0 / (1.0 + math.exp(-log_odds))
+            if log_odds >= 0
+            else (math.exp(log_odds) / (1.0 + math.exp(log_odds)))
+        )
+    if not math.isfinite(posterior):
+        raise ValueError("Posterior became non-finite; check likelihood inputs.")
     sensitivity = "Posterior sensitive to dominant likelihood." if dominant else "Stable"
     dominant_desc = dominant[1] if dominant else "None"
     policy = "Gather more evidence"

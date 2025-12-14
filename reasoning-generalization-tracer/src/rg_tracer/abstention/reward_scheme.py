@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping
 
@@ -26,7 +27,7 @@ def _normalise_answer(value: Any) -> str | None:
     if value is None:
         return None
     text = str(value).strip()
-    return text.lower() if text else None
+    return text.casefold() if text else None
 
 
 def _extract_prediction(prediction: Any, text: str | None) -> str | None:
@@ -35,8 +36,8 @@ def _extract_prediction(prediction: Any, text: str | None) -> str | None:
         return normalised
     if not text:
         return None
-    tokens = [tok.strip(". ,") for tok in text.split() if tok.strip()]
-    return tokens[-1].lower() if tokens else None
+    tokens = [tok.strip(".,!?;:()[]{}\"' ") for tok in text.split() if tok.strip()]
+    return tokens[-1].casefold() if tokens else None
 
 
 def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Mapping[str, float]]:
@@ -47,6 +48,8 @@ def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Map
     try:
         threshold = float(abst_cfg.get("threshold", ABSTENTION_THRESHOLD))
     except (TypeError, ValueError):
+        threshold = ABSTENTION_THRESHOLD
+    if not math.isfinite(threshold):
         threshold = ABSTENTION_THRESHOLD
     threshold = max(0.0, min(1.0, threshold))
     raw_weights = abst_cfg.get("reward_weights", {})
@@ -62,9 +65,12 @@ def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Map
     merged_weights: Dict[str, float] = {}
     for key, default_value in defaults.items():
         try:
-            merged_weights[key] = float(raw_weights.get(key, default_value))
+            value = float(raw_weights.get(key, default_value))
         except (TypeError, ValueError):
-            merged_weights[key] = float(default_value)
+            value = float(default_value)
+        if not math.isfinite(value):
+            value = float(default_value)
+        merged_weights[key] = value
     return threshold, merged_weights
 
 
