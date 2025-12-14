@@ -12,6 +12,7 @@ if importlib.util.find_spec("torch"):
 else:  # pragma: no cover - fallback path
     _SCALAR_INDEXING_ERROR = "SimpleTensor does not support indexing on scalars"
     _SCALAR_ITERATION_ERROR = "SimpleTensor is not iterable"
+    _SINGLE_ELEMENT_ERROR = "only one element tensors can be converted to Python scalars"
 
     class SimpleTensor:
         def __init__(self, data: Any):
@@ -22,11 +23,7 @@ else:  # pragma: no cover - fallback path
 
         @property
         def ndim(self) -> int:
-            if (
-                isinstance(self.data, list)
-                and self.data
-                and isinstance(self.data[0], list)
-            ):
+            if isinstance(self.data, list) and self.data and isinstance(self.data[0], list):
                 return 1 + SimpleTensor(self.data[0]).ndim
             if isinstance(self.data, list):
                 return 1
@@ -49,9 +46,7 @@ else:  # pragma: no cover - fallback path
         def item(self) -> float:
             if isinstance(self.data, list):
                 if len(self.data) != 1:
-                    raise ValueError(
-                        "only one element tensors can be converted to Python scalars"
-                    )
+                    raise ValueError(_SINGLE_ELEMENT_ERROR)
                 return SimpleTensor(self.data[0]).item()
             return float(self.data)
 
