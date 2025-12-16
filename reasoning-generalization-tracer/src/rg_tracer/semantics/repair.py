@@ -35,13 +35,11 @@ def _build_unit_pattern(unit_text: str) -> re.Pattern[str] | None:
 
 def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
-        steps = [step.strip() for step in chain.split("\n") if step.strip()]
+        steps = [value for step in chain.split("\n") if (value := step.strip())]
     elif isinstance(chain, Mapping) and "steps" in chain:
-        steps = [
-            str(step).strip() for step in chain.get("steps", []) if str(step).strip()
-        ]
+        steps = [value for step in chain.get("steps", []) if (value := str(step).strip())]
     elif isinstance(chain, Iterable):
-        steps = [str(step).strip() for step in chain if str(step).strip()]
+        steps = [value for step in chain if (value := str(step).strip())]
     else:
         steps = [str(chain).strip()]
     return steps or [""]
@@ -142,15 +140,20 @@ def repair_once(
             if candidate:
                 pattern = build_token_boundary_pattern(candidate)
                 if pattern:
-                    new_step, replaced = pattern.subn(
-                        replacement_var, new_step, count=1
-                    )
+                    new_step, replaced = pattern.subn(replacement_var, new_step, count=1)
                     if replaced == 0:
-                        flags = pattern.flags | re.IGNORECASE
-                        pattern_ci = _compile_case_insensitive(pattern, flags=flags)
-                        new_step, _ = pattern_ci.subn(
-                            replacement_var, new_step, count=1
+                        ignorecase = (
+                            _regex_backend.IGNORECASE
+                            if (
+                                _regex_backend is not None
+                                and _REGEX_PATTERN_TYPE is not None
+                                and isinstance(pattern, _REGEX_PATTERN_TYPE)
+                            )
+                            else re.IGNORECASE
                         )
+                        flags = pattern.flags | ignorecase
+                        pattern_ci = _compile_case_insensitive(pattern, flags=flags)
+                        new_step, _ = pattern_ci.subn(replacement_var, new_step, count=1)
                 else:
                     new_step = new_step.replace(candidate, replacement_var, 1)
             else:
@@ -165,14 +168,32 @@ def repair_once(
                 if pattern:
                     new_step, replaced = pattern.subn(expected_units, new_step, count=1)
                     if replaced == 0:
-                        flags = pattern.flags | re.IGNORECASE
+                        ignorecase = (
+                            _regex_backend.IGNORECASE
+                            if (
+                                _regex_backend is not None
+                                and _REGEX_PATTERN_TYPE is not None
+                                and isinstance(pattern, _REGEX_PATTERN_TYPE)
+                            )
+                            else re.IGNORECASE
+                        )
+                        flags = pattern.flags | ignorecase
                         pattern_ci = _compile_case_insensitive(pattern, flags=flags)
                         new_step, _ = pattern_ci.subn(expected_units, new_step, count=1)
             expected_trimmed = expected_units.strip()
             if expected_trimmed:
                 expected_pattern = build_token_boundary_pattern(expected_trimmed)
                 if expected_pattern:
-                    flags = expected_pattern.flags | re.IGNORECASE
+                    ignorecase = (
+                        _regex_backend.IGNORECASE
+                        if (
+                            _regex_backend is not None
+                            and _REGEX_PATTERN_TYPE is not None
+                            and isinstance(expected_pattern, _REGEX_PATTERN_TYPE)
+                        )
+                        else re.IGNORECASE
+                    )
+                    flags = expected_pattern.flags | ignorecase
                     matcher = _compile_case_insensitive(expected_pattern, flags=flags)
                     has_expected = bool(matcher.search(new_step))
                 else:
@@ -211,9 +232,7 @@ def repair_once(
                 steps[idx] = _append_with_punctuation(step, clarification)
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            normative_suffix = (
-                "This recommendation is normative and contingent on shared values."
-            )
+            normative_suffix = "This recommendation is normative and contingent on shared values."
             if normative_suffix.lower() not in step.lower():
                 steps[idx] = _append_with_punctuation(step, normative_suffix)
             break
