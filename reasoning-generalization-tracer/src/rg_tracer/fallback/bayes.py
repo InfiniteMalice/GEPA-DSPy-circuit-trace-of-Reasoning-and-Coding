@@ -47,6 +47,10 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
         log_odds = float("inf")
     else:
         log_odds = math.log(prob_true) - math.log(prob_false)
+    prior_pins_posterior = math.isinf(log_odds)
+
+    forced_zero = False
+    forced_one = False
     dominant: tuple[float, str] | None = None
     for like in likes:
         for value, name in (
@@ -56,20 +60,31 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
             if not math.isfinite(value) or not 0.0 <= value <= 1.0:
                 raise ValueError(LIKELIHOOD_PROBABILITY_INVALID.format(name))
         if like.probability_if_true == 0.0 and like.probability_if_false > 0.0:
-            log_odds = float("-inf")
+            forced_zero = True
             impact = float("inf")
         elif like.probability_if_false == 0.0 and like.probability_if_true > 0.0:
-            log_odds = float("inf")
+            forced_one = True
             impact = float("inf")
         elif like.probability_if_true > 0.0 and like.probability_if_false > 0.0:
             log_ratio = math.log(like.probability_if_true) - math.log(like.probability_if_false)
-            log_odds += log_ratio
+            if not prior_pins_posterior:
+                log_odds += log_ratio
             impact = abs(log_ratio)
         else:
             continue
 
         if dominant is None or impact > dominant[0]:
             dominant = (impact, like.evidence)
+
+    if forced_zero and forced_one:
+        raise ValueError(
+            "Conflicting likelihoods: some evidence forces posterior=0 and others force posterior=1."
+        )
+    if not prior_pins_posterior:
+        if forced_one:
+            log_odds = float("inf")
+        elif forced_zero:
+            log_odds = float("-inf")
 
     if log_odds == float("inf"):
         posterior = 1.0

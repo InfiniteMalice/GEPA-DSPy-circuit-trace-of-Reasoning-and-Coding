@@ -90,7 +90,7 @@ def test_compute_posterior_decision_policies():
 @pytest.mark.parametrize("prob", [1.5, -0.1, float("nan"), float("inf"), float("-inf")])
 def test_compute_posterior_validates_prior_probability(prob):
     prior = Prior(hypothesis="claim", probability=prob)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="prior.probability must be a finite value"):
         compute_posterior(prior, [])
 
 

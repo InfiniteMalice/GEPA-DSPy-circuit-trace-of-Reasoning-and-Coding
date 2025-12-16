@@ -726,7 +726,7 @@ def run_self_play(
         semantic_dict["abstained"] = abstention.abstained
         thought_context = {
             "prompt": problem.get("prompt"),
-            "text": abstention.text if abstention.abstained else text_after_repair,
+            "text": None,
         }
         model_prediction = raw.get("prediction")
         # ``final_answer`` mirrors the surfaced output (abstention text when abstained).
@@ -735,8 +735,9 @@ def run_self_play(
         else:
             final_answer = model_prediction if model_prediction is not None else ""
         final_text = abstention.text if abstention.abstained else text_after_repair
+        thought_context["text"] = final_text
         thought_align, s_match, s_epistemic = classify_thought_alignment(
-            text_after_repair, final_answer, thought_context
+            final_text, final_answer, thought_context
         )
         reward_outcome = evaluate_abstention_reward(
             expected_answer=problem.get("answer"),

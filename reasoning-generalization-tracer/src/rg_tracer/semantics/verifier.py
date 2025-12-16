@@ -56,11 +56,13 @@ def _normalise_chain(chain: object) -> List[str]:
         steps = [value for step in chain.split("\n") if (value := step.strip())]
     elif isinstance(chain, Mapping) and "steps" in chain:
         raw_steps = chain.get("steps", [])
-        if (
-            raw_steps is None
-            or isinstance(raw_steps, (str, bytes))
-            or not isinstance(raw_steps, Sequence)
-        ):
+        if raw_steps is None:
+            raw_steps = []
+        elif isinstance(raw_steps, bytes):
+            raw_steps = raw_steps.decode().split("\n")
+        elif isinstance(raw_steps, str):
+            raw_steps = raw_steps.split("\n")
+        elif not isinstance(raw_steps, Sequence):
             raw_steps = [raw_steps]
         steps = [value for step in raw_steps if (value := str(step).strip())]
     elif isinstance(chain, Sequence):
@@ -177,7 +179,9 @@ def verify_chain(chain: object, problem_spec: Mapping[str, object]) -> SemanticR
     if expected_units == "":
         expected_units = None
     allowed_vars = {
-        value.casefold() for var in problem_spec.get("variables", []) if (value := str(var).strip())
+        value.casefold()
+        for var in problem_spec.get("variables", [])
+        if var is not None and (value := str(var).strip())
     }
     raw_concept = problem_spec.get("concept")
     concept = str(raw_concept).strip() if raw_concept is not None else None

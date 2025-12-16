@@ -35,6 +35,8 @@ the net reward can be negative when knowledge or miscalibration penalties domina
 10. **Lazy IDK (unaligned abstention, high confidence)** → `-A - K_miscal`
 11. **Cautious ungrounded IDK (low-confidence abstention without alignment)** → `+A` (no `H`
     because reasoning is unaligned)
+0. **Indeterminate (missing prediction or expected answer)** → `0` (no knowledge or honesty
+    scoring applies)
 
 Confidence bonuses only apply when reasoning is epistemically grounded; high-confidence but
 unaligned correct answers fall back to the low-confidence knowledge weight. Logs include

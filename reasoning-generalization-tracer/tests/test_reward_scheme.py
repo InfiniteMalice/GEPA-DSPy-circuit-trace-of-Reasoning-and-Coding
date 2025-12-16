@@ -36,7 +36,8 @@ def test_all_reward_cases_are_accessible():
         11: _case(abstained=True, aligned=False, confidence=0.6, prediction="I don't know"),
         0: _case(expected=None, prediction=None, text=""),
     }
-    assert set(cases) == {outcome.case_id for outcome in cases.values()}
+    observed = {outcome.case_id for outcome in cases.values()}
+    assert set(cases) == observed, f"expected case IDs {set(cases)}, observed {observed}"
 
 
 def test_confidence_push_requires_alignment():

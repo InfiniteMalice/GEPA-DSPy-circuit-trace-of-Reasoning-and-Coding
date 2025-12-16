@@ -20,7 +20,8 @@ def reset_aggregator_defaults():
     from rg_tracer.scoring import aggregator
 
     with aggregator._LAST_CONFIG_LOCK:
+        prior_last_config = copy.deepcopy(aggregator._LAST_CONFIG)
         aggregator._LAST_CONFIG = copy.deepcopy(aggregator.DEFAULT_CONFIG)
     yield
     with aggregator._LAST_CONFIG_LOCK:
-        aggregator._LAST_CONFIG = copy.deepcopy(aggregator.DEFAULT_CONFIG)
+        aggregator._LAST_CONFIG = prior_last_config

@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import itertools
 import json
+import math
 import numbers
 import warnings
 from collections.abc import Iterable, Mapping
@@ -72,7 +73,11 @@ def _summarise_metrics(
     return {
         key: (
             float(value)
-            if isinstance(value, numbers.Real) and not isinstance(value, bool)
+            if (
+                isinstance(value, numbers.Real)
+                and not isinstance(value, bool)
+                and math.isfinite(float(value))
+            )
             else value
         )
         for key, value in metrics.items()
@@ -110,38 +115,62 @@ def _write_summary(
         handle.write(separator)
         for name, metrics in rows:
             align_value = metrics.get("delta_alignment")
-            if isinstance(align_value, numbers.Real) and not isinstance(align_value, bool):
+            if (
+                isinstance(align_value, numbers.Real)
+                and not isinstance(align_value, bool)
+                and math.isfinite(float(align_value))
+            ):
                 align_display = f"{align_value:.3f}"
             else:
                 align_display = "n/a"
             repeat = metrics.get("delta_repeatability")
             repeat_display = (
                 f"{repeat:.3f}"
-                if isinstance(repeat, numbers.Real) and not isinstance(repeat, bool)
+                if (
+                    isinstance(repeat, numbers.Real)
+                    and not isinstance(repeat, bool)
+                    and math.isfinite(float(repeat))
+                )
                 else "n/a"
             )
             sparsity_val = metrics.get("delta_sparsity")
             sparsity_display = (
                 f"{sparsity_val:.3f}"
-                if isinstance(sparsity_val, numbers.Real) and not isinstance(sparsity_val, bool)
+                if (
+                    isinstance(sparsity_val, numbers.Real)
+                    and not isinstance(sparsity_val, bool)
+                    and math.isfinite(float(sparsity_val))
+                )
                 else "n/a"
             )
             path_val = metrics.get("avg_path_length")
             path_display = (
                 f"{path_val:.3f}"
-                if isinstance(path_val, numbers.Real) and not isinstance(path_val, bool)
+                if (
+                    isinstance(path_val, numbers.Real)
+                    and not isinstance(path_val, bool)
+                    and math.isfinite(float(path_val))
+                )
                 else "n/a"
             )
             branch_val = metrics.get("branching_factor")
             branch_display = (
                 f"{branch_val:.3f}"
-                if isinstance(branch_val, numbers.Real) and not isinstance(branch_val, bool)
+                if (
+                    isinstance(branch_val, numbers.Real)
+                    and not isinstance(branch_val, bool)
+                    and math.isfinite(float(branch_val))
+                )
                 else "n/a"
             )
             rep_val = metrics.get("repeatability")
             rep_display = (
                 f"{rep_val:.3f}"
-                if isinstance(rep_val, numbers.Real) and not isinstance(rep_val, bool)
+                if (
+                    isinstance(rep_val, numbers.Real)
+                    and not isinstance(rep_val, bool)
+                    and math.isfinite(float(rep_val))
+                )
                 else "n/a"
             )
             row_text = (
@@ -193,6 +222,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--output",
         default="runs/matrix",
         help="Directory for experiment outputs",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        help="Optional limit on number of matrix cells",
     )
     parser.add_argument("--limit", type=int, help="Optional limit on number of matrix cells")
     return parser.parse_args(argv)

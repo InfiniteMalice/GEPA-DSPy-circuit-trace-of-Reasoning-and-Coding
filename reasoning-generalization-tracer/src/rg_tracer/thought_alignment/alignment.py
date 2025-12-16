@@ -15,6 +15,14 @@ _RANDOMNESS_FLAGS = ("random", "guess", "no idea", "unsure", "confused")
 _CONTRADICTION_FLAGS = ("contradiction", "inconsistent", "but then", "however")
 _VACILLATION_PATTERNS = ("or maybe", "or perhaps", "alternatively")
 _THRESHOLDS_ERROR = "thresholds must be a (theta_match, theta_epistemic) tuple"
+# Heuristic weights for match scoring components (base credit, derivation/endorsement bonuses,
+# penalties for dangling alternatives or contradictions).
+_BASE_TRACE_CREDIT = 0.25
+_DERIVATION_BONUS = 0.35
+_ENDORSEMENT_BONUS = 0.25
+_MENTION_BONUS = 0.1
+_UNRESOLVED_PENALTY = 0.1
+_CONTRADICTION_PENALTY = 0.2
 
 
 def _compile_terms(terms: tuple[str, ...]) -> tuple[re.Pattern[str], ...]:
@@ -94,34 +102,29 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
     if not text:
         return 0.0
 
-    score = 0.25  # base credit for providing any trace
-    if answer is None:
-        answer_token = ""
-    else:
-        answer_token = str(answer).strip().casefold()
+    score = _BASE_TRACE_CREDIT  # base credit for providing any trace
+    answer_token = str(answer).strip().casefold() if answer is not None else ""
     derivation_found = False
     endorsement_found = False
 
     if answer_token:
         derivation_pattern = rf"(?<!\w)(=|->|=>|yields|gives)\s*{re.escape(answer_token)}\b"
         if re.search(derivation_pattern, text):
-            score += 0.35
+            score += _DERIVATION_BONUS
             derivation_found = True
         if re.search(rf"(?<!\w)(therefore|thus|so).*\b{re.escape(answer_token)}\b", text):
-            score += 0.25
+            score += _ENDORSEMENT_BONUS
             endorsement_found = True
         if re.search(rf"\b{re.escape(answer_token)}\b", text) and not (
             derivation_found or endorsement_found
         ):
-            score += 0.1
-    else:
-        score -= 0.1
+            score += _MENTION_BONUS
 
     unresolved_candidates = text.count(" or ") + text.count(" maybe ")
-    score -= 0.1 * unresolved_candidates
+    score -= _UNRESOLVED_PENALTY * unresolved_candidates
 
     if _contains_any(_CONTRADICTION_PATTERNS, text):
-        score -= 0.2
+        score -= _CONTRADICTION_PENALTY
 
     score = max(0.0, min(1.0, score))
     return score
