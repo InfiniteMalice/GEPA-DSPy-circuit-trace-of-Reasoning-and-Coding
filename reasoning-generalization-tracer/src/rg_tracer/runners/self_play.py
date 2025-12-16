@@ -11,10 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Sequence
 
-from ..abstention import apply_abstention
+from ..abstention import apply_abstention, evaluate_abstention_reward
 from ..attribution import graphs as attr_graphs
 from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
+from ..thought_alignment import classify_thought_alignment
 from .overwatch import OverwatchAgent, OverwatchConfig
 from ..scoring import aggregator, axes
 from ..semantics import SemanticTag, repair_once, verify_chain
@@ -65,6 +66,12 @@ class Candidate:
     value_decomp: ValueDecompResult | None = None
     overwatch_interventions: List[Dict[str, object]] = field(default_factory=list)
     grn_flags: Dict[str, bool] = field(default_factory=dict)
+    predicted_answer: object | None = None
+    thought_alignment: bool | None = None
+    thought_scores: Dict[str, float] = field(default_factory=dict)
+    reward: float = 0.0
+    reward_case: int | None = None
+    reward_components: Dict[str, float] | None = None
 
 
 class TRMSampler:
@@ -73,9 +80,7 @@ class TRMSampler:
     def __init__(self) -> None:
         self.model = TinyRecursionModel()
 
-    def generate(
-        self, problem: Mapping[str, object], k: int
-    ) -> List[Dict[str, object]]:
+    def generate(self, problem: Mapping[str, object], k: int) -> List[Dict[str, object]]:
         numbers = problem.get("numbers", [])
         answer = problem.get("answer")
         parity_task = problem.get("task") == "parity"
@@ -119,6 +124,7 @@ class TRMSampler:
                     "confidence": confidence,
                     "metrics": metrics,
                     "trace": trace,
+                    "prediction": prediction,
                 }
             )
         return candidates
@@ -153,9 +159,7 @@ def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
     return frontier
 
 
-def _candidate_to_record(
-    candidate: Candidate, overwatch_enabled: bool
-) -> Dict[str, object]:
+def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[str, object]:
     record: Dict[str, object] = {
         "text": candidate.text,
         "confidence": candidate.confidence,
@@ -172,6 +176,12 @@ def _candidate_to_record(
         "grn_flags": candidate.grn_flags,
         "overwatch_enabled": overwatch_enabled,
         "overwatch_interventions": candidate.overwatch_interventions,
+        "predicted_answer": candidate.predicted_answer,
+        "thought_alignment": candidate.thought_alignment,
+        "thought_scores": candidate.thought_scores,
+        "reward": candidate.reward,
+        "reward_case": candidate.reward_case,
+        "reward_components": candidate.reward_components,
     }
     if candidate.value_decomp is not None:
         record.update(
@@ -338,9 +348,7 @@ def _apply_attribution_rewards(
     if isinstance(backend_value, MappingABC):
         backend_config = dict(backend_value)
         backend_name = (
-            str(backend_config.pop("name", DEFAULT_ATTR_CONFIG["backend"]))
-            .strip()
-            .lower()
+            str(backend_config.pop("name", DEFAULT_ATTR_CONFIG["backend"])).strip().lower()
         )
         kwargs_value = backend_config.pop("kwargs", {})
         if isinstance(kwargs_value, MappingABC):
@@ -349,9 +357,7 @@ def _apply_attribution_rewards(
             backend_kwargs = {}
         backend_kwargs.update(backend_config)
     else:
-        backend_name = (
-            str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
-        )
+        backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
     if not backend_name:
         backend_name = DEFAULT_ATTR_CONFIG["backend"]
     backend_spec: Mapping[str, object] = {"name": backend_name, **backend_kwargs}
@@ -398,9 +404,7 @@ def _apply_attribution_rewards(
                     attr_path = attr_dir / f"candidate{idx}_probe{probe_index}.json"
                     with attr_path.open("w", encoding="utf8") as graph_handle:
                         json.dump(graph, graph_handle, indent=2)
-                metrics = _compute_and_apply_attr_metrics(
-                    candidate, graphs, bonuses, concept
-                )
+                metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept)
                 record = {
                     "candidate_index": idx,
                     "problem_id": candidate.problem_id,
@@ -439,9 +443,7 @@ def _map_semantics_to_features(
     raw_features = trace.get("features", []) or []
     if isinstance(raw_features, MappingABC):
         features_iterable = [raw_features]
-    elif isinstance(raw_features, Iterable) and not isinstance(
-        raw_features, (str, bytes)
-    ):
+    elif isinstance(raw_features, Iterable) and not isinstance(raw_features, (str, bytes)):
         features_iterable = list(raw_features)
     else:
         features_iterable = []
@@ -455,12 +457,8 @@ def _map_semantics_to_features(
         for entry in report.get("tags", [])
         if SemanticTag.CONTRADICTION.value in entry.get("tags", [])
     ]
-    entailed_lower = [
-        str(step).casefold() for step in entailed_steps if step is not None
-    ]
-    contradictory_lower = [
-        str(step).casefold() for step in contradictory_steps if step is not None
-    ]
+    entailed_lower = [str(step).casefold() for step in entailed_steps if step is not None]
+    contradictory_lower = [str(step).casefold() for step in contradictory_steps if step is not None]
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
     for feature in features_iterable:
@@ -565,13 +563,17 @@ def run_self_play(
         raise KeyError(f"Profile {profile} not found")
     profile_obj = profiles[profile]
     grn_scoring = _resolve_grn_flag(
-        use_grn_for_scoring, profile_config_safe, "use_grn_for_scoring"
+        use_grn_for_scoring,
+        profile_config_safe,
+        "use_grn_for_scoring",
     )
     grn_abstention = _resolve_grn_flag(
         use_grn_for_abstention, profile_config_safe, "use_grn_for_abstention"
     )
     grn_probes = _resolve_grn_flag(
-        use_grn_for_probes, profile_config_safe, "use_grn_for_probes"
+        use_grn_for_probes,
+        profile_config_safe,
+        "use_grn_for_probes",
     )
     grn_flags = {
         "scoring": grn_scoring,
@@ -589,9 +591,7 @@ def run_self_play(
         else bool(profile_config_safe.get("log_dvgr_metrics", False))
     )
     overwatch_settings = overwatch_config or OverwatchConfig()
-    overwatch_agent = (
-        OverwatchAgent(overwatch_settings) if overwatch_settings.enabled else None
-    )
+    overwatch_agent = OverwatchAgent(overwatch_settings) if overwatch_settings.enabled else None
     run_dir = _prepare_output_dir(output_dir)
 
     results: List[Candidate] = []
@@ -661,9 +661,7 @@ def run_self_play(
         dvgr_score: float | None = None
         if dvgr_logging:
             examples = problem.get("dvgr_examples") or []
-            if isinstance(examples, Iterable) and not isinstance(
-                examples, (str, bytes)
-            ):
+            if isinstance(examples, Iterable) and not isinstance(examples, (str, bytes)):
                 dvgr_score = compute_dvgr(list(examples), [text_after_repair])
         score_decomp: Dict[str, float] | None = None
         if value_decomp_active:
@@ -726,6 +724,29 @@ def run_self_play(
         semantic_dict = report.as_dict()
         semantic_dict["repairs_attempted"] = repairs_attempted
         semantic_dict["abstained"] = abstention.abstained
+        model_prediction = raw.get("prediction")
+        # ``final_answer`` mirrors the surfaced output (abstention text when abstained).
+        if abstention.abstained:
+            final_answer = abstention.text
+        else:
+            final_answer = model_prediction if model_prediction is not None else ""
+        final_text = abstention.text if abstention.abstained else text_after_repair
+        thought_context = {"prompt": problem.get("prompt")}
+        thought_align, s_match, s_epistemic = classify_thought_alignment(
+            final_text, final_answer, thought_context
+        )
+        reward_outcome = evaluate_abstention_reward(
+            expected_answer=problem.get("answer"),
+            prediction=final_answer,
+            text=final_text,
+            confidence=raw.get("confidence", 0.0),
+            aligned=thought_align,
+            abstained=abstention.abstained,
+        )
+        semantic_dict["thought_alignment"] = thought_align
+        semantic_dict["s_match"] = s_match
+        semantic_dict["s_epistemic"] = s_epistemic
+        semantic_dict["reward_case"] = reward_outcome.case_id
         semantics_logs.append(semantic_dict)
 
         composite_value = float(eval_result["composite"])
@@ -747,6 +768,12 @@ def run_self_play(
             value_decomp=value_decomp_result,
             overwatch_interventions=interventions,
             grn_flags=dict(grn_flags),
+            predicted_answer=reward_outcome.prediction,
+            thought_alignment=thought_align,
+            thought_scores={"match": s_match, "epistemic": s_epistemic},
+            reward=reward_outcome.reward,
+            reward_case=reward_outcome.case_id,
+            reward_components=reward_outcome.components,
         )
         results.append(candidate)
 
@@ -781,9 +808,7 @@ def run_self_play(
                 grn_eps=aggregator.DEFAULT_EPSILON,
             )
             candidate.composite = (
-                candidate.base_composite
-                + candidate.attr_bonus
-                + candidate.concept_reward
+                candidate.base_composite + candidate.attr_bonus + candidate.concept_reward
             )
     else:
         for candidate in results:
@@ -805,12 +830,8 @@ def run_self_play(
 
     summary_path = run_dir / "summary.md"
     with summary_path.open("w", encoding="utf8") as handle:
-        handle.write(
-            "| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n"
-        )
-        handle.write(
-            "| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n"
-        )
+        handle.write("| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n")
+        handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):
             summary_row = (
                 "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | {repair} |\n"
