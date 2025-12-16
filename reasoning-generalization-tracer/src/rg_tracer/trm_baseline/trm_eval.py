@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from statistics import mean
 from typing import Iterable, Mapping, Sequence, Tuple
 
+
 from ..scoring import axes
 from ..semantics import verify_chain
 from .trm_train import PARITY_REASON
