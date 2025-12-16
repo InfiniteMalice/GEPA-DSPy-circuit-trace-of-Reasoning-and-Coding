@@ -84,6 +84,16 @@ def _summarise_metrics(
     }
 
 
+def _format_metric(value: object, decimals: int = 3) -> str:
+    if (
+        isinstance(value, numbers.Real)
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    ):
+        return f"{value:.{decimals}f}"
+    return "n/a"
+
+
 def _write_cell_artifacts(
     cell_dir: Path,
     graphs: list[Mapping[str, object]],
@@ -114,65 +124,12 @@ def _write_summary(
         handle.write(header)
         handle.write(separator)
         for name, metrics in rows:
-            align_value = metrics.get("delta_alignment")
-            if (
-                isinstance(align_value, numbers.Real)
-                and not isinstance(align_value, bool)
-                and math.isfinite(float(align_value))
-            ):
-                align_display = f"{align_value:.3f}"
-            else:
-                align_display = "n/a"
-            repeat = metrics.get("delta_repeatability")
-            repeat_display = (
-                f"{repeat:.3f}"
-                if (
-                    isinstance(repeat, numbers.Real)
-                    and not isinstance(repeat, bool)
-                    and math.isfinite(float(repeat))
-                )
-                else "n/a"
-            )
-            sparsity_val = metrics.get("delta_sparsity")
-            sparsity_display = (
-                f"{sparsity_val:.3f}"
-                if (
-                    isinstance(sparsity_val, numbers.Real)
-                    and not isinstance(sparsity_val, bool)
-                    and math.isfinite(float(sparsity_val))
-                )
-                else "n/a"
-            )
-            path_val = metrics.get("avg_path_length")
-            path_display = (
-                f"{path_val:.3f}"
-                if (
-                    isinstance(path_val, numbers.Real)
-                    and not isinstance(path_val, bool)
-                    and math.isfinite(float(path_val))
-                )
-                else "n/a"
-            )
-            branch_val = metrics.get("branching_factor")
-            branch_display = (
-                f"{branch_val:.3f}"
-                if (
-                    isinstance(branch_val, numbers.Real)
-                    and not isinstance(branch_val, bool)
-                    and math.isfinite(float(branch_val))
-                )
-                else "n/a"
-            )
-            rep_val = metrics.get("repeatability")
-            rep_display = (
-                f"{rep_val:.3f}"
-                if (
-                    isinstance(rep_val, numbers.Real)
-                    and not isinstance(rep_val, bool)
-                    and math.isfinite(float(rep_val))
-                )
-                else "n/a"
-            )
+            align_display = _format_metric(metrics.get("delta_alignment"))
+            repeat_display = _format_metric(metrics.get("delta_repeatability"))
+            sparsity_display = _format_metric(metrics.get("delta_sparsity"))
+            path_display = _format_metric(metrics.get("avg_path_length"))
+            branch_display = _format_metric(metrics.get("branching_factor"))
+            rep_display = _format_metric(metrics.get("repeatability"))
             row_text = (
                 f"| {name} | {align_display} | {repeat_display} | "
                 f"{sparsity_display} | {path_display} | "

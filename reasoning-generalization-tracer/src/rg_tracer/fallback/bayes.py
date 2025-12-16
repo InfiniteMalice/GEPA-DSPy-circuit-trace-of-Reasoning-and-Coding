@@ -10,6 +10,9 @@ from typing import Iterable
 PRIOR_PROBABILITY_INVALID = "prior.probability must be a finite value in [0.0, 1.0]"
 LIKELIHOOD_PROBABILITY_INVALID = "Likelihood.{} must be finite and in [0.0, 1.0]"
 POSTERIOR_NON_FINITE = "Posterior became non-finite; check likelihood inputs."
+CONFLICTING_LIKELIHOODS = (
+    "Conflicting likelihoods: some evidence forces posterior=0 and others force posterior=1."
+)
 
 
 @dataclass
@@ -77,9 +80,7 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
             dominant = (impact, like.evidence)
 
     if forced_zero and forced_one:
-        raise ValueError(
-            "Conflicting likelihoods: some evidence forces posterior=0 and others force posterior=1."
-        )
+        raise ValueError(CONFLICTING_LIKELIHOODS)
     if not prior_pins_posterior:
         if forced_one:
             log_odds = float("inf")

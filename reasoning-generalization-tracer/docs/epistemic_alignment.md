@@ -16,12 +16,13 @@ Alignment is true only when both signals clear their thresholds
 even when the final answer is wrong, but name-dropping, unresolved branches, or contradiction swings
 suppress alignment.
 
-## Eleven-Case Abstention Reward Scheme
+## Eleven primary reward cases (plus indeterminate fallback)
 
 The reward combines knowledge, honesty, and abstention calibration weights (`abstention.reward_weights`).
 The honesty component is never negative and only activates when epistemic alignment is present, but
 the net reward can be negative when knowledge or miscalibration penalties dominate (e.g.,
-`-K_high + H` with defaults yields `-1.0`).
+`-K_high + H` with defaults yields `-1.0`). Case 0 is a fallback used when correctness cannot be
+evaluated (missing prediction or expected answer).
 
 1. **Correct, high-conf, aligned** → `+K_high + H`
 2. **Correct, high-conf, unaligned** → `+K_low`
