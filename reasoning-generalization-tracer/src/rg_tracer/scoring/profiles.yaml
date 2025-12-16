@@ -58,3 +58,16 @@ config:
     probe_size: 4
     topk: 2
     backend: null
+  abstention:
+    enabled: false
+    threshold: 0.75
+    reward_weights:
+      # H: hit reward, A: abstention reward, K_*: calibration multipliers
+      H: 1.0
+      A: 0.25
+      K_high: 2.0
+      K_low: 1.0
+      K_miscal: 2.0
+  thought_alignment:
+    theta_match: 0.8
+    theta_epistemic: 0.5

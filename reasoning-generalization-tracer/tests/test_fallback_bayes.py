@@ -1,6 +1,9 @@
 import json
 
+import pytest
+
 from rg_tracer.fallback import run_academic_pipeline
+from rg_tracer.fallback.bayes import Likelihood, Prior, compute_posterior
 
 
 def test_academic_pipeline_outputs_bayesian_position(tmp_path):
@@ -54,3 +57,45 @@ def test_academic_pipeline_outputs_bayesian_position(tmp_path):
         "Support with caveats",
         "Gather more evidence",
     }
+
+
+def test_compute_posterior_decision_policies():
+    prior = Prior(hypothesis="claim", probability=0.5)
+    strong_like = Likelihood(
+        evidence="compelling",
+        probability_if_true=0.9,
+        probability_if_false=0.1,
+    )
+    weak_like = Likelihood(
+        evidence="mixed",
+        probability_if_true=0.6,
+        probability_if_false=0.5,
+    )
+    cautious_like = Likelihood(
+        evidence="contrary",
+        probability_if_true=0.2,
+        probability_if_false=0.8,
+    )
+
+    confident = compute_posterior(prior, [strong_like])
+    assert confident.decision_policy == "Support with caveats"
+
+    uncertain = compute_posterior(prior, [weak_like])
+    assert uncertain.decision_policy == "Gather more evidence"
+
+    cautious = compute_posterior(prior, [cautious_like])
+    assert cautious.decision_policy == "Recommend caution"
+
+
+@pytest.mark.parametrize("prob", [1.5, -0.1, float("nan"), float("inf"), float("-inf")])
+def test_compute_posterior_validates_prior_probability(prob):
+    prior = Prior(hypothesis="claim", probability=prob)
+    with pytest.raises(ValueError, match="prior.probability must be a finite value"):
+        compute_posterior(prior, [])
+
+
+@pytest.mark.parametrize("prob", [0.0, 1.0])
+def test_compute_posterior_accepts_boundary_priors(prob):
+    prior = Prior(hypothesis="claim", probability=prob)
+    result = compute_posterior(prior, [])
+    assert result.posterior == prob
