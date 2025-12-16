@@ -61,6 +61,7 @@ def _normalise_chain(chain: object) -> List[str]:
         steps = [value for step in decoded.split("\n") if (value := step.strip())]
     elif isinstance(chain, Mapping) and "steps" in chain:
         raw_steps = chain.get("steps", [])
+        # Normalize raw_steps to an iterable before stringification
         if raw_steps is None:
             raw_steps = []
         elif isinstance(raw_steps, bytes):

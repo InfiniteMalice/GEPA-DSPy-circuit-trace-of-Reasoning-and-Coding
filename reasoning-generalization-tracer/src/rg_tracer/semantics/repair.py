@@ -168,14 +168,32 @@ def repair_once(
                 if pattern:
                     new_step, replaced = pattern.subn(expected_units, new_step, count=1)
                     if replaced == 0:
-                        flags = pattern.flags | re.IGNORECASE
+                        ignorecase = (
+                            _regex_backend.IGNORECASE
+                            if (
+                                _regex_backend is not None
+                                and _REGEX_PATTERN_TYPE is not None
+                                and isinstance(pattern, _REGEX_PATTERN_TYPE)
+                            )
+                            else re.IGNORECASE
+                        )
+                        flags = pattern.flags | ignorecase
                         pattern_ci = _compile_case_insensitive(pattern, flags=flags)
                         new_step, _ = pattern_ci.subn(expected_units, new_step, count=1)
             expected_trimmed = expected_units.strip()
             if expected_trimmed:
                 expected_pattern = build_token_boundary_pattern(expected_trimmed)
                 if expected_pattern:
-                    flags = expected_pattern.flags | re.IGNORECASE
+                    ignorecase = (
+                        _regex_backend.IGNORECASE
+                        if (
+                            _regex_backend is not None
+                            and _REGEX_PATTERN_TYPE is not None
+                            and isinstance(expected_pattern, _REGEX_PATTERN_TYPE)
+                        )
+                        else re.IGNORECASE
+                    )
+                    flags = expected_pattern.flags | ignorecase
                     matcher = _compile_case_insensitive(expected_pattern, flags=flags)
                     has_expected = bool(matcher.search(new_step))
                 else:
