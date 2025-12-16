@@ -173,3 +173,11 @@ def test_split_profile_payload_rejects_non_mapping_weights_section():
     payload = {"weights": 1}
     with pytest.raises(TypeError, match="weights section must be a mapping"):
         _split_profile_payload(payload)
+
+
+def test_default_config_includes_abstention_and_alignment():
+    load_profiles()
+    config = get_last_config()
+    assert config["abstention"]["threshold"] == 0.75
+    assert config["thought_alignment"]["theta_match"] == 0.8
+    assert config["thought_alignment"]["theta_epistemic"] == 0.5
