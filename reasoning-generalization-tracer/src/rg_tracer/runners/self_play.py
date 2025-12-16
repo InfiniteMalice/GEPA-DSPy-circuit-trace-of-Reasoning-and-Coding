@@ -731,7 +731,7 @@ def run_self_play(
         else:
             final_answer = model_prediction if model_prediction is not None else ""
         final_text = abstention.text if abstention.abstained else text_after_repair
-        thought_context = {"prompt": problem.get("prompt"), "text": final_text}
+        thought_context = {"prompt": problem.get("prompt")}
         thought_align, s_match, s_epistemic = classify_thought_alignment(
             final_text, final_answer, thought_context
         )

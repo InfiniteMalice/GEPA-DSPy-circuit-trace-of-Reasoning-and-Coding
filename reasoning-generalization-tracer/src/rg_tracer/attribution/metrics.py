@@ -278,9 +278,7 @@ def delta_repeatability(
     return float(post - overfit)
 
 
-_GRAPH_TYPE_ERROR = (
-    "graphs must be a graph (mapping/AttributionGraph) or an iterable of graphs"
-)
+_GRAPH_TYPE_ERROR = "graphs must be a graph (mapping/AttributionGraph) or an iterable of graphs"
 
 
 def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike | None) -> List[GraphLike]:

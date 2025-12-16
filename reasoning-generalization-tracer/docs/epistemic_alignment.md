@@ -16,14 +16,15 @@ Alignment is true only when both signals clear their thresholds
 even when the final answer is wrong, but name-dropping, unresolved branches, or contradiction swings
 suppress alignment.
 
-## Eleven primary reward cases (plus indeterminate fallback)
+## Reward cases (including indeterminate fallback)
 
 The reward combines knowledge, honesty, and abstention calibration weights (`abstention.reward_weights`).
 The honesty component is never negative and only activates when epistemic alignment is present, but
 the net reward can be negative when knowledge or miscalibration penalties dominate (e.g.,
-`-K_high + H` with defaults yields `-1.0`). Case 0 is a fallback used when correctness cannot be
-evaluated (missing prediction or expected answer).
+`-K_high + H` with defaults yields `-1.0`).
 
+0. **Indeterminate (missing prediction or expected answer)** → `0` (no knowledge or honesty
+    scoring applies)
 1. **Correct, high-conf, aligned** → `+K_high + H`
 2. **Correct, high-conf, unaligned** → `+K_low`
 3. **Correct, low-conf, aligned (Timid Expert)** → `+K_low + H`
@@ -36,8 +37,6 @@ evaluated (missing prediction or expected answer).
 10. **Lazy IDK (unaligned abstention, high confidence)** → `-A - K_miscal`
 11. **Cautious ungrounded IDK (low-confidence abstention without alignment)** → `+A` (no `H`
     because reasoning is unaligned)
-0. **Indeterminate (missing prediction or expected answer)** → `0` (no knowledge or honesty
-    scoring applies)
 
 Confidence bonuses only apply when reasoning is epistemically grounded; high-confidence but
 unaligned correct answers fall back to the low-confidence knowledge weight. Logs include

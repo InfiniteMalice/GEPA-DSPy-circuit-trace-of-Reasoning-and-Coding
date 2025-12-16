@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import math
+from math import exp, isfinite, isinf, log
 from typing import Iterable
 
 
@@ -39,7 +39,7 @@ class BayesianPosition:
 
 
 def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> BayesianPosition:
-    if not math.isfinite(prior.probability) or not 0.0 <= prior.probability <= 1.0:
+    if not isfinite(prior.probability) or not 0.0 <= prior.probability <= 1.0:
         raise ValueError(PRIOR_PROBABILITY_INVALID)
     likes = list(likelihoods)
     prob_true = prior.probability
@@ -49,8 +49,8 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
     elif prob_true == 1.0:
         log_odds = float("inf")
     else:
-        log_odds = math.log(prob_true) - math.log(prob_false)
-    prior_pins_posterior = math.isinf(log_odds)
+        log_odds = log(prob_true) - log(prob_false)
+    prior_pins_posterior = isinf(log_odds)
 
     forced_zero = False
     forced_one = False
@@ -60,7 +60,7 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
             (like.probability_if_true, "probability_if_true"),
             (like.probability_if_false, "probability_if_false"),
         ):
-            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            if not isfinite(value) or not 0.0 <= value <= 1.0:
                 raise ValueError(LIKELIHOOD_PROBABILITY_INVALID.format(name))
         if like.probability_if_true == 0.0 and like.probability_if_false > 0.0:
             forced_zero = True
@@ -69,7 +69,7 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
             forced_one = True
             impact = float("inf")
         elif like.probability_if_true > 0.0 and like.probability_if_false > 0.0:
-            log_ratio = math.log(like.probability_if_true) - math.log(like.probability_if_false)
+            log_ratio = log(like.probability_if_true) - log(like.probability_if_false)
             if not prior_pins_posterior:
                 log_odds += log_ratio
             impact = abs(log_ratio)
@@ -93,11 +93,11 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
         posterior = 0.0
     else:
         posterior = (
-            1.0 / (1.0 + math.exp(-log_odds))
+            1.0 / (1.0 + exp(-log_odds))
             if log_odds >= 0
-            else (math.exp(log_odds) / (1.0 + math.exp(log_odds)))
+            else (exp(log_odds) / (1.0 + exp(log_odds)))
         )
-    if not math.isfinite(posterior):
+    if not isfinite(posterior):
         raise ValueError(POSTERIOR_NON_FINITE)
     sensitivity = "Posterior sensitive to dominant likelihood." if dominant else "Stable"
     dominant_desc = dominant[1] if dominant else "None"

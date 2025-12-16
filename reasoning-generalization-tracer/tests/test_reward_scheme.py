@@ -105,3 +105,4 @@ def test_punctuation_only_prediction_is_ignored():
     )
     assert outcome.prediction is None
     assert outcome.abstained
+    assert outcome.case_id == 11
