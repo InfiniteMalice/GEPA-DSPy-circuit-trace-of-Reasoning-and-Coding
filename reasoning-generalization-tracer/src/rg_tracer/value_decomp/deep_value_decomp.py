@@ -191,7 +191,7 @@ def analyze_output_shallow_features(output_text: str) -> ShallowFeatureVector:
 def compute_dvgr(examples: Iterable[Mapping[str, Any]], predictions: Iterable[str]) -> float:
     examples_list = list(examples)
     predictions_list = list(predictions)
-    pairs = list(zip(examples_list, predictions_list))
+    pairs = list(zip(examples_list, predictions_list, strict=True))
     if not pairs:
         return 0.0
     correct: float = 0.0

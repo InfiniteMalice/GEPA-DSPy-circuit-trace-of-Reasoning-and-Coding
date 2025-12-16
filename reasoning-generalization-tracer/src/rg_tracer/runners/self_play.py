@@ -662,7 +662,9 @@ def run_self_play(
         if dvgr_logging:
             examples = problem.get("dvgr_examples") or []
             if isinstance(examples, Iterable) and not isinstance(examples, (str, bytes)):
-                dvgr_score = compute_dvgr(list(examples), [text_after_repair])
+                examples_list = list(examples)
+                predictions_list = [text_after_repair] * len(examples_list)
+                dvgr_score = compute_dvgr(examples_list, predictions_list)
         score_decomp: Dict[str, float] | None = None
         if value_decomp_active:
             score_decomp = decompose_score(
