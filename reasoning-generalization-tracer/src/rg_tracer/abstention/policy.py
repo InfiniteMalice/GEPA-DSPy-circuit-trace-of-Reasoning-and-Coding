@@ -28,7 +28,12 @@ def apply_abstention(
     use_grn: bool = False,
     grn_eps: float = 1e-6,
 ) -> AbstentionResult:
-    """Return abstention result enforcing the 0.75 threshold and semantic gate.
+    """Return abstention result enforcing confidence and semantic thresholds.
+
+    Abstains (returns "I don't know.") when:
+    - confidence < 0.75 (``ABSTENTION_THRESHOLD``), or
+    - sem_score < 2 (``SEMANTIC_THRESHOLD``), or
+    - gates_pass is False
 
     When ``use_grn`` is enabled, only the confidence dimension is RMS-normalised; the
     semantic score remains on its original scale to preserve the existing gate semantics.
@@ -41,17 +46,19 @@ def apply_abstention(
     else:
         confidence_value = float(confidence)
         sem_value = float(sem_score)
-    should_abstain = (
-        confidence_value < ABSTENTION_THRESHOLD
-        or sem_value < SEMANTIC_THRESHOLD
-        or not gates_pass
-    )
+    low_confidence = confidence_value < ABSTENTION_THRESHOLD
+    low_semantic = sem_value < SEMANTIC_THRESHOLD
+    should_abstain = low_confidence or low_semantic or not gates_pass
     if should_abstain:
         return AbstentionResult(
-            text="I don't know.", abstained=True, confidence=confidence_value
+            text="I don't know.",
+            abstained=True,
+            confidence=confidence_value,
         )
     return AbstentionResult(
-        text=output_text, abstained=False, confidence=confidence_value
+        text=output_text,
+        abstained=False,
+        confidence=confidence_value,
     )
 
 
