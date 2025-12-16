@@ -168,9 +168,13 @@ def _get_thresholds() -> tuple[float, float]:
         theta_epistemic = float(ta_cfg.get("theta_epistemic", 0.5))
     except (TypeError, ValueError):
         theta_epistemic = 0.5
-    theta_match = max(0.0, min(1.0, theta_match))
-    theta_epistemic = max(0.0, min(1.0, theta_epistemic))
+    theta_match = _clamp_threshold(theta_match)
+    theta_epistemic = _clamp_threshold(theta_epistemic)
     return theta_match, theta_epistemic
+
+
+def _clamp_threshold(value: float) -> float:
+    return max(0.0, min(1.0, value))
 
 
 def classify_thought_alignment(
@@ -192,8 +196,8 @@ def classify_thought_alignment(
         theta_epistemic = float(resolved[1])
     except (TypeError, ValueError):
         raise ValueError(_THRESHOLDS_ERROR) from None
-    theta_match = max(0.0, min(1.0, theta_match))
-    theta_epistemic = max(0.0, min(1.0, theta_epistemic))
+    theta_match = _clamp_threshold(theta_match)
+    theta_epistemic = _clamp_threshold(theta_epistemic)
     thought_align = s_match >= theta_match and s_epistemic >= theta_epistemic
     return thought_align, s_match, s_epistemic
 

@@ -116,7 +116,7 @@ def _score_non_abstain(
             knowledge = -weights.get("K_high", 0.0)
             case_id = 6
         else:
-            # Case 7: Low-confidence wrong answer
+            # Case 7: Low-confidence wrong answer (alignment not distinguished when confidence is low)
             knowledge = -weights.get("K_low", 0.0)
             case_id = 7
     else:

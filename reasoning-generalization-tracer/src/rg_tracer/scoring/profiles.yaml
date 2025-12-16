@@ -69,5 +69,6 @@ config:
       K_low: 1.0
       K_miscal: 2.0
   thought_alignment:
+    # theta_match: match score threshold, theta_epistemic: epistemic alignment threshold
     theta_match: 0.8
     theta_epistemic: 0.5
