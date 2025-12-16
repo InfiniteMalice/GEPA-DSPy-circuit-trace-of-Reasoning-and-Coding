@@ -65,9 +65,7 @@ def _normalise_trace(raw: Mapping[str, Any]) -> CircuitTrace:
         for edge in raw.get("edges", [])
     ]
     sparsity = float(raw.get("sparsity", 0.0))
-    path_lengths = {
-        key: float(value) for key, value in raw.get("path_lengths", {}).items()
-    }
+    path_lengths = {key: float(value) for key, value in raw.get("path_lengths", {}).items()}
     return CircuitTrace(
         model_ref=str(raw.get("model_ref", "unknown")),
         task_id=str(raw.get("task_id", "unknown")),
