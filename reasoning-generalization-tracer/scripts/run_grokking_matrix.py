@@ -56,6 +56,14 @@ def _extract_phase_graphs(combo_digest: int, combo_name: str) -> list[Mapping[st
     return graphs
 
 
+def _is_displayable_numeric(value: object) -> bool:
+    return (
+        isinstance(value, numbers.Real)
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
+
+
 def _summarise_metrics(
     graphs: list[Mapping[str, object]],
 ) -> dict[str, object]:
@@ -71,25 +79,13 @@ def _summarise_metrics(
     # deltas as unavailable rather than returning a wall of zeros.
     metrics["delta_alignment"] = None
     return {
-        key: (
-            float(value)
-            if (
-                isinstance(value, numbers.Real)
-                and not isinstance(value, bool)
-                and math.isfinite(float(value))
-            )
-            else value
-        )
+        key: (float(value) if _is_displayable_numeric(value) else value)
         for key, value in metrics.items()
     }
 
 
 def _format_metric(value: object, decimals: int = 3) -> str:
-    if (
-        isinstance(value, numbers.Real)
-        and not isinstance(value, bool)
-        and math.isfinite(float(value))
-    ):
+    if _is_displayable_numeric(value):
         return f"{value:.{decimals}f}"
     return "n/a"
 

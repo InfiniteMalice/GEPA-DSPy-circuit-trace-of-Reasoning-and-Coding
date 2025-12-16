@@ -74,6 +74,7 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
                 log_odds += log_ratio
             impact = abs(log_ratio)
         else:
+            # Both probabilities are 0: evidence impossible under either hypothesis; skip.
             continue
 
         if dominant is None or impact > dominant[0]:
