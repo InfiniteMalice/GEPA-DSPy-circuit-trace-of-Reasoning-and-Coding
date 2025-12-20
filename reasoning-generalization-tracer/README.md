@@ -9,6 +9,89 @@ verifiable reward signals, RG-Tracer falls back to an academic three-step
 pipeline culminating in a Bayesian position. All components are lightweight,
 CPU-friendly, and designed for reproducible experimentation.
 
+## Abstention, Hallucination Control, and Thought-Trace Rewards
+
+All training modes in this repo (GEPA-from-scratch, GRPO with GEPA scoring,
+PPO+GRN) share a **13-case behavioral schema plus a null fallback (case 0)**.
+
+Each case describes a unique combination of:
+
+- Whether the model **answers** or **abstains** with `"I don't know"`.
+- Whether a non-IDK answer is **correct** or **incorrect**.
+- Whether confidence in that answer is **high** (≥ threshold τ, default 0.75)
+  or **low**.
+- Whether the **thought trace is epistemically aligned** with the surface
+  behavior.
+- For IDK, whether the model is **lazy/sandbagging**, **miscalibrated**, or
+  **honestly unsure**.
+
+Rewards are decomposed into:
+
+- **R_token** – surface answer correctness.
+- **R_confidence** – calibration push toward or away from the 0.75 abstention
+  threshold.
+- **R_thought** – binary honesty bonus; **either H or 0, never negative**.
+- **R_abstain** – reward/penalty for choosing `"I don't know"` when it is (or
+  isn’t) the safe action.
+
+Case 0 is reserved for internal errors or unclassified situations and uses a
+neutral fallback reward.
+
+### 13+0 Case Schema
+
+**Answer cases (no IDK):**
+
+| Case | Output | Conditions | Description | R_token | R_confidence | R_thought | R_abstain |
+|------|--------|------------|-------------|---------|--------------|-----------|-----------|
+| 1 | Answer | Correct, High conf, Aligned | Knows the answer, calibrated, reasoning supports it | Positive | Keep high / slight ↑ | H | 0 |
+| 2 | Answer | Correct, High conf, Unaligned | Correct but explanation is shortcut / sycophantic / off-path | Positive | Keep high | 0 | 0 |
+| 3 | Answer | Correct, Low conf, Aligned | “Timid expert” – correct and grounded but underconfident | Positive | Push up toward τ | H | 0 |
+| 4 | Answer | Correct, Low conf, Unaligned | Lucky / shallow guess – no solid reasoning to support answer | Positive (reduced) | Small or no ↑ | 0 | 0 |
+| 5 | Answer | Incorrect, High conf, Aligned | Honest but confidently wrong; reasoning clearly shown | Strong negative | Strong ↓ | H | 0 |
+| 6 | Answer | Incorrect, High conf, Unaligned | Confident hallucination / BS; no coherent support in trace | Strong negative | Strong ↓ | 0 | 0 |
+| 7 | Answer | Incorrect, Low conf, Aligned | Wrong but tentative and honest; shows where reasoning failed | Negative (scaled) | Mild ↓ or unchanged | H | 0 |
+| 8 | Answer | Incorrect, Low conf, Unaligned | Noisy guessing; weak confidence and ungrounded reasoning | Negative (scaled) | Mild ↓ | 0 | 0 |
+
+**IDK cases (`"I don't know"`):**
+
+Here `p_ans` is the model’s internal confidence that some concrete answer would
+be correct.
+
+| Case | Output | Conditions | Description | R_token | R_confidence | R_thought | R_abstain |
+|------|--------|------------|-------------|---------|--------------|-----------|-----------|
+| 9 | IDK | `p_ans ≥ τ`, trace walks to a correct specific answer | Lazy / sandbagging IDK – hides a known answer behind “I don’t know” | Negative on IDK tokens | Reduce `p_idk`; preserve confidence in the correct-answer circuit | 0 | Strong negative |
+| 10 | IDK | `p_ans ≥ τ`, no hidden correct answer, **aligned** uncertainty | Miscalibrated but epistemically grounded IDK – honest confusion | 0 | Push `p_ans` down toward τ | H | 0 |
+| 11 | IDK | `p_ans ≥ τ`, no hidden correct answer, **unaligned** uncertainty | Miscalibrated and ungrounded IDK – mushy “I don’t know” | 0 | Same calibration push as case 10 | 0 | 0 |
+| 12 | IDK | `p_ans < τ`, grounded uncertainty | Honest grounded IDK at low confidence – explores options, explains why none are safe | 0 | Keep `p_ans` low (or light tweak) | H | Small positive |
+| 13 | IDK | `p_ans < τ`, ungrounded uncertainty | Cautious ungrounded IDK – safe abstention but weak reasoning | 0 | Keep `p_ans` low | 0 | Smaller positive |
+
+**Null case (0):**
+
+- **Case 0 – Null / Fallback**
+  - Used when inputs violate invariants or no case applies.
+  - Reward: neutral or near-neutral, with assertions/logging in debug builds.
+  - Intention: catch implementation errors, *not* a real training state.
+
+### Invariants
+
+The implementation and this schema enforce a small set of invariants:
+
+- **Thought rewards are only paid when `thought_align=True`.**
+  - `R_thought = H` iff the trace is epistemically aligned with the surface
+    behavior (correct answer or justified uncertainty).
+- **Abstention is never punished when it reduces hallucination risk.**
+  - High-`p_ans` lazy IDK (case 9) is penalized.
+  - Low-`p_ans` IDK (cases 12–13) is never penalized, only neutral or rewarded.
+- **Hallucinations and confident errors are strongly discouraged.**
+  - High-confidence wrong answers (cases 5–6) incur strong negative token reward
+    and strong confidence reduction.
+- **Honest uncertainty is explicitly rewarded.**
+  - Grounded IDK (cases 10 and 12) receives the thought bonus; 12 additionally
+    gets a small abstention bonus.
+
+This 13+0 schema is applied **on top of** any optimizer (PPO, GRPO, supervised)
+and is the behavioral backbone for all experiments in this repository.
+
 ## Rubric Axes
 
 Scores are deterministic integers from 0 to 4 across eleven axes:
@@ -73,7 +156,7 @@ probe graph is stored under `runs/<timestamp>/attr/`.
 The abstention policy enforces a calibrated threshold of `0.75`. Any candidate
 with lower confidence, failing semantic checks (score < 2), or blocked by hard
 gates emits the exact string “I don't know.” No token reward is granted; a
-separate “honesty” metric can be layered on in downstream analysis.
+separate reward decomposition is handled by the abstention reward scheme.
 
 ## Semantic Verifier and Repair
 
@@ -179,7 +262,8 @@ Each self-play run emits:
   pass `--profiles /path/to/custom.yaml` to use any other file.
 * **Concept Rewards:** override weights via the `weights` parameter in
   `compute_concept_reward`.
-* **Abstention:** calibrate model confidences using `abstention/calibrate.py`.
+* **Abstention:** calibrate model confidences using `abstention/calibrate.py`. Reward cases follow
+  the 13-case schema described in `docs/epistemic_alignment.md`.
 * **Semantic Repair:** customise behaviour by editing `semantics/repair.py` and
   `semantics/verifier.py` heuristics.
 * **Humanities Profiles:** adjust humanities weights in

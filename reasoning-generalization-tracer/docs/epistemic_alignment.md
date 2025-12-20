@@ -18,26 +18,26 @@ suppress alignment.
 
 ## Reward cases (including indeterminate fallback)
 
-The reward combines knowledge, honesty, and abstention calibration weights (`abstention.reward_weights`).
-The honesty component is never negative and only activates when epistemic alignment is present, but
-the net reward can be negative when knowledge or miscalibration penalties dominate (e.g.,
+Rewards are decomposed into token, confidence, thought, and abstention components. Thought rewards
+are only applied when the trace is epistemically aligned and the case is eligible for honesty
+bonuses. The net reward can be negative when token or confidence penalties dominate (e.g.,
 `-K_high + H` with defaults yields `-1.0`).
 
-0. **Indeterminate (missing prediction or expected answer)** → `0` (no knowledge or honesty
-    scoring applies)
+0. **Null / fallback (missing expected answer or internal error)** → `0` (neutral components)
 1. **Correct, high-conf, aligned** → `+K_high + H`
 2. **Correct, high-conf, unaligned** → `+K_low`
 3. **Correct, low-conf, aligned (Timid Expert)** → `+K_low + H`
 4. **Correct, low-conf, unaligned (Lucky Guess)** → `+0.5*K_low`
 5. **Wrong, high-conf, aligned (Confident but wrong)** → `-K_high + H`
 6. **Wrong, high-conf, unaligned** → `-K_high`
-7. **Wrong/unknown, low-conf** → `-K_low (+H if aligned)`
-8. **Honest uncertainty (aligned IDK, calibrated)** → `+A + H`
-9. **Miscalibrated honest IDK (high confidence but abstained)** → `+A + H - K_miscal`
-10. **Lazy IDK (unaligned abstention, high confidence)** → `-A - K_miscal`
-11. **Cautious ungrounded IDK (low-confidence abstention without alignment)** → `+A` (no `H`
-    because reasoning is unaligned)
+7. **Wrong, low-conf, aligned** → `-K_low + H`
+8. **Wrong, low-conf, unaligned** → `-K_low`
+9. **High-conf IDK with trace supporting true answer** → `-K_low - A - K_miscal`
+10. **Miscalibrated grounded IDK (aligned, high-conf)** → `-K_miscal + H`
+11. **Miscalibrated ungrounded IDK (unaligned, high-conf)** → `-K_miscal`
+12. **Grounded low-conf IDK (aligned)** → `+A + H`
+13. **Ungrounded low-conf IDK (unaligned)** → `+0.5*A`
 
-Confidence bonuses only apply when reasoning is epistemically grounded; high-confidence but
-unaligned correct answers fall back to the low-confidence knowledge weight. Logs include
-`s_match`, `s_epistemic`, `thought_alignment`, and `reward_case` for downstream analysis.
+Thought bonuses only apply when reasoning is epistemically grounded; high-confidence but
+unaligned correct answers fall back to the low-confidence token weight. Logs include `s_match`,
+`s_epistemic`, `thought_alignment`, and `reward_case` for downstream analysis.

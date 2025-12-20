@@ -30,10 +30,12 @@ def test_all_reward_cases_are_accessible():
         5: _case(prediction=7, aligned=True),
         6: _case(prediction=7, aligned=False),
         7: _case(prediction=7, aligned=True, confidence=0.6),
-        8: _case(abstained=True, aligned=True, confidence=0.4, prediction="I don't know"),
-        9: _case(abstained=True, aligned=True, confidence=0.9, prediction="I don't know"),
-        10: _case(abstained=True, aligned=False, confidence=0.9, prediction="I don't know"),
-        11: _case(abstained=True, aligned=False, confidence=0.6, prediction="I don't know"),
+        8: _case(prediction=7, aligned=False, confidence=0.6),
+        9: _case(abstained=True, aligned=False, confidence=0.9, prediction=5),
+        10: _case(abstained=True, aligned=True, confidence=0.9, prediction="I don't know"),
+        11: _case(abstained=True, aligned=False, confidence=0.9, prediction="I don't know"),
+        12: _case(abstained=True, aligned=True, confidence=0.4, prediction="I don't know"),
+        13: _case(abstained=True, aligned=False, confidence=0.4, prediction="I don't know"),
         0: _case(expected=None, prediction=None, text=""),
     }
     observed = {outcome.case_id for outcome in cases.values()}
@@ -43,7 +45,7 @@ def test_all_reward_cases_are_accessible():
 def test_confidence_push_requires_alignment():
     aligned = _case()
     unaligned = _case(aligned=False)
-    assert aligned.components["knowledge"] > unaligned.components["knowledge"]
+    assert aligned.components["token"] > unaligned.components["token"]
 
 
 def test_timid_expert_reward_positive():
@@ -60,24 +62,28 @@ def test_lucky_guesser_has_lower_reward():
 
 
 def test_miscalibrated_honest_idk_is_distinct():
-    honest = _case(abstained=True, aligned=True, confidence=0.4, prediction="I don't know")
-    miscal = _case(abstained=True, aligned=True, confidence=0.9, prediction="I don't know")
-    lazy = _case(abstained=True, aligned=False, confidence=0.9, prediction="I don't know")
-    cautious = _case(abstained=True, aligned=False, confidence=0.6, prediction="I don't know")
-    assert honest.case_id == 8
-    assert miscal.case_id == 9
-    assert lazy.case_id == 10
-    assert cautious.case_id == 11
-    assert miscal.components["miscalibration"] < 0
-    assert "miscalibration" not in cautious.components
-    assert cautious.reward > 0
-    assert cautious.components.get("abstention", 0) > 0
+    lazy = _case(abstained=True, aligned=False, confidence=0.9, prediction=5)
+    miscal_aligned = _case(abstained=True, aligned=True, confidence=0.9, prediction="I don't know")
+    miscal_unaligned = _case(
+        abstained=True, aligned=False, confidence=0.9, prediction="I don't know"
+    )
+    grounded = _case(abstained=True, aligned=True, confidence=0.4, prediction="I don't know")
+    cautious = _case(abstained=True, aligned=False, confidence=0.4, prediction="I don't know")
+    assert lazy.case_id == 9
+    assert miscal_aligned.case_id == 10
+    assert miscal_unaligned.case_id == 11
+    assert grounded.case_id == 12
+    assert cautious.case_id == 13
+    assert miscal_aligned.components["confidence"] < 0
+    assert miscal_unaligned.components["confidence"] < 0
+    assert grounded.components.get("abstain", 0) > 0
+    assert cautious.components.get("abstain", 0) > 0
 
 
 def test_confident_but_wrong_remains_aligned_rewarded_for_honesty():
     outcome = _case(prediction=7, aligned=True)
     assert outcome.case_id == 5
-    assert outcome.components["honesty"] >= 0
+    assert outcome.components["thought"] >= 0
     assert outcome.reward < 0  # knowledge penalty dominates
 
 
@@ -90,7 +96,7 @@ def test_punctuation_only_prediction_returns_none():
         confidence=0.6,
     )
     assert outcome.prediction is None
-    assert outcome.case_id == 11
+    assert outcome.case_id == 13
 
 
 def test_punctuation_only_prediction_is_ignored():
@@ -105,4 +111,28 @@ def test_punctuation_only_prediction_is_ignored():
     )
     assert outcome.prediction is None
     assert outcome.abstained
+    assert outcome.case_id == 13
+
+
+def test_miscalibrated_grounded_idk_receives_thought_reward():
+    outcome = _case(abstained=True, aligned=True, confidence=0.9, prediction="I don't know")
+    assert outcome.case_id == 10
+    assert outcome.components["thought"] > 0
+
+
+def test_miscalibrated_ungrounded_idk_no_thought_reward():
+    outcome = _case(abstained=True, aligned=False, confidence=0.9, prediction="I don't know")
     assert outcome.case_id == 11
+    assert outcome.components["thought"] == 0.0
+
+
+def test_grounded_low_confidence_idk_receives_thought_reward():
+    outcome = _case(abstained=True, aligned=True, confidence=0.4, prediction="I don't know")
+    assert outcome.case_id == 12
+    assert outcome.components["thought"] > 0
+
+
+def test_ungrounded_low_confidence_idk_no_thought_reward():
+    outcome = _case(abstained=True, aligned=False, confidence=0.4, prediction="I don't know")
+    assert outcome.case_id == 13
+    assert outcome.components["thought"] == 0.0
