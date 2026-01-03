@@ -1,0 +1,158 @@
+"""CLI entrypoint for hybrid DAPO training."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Mapping
+
+import yaml
+from gepa_dapo_grn import (
+    CurriculumTracker,
+    DAPOConfig,
+    GRNConfig,
+    RewardMixerConfig,
+    SafetyController,
+)
+
+from rg_tracer.dapo import (
+    DAPOHybridTrainer,
+    FeedbackMappingConfig,
+    HFPolicyAdapter,
+    HybridTrainingConfig,
+    JSONLLogger,
+)
+from rg_tracer.modules.torch_stub import torch
+
+
+class NullScorer:
+    def score(self, prompts: Iterable[str], completions: Iterable[str]) -> List[Dict[str, float]]:
+        return [{} for _ in zip(prompts, completions)]
+
+
+def _load_jsonl(path: Path) -> List[Mapping[str, Any]]:
+    rows = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            rows.append(json.loads(line))
+    return rows
+
+
+def _extract_prompt(record: Mapping[str, Any]) -> str:
+    for key in ("prompt", "question", "problem", "text"):
+        if key in record:
+            return str(record[key])
+    return json.dumps(record)
+
+
+def _batch_records(records: List[Mapping[str, Any]], batch_size: int) -> Iterable[Dict[str, Any]]:
+    for i in range(0, len(records), batch_size):
+        batch = records[i : i + batch_size]
+        prompts = [_extract_prompt(record) for record in batch]
+        task_ids = [record.get("task_id") for record in batch]
+        prompt_ids = [record.get("id") for record in batch]
+        yield {
+            "prompts": prompts,
+            "task_ids": task_ids,
+            "prompt_ids": prompt_ids,
+        }
+
+
+def _load_reward_mixer(path: Path) -> Dict[str, float]:
+    if path.suffix in {".yaml", ".yml"}:
+        return yaml.safe_load(path.read_text()) or {}
+    return json.loads(path.read_text())
+
+
+def _load_mapping_config(path: Path) -> FeedbackMappingConfig:
+    data = json.loads(path.read_text())
+    return FeedbackMappingConfig(
+        reward_keys=data.get("reward_keys", {}),
+        tag_keys=data.get("tag_keys", {}),
+        task_id_field=data.get("task_id_field", "task_id"),
+        prompt_id_field=data.get("prompt_id_field", "prompt_id"),
+        abstain_field=data.get("abstain_field"),
+    )
+
+
+def _build_policy(model_name: str, device: str) -> HFPolicyAdapter:
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    model.to(device)
+    return HFPolicyAdapter(model=model, tokenizer=tokenizer, device=device)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Train a DAPO hybrid policy on RG tasks.")
+    parser.add_argument("--model", required=True, help="HuggingFace model name or path")
+    parser.add_argument("--dataset", required=True, help="Path to a JSONL dataset")
+    parser.add_argument("--output-dir", required=True, help="Output directory for logs")
+    parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--group-size", type=int, default=1)
+    parser.add_argument("--learning-rate", type=float, default=1e-5)
+    parser.add_argument("--clip-ratio", type=float, default=0.2)
+    parser.add_argument("--kl-target", type=float, default=0.1)
+    parser.add_argument("--kl-coef", type=float, default=0.1)
+    parser.add_argument("--reward-mixer", required=True, help="YAML/JSON reward mixer file")
+    parser.add_argument("--mapping-config", help="JSON feedback mapping config")
+    parser.add_argument("--enable-grn-policy", action="store_true")
+    parser.add_argument("--enable-grn-value", action="store_true")
+    parser.add_argument("--eval-every", type=int, default=100)
+    parser.add_argument("--seed", type=int, default=0)
+    args = parser.parse_args()
+
+    device = "cuda" if hasattr(torch, "cuda") and torch.cuda.is_available() else "cpu"
+    policy = _build_policy(args.model, device)
+
+    reward_weights = _load_reward_mixer(Path(args.reward_mixer))
+    reward_mixer = RewardMixerConfig(weights=reward_weights)
+
+    dapo_cfg = DAPOConfig(
+        learning_rate=args.learning_rate,
+        clip_ratio=args.clip_ratio,
+        kl_target=args.kl_target,
+        kl_coef=args.kl_coef,
+    )
+    grn_cfg = GRNConfig(
+        enable_policy=args.enable_grn_policy,
+        enable_value=args.enable_grn_value,
+        enable_probes=False,
+    )
+
+    if args.mapping_config:
+        feedback_cfg = _load_mapping_config(Path(args.mapping_config))
+    else:
+        feedback_cfg = FeedbackMappingConfig(reward_keys={}, tag_keys={})
+
+    dataset_rows = _load_jsonl(Path(args.dataset))
+    dataloader = _batch_records(dataset_rows, args.batch_size)
+
+    logger = JSONLLogger(Path(args.output_dir) / "train.jsonl")
+    trainer = DAPOHybridTrainer(
+        policy=policy,
+        scorer=NullScorer(),
+        dataloader=dataloader,
+        feedback_cfg=feedback_cfg,
+        cfg=HybridTrainingConfig(
+            dapo=dapo_cfg,
+            grn=grn_cfg,
+            reward_mixer=reward_mixer,
+            group_size=args.group_size,
+            eval_every=args.eval_every,
+            seed=args.seed,
+        ),
+        logger=logger,
+        curriculum=CurriculumTracker(),
+        safety=SafetyController(),
+    )
+    trainer.run()
+
+
+if __name__ == "__main__":
+    main()
