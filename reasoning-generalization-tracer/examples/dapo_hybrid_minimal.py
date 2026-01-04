@@ -171,7 +171,7 @@ def main() -> None:
             group_size=2,
             max_steps=2,
         ),
-        logger=JSONLLogger(Path("examples/dapo_hybrid_minimal.jsonl")),
+        logger=JSONLLogger(Path(__file__).parent / "dapo_hybrid_minimal.jsonl"),
     )
     trainer.run()
 

@@ -70,4 +70,5 @@ class JSONLLogger:
 
 
 def summarize_task_emas(ema_by_task: Mapping[str, float]) -> Dict[str, float]:
+    """Convert task EMAs to a dict with float values (not numpy scalars)."""
     return {task: float(value) for task, value in ema_by_task.items()}

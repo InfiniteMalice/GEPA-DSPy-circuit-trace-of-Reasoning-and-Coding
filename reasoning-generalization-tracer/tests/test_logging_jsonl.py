@@ -34,8 +34,16 @@ def test_logging_jsonl_schema() -> None:
 
         loaded = json.loads(path.read_text().splitlines()[0])
         assert "rl" in loaded
+        assert loaded["rl"]["loss"] == 0.1
+        assert loaded["rl"]["policy_loss"] == 0.05
         assert "curriculum" in loaded
+        assert loaded["curriculum"]["task_id"] == ["t1"]
         assert "safety" in loaded
+        assert loaded["safety"]["ema_deception"] == 0.0
         assert "gepa" in loaded
         assert loaded["gepa"][0]["rewards"]["correctness"] == 1.0
+        assert loaded["gepa"][0]["tags"]["format_penalty"] == 0.1
+        assert loaded["gepa"][0]["meta"]["task_id"] == "t1"
+        assert loaded["gepa"][0]["abstained"] is False
         assert "generation" in loaded
+        assert loaded["generation"][0]["prompt_id"] == "p1"

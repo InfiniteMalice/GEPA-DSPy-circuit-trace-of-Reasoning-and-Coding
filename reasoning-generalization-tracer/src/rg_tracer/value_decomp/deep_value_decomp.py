@@ -195,6 +195,18 @@ def analyze_output_shallow_features(output_text: str) -> ShallowFeatureVector:
 def compute_dvgr(
     examples: Iterable[Mapping[str, Any]], predictions: Iterable[str]
 ) -> float:
+    """Compute Deep Value Generalization Rate.
+
+    Args:
+        examples: Input examples with deep value and shallow feature keys.
+        predictions: Model predictions corresponding to the examples.
+
+    Returns:
+        DVGR score in [0.0, 1.0]. Returns 0.0 if no example pairs are provided.
+
+    Raises:
+        ValueError: If examples and predictions have different lengths.
+    """
     examples_list = list(examples)
     predictions_list = list(predictions)
     pairs = list(zip(examples_list, predictions_list, strict=True))

@@ -35,20 +35,28 @@ class DummyPolicy:
         temperature: float = 1.0,
         seed: Optional[int] = None,
     ) -> DummyGeneration:
-        _ = group_size
+        completions = []
+        actions = []
+        logprobs = []
+        metadata = []
+        for prompt in prompts:
+            for _ in range(group_size):
+                completions.append("ok")
+                actions.append([0])
+                logprobs.append(0.0)
+                metadata.append(
+                    {
+                        "prompt": prompt,
+                        "completion": "ok",
+                        "temperature": temperature,
+                        "seed": seed,
+                    }
+                )
         return DummyGeneration(
-            completions=["ok" for _ in prompts],
-            actions=[[0] for _ in prompts],
-            logprobs=[0.0 for _ in prompts],
-            metadata=[
-                {
-                    "prompt": prompt,
-                    "completion": "ok",
-                    "temperature": temperature,
-                    "seed": seed,
-                }
-                for prompt in prompts
-            ],
+            completions=completions,
+            actions=actions,
+            logprobs=logprobs,
+            metadata=metadata,
         )
 
 

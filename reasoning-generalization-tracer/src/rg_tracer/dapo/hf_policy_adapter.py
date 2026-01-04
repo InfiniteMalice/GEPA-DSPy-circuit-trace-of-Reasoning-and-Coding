@@ -152,7 +152,11 @@ def _log_softmax(logits: Any) -> Any:
     data = _to_list(logits)
     if not data:
         return torch.tensor([])
-    if isinstance(data[0][0], list):
+    if (
+        isinstance(data[0], Sequence)
+        and len(data[0]) > 0
+        and isinstance(data[0][0], list)
+    ):
         return torch.tensor(
             [[_log_softmax_row(step) for step in sequence] for sequence in data]
         )
@@ -222,7 +226,12 @@ def _gather_logprobs(
     log_probs = _log_softmax(logits)
     if isinstance(actions, Sequence) and actions and isinstance(actions[0], int):
         action_ids = list(actions)
-        gathered = [log_probs[idx][action] for idx, action in enumerate(action_ids)]
+        if hasattr(log_probs, "ndim") and log_probs.ndim == 3:
+            gathered = [
+                log_probs[idx, -1, action] for idx, action in enumerate(action_ids)
+            ]
+        else:
+            gathered = [log_probs[idx][action] for idx, action in enumerate(action_ids)]
         return torch.tensor(gathered)
     gathered_sequences = []
     for idx, token_ids in enumerate(actions):

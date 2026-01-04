@@ -18,7 +18,12 @@ class FeedbackMappingConfig:
 
 
 def _coerce_float(value: Any) -> float:
-    return float(value)
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(
+            f"Cannot coerce {type(value).__name__} to float: {value!r}"
+        ) from exc
 
 
 def make_gepa_feedback(

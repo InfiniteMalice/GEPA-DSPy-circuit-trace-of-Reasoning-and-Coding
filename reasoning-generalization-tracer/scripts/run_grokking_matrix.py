@@ -187,9 +187,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         help="Optional limit on number of matrix cells",
     )
-    parser.add_argument(
-        "--limit", type=int, help="Optional limit on number of matrix cells"
-    )
     return parser.parse_args(argv)
 
 
