@@ -108,11 +108,15 @@ def compute_match_score(trace: Any, answer: Any, context: Any | None = None) -> 
     endorsement_found = False
 
     if answer_token:
-        derivation_pattern = rf"(?<!\w)(=|->|=>|yields|gives)\s*{re.escape(answer_token)}\b"
+        derivation_pattern = (
+            rf"(?<!\w)(=|->|=>|yields|gives)\s*{re.escape(answer_token)}\b"
+        )
         if re.search(derivation_pattern, text):
             score += _DERIVATION_BONUS
             derivation_found = True
-        if re.search(rf"(?<!\w)(therefore|thus|so).*\b{re.escape(answer_token)}\b", text):
+        if re.search(
+            rf"(?<!\w)(therefore|thus|so).*\b{re.escape(answer_token)}\b", text
+        ):
             score += _ENDORSEMENT_BONUS
             endorsement_found = True
         if re.search(rf"\b{re.escape(answer_token)}\b", text) and not (

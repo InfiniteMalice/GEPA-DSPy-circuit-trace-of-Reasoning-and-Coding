@@ -10,9 +10,7 @@ from typing import Iterable
 PRIOR_PROBABILITY_INVALID = "prior.probability must be a finite value in [0.0, 1.0]"
 LIKELIHOOD_PROBABILITY_INVALID = "Likelihood.{} must be finite and in [0.0, 1.0]"
 POSTERIOR_NON_FINITE = "Posterior became non-finite; check likelihood inputs."
-CONFLICTING_LIKELIHOODS = (
-    "Conflicting likelihoods: some evidence forces posterior=0 and others force posterior=1."
-)
+CONFLICTING_LIKELIHOODS = "Conflicting likelihoods: some evidence forces posterior=0 and others force posterior=1."
 
 
 @dataclass
@@ -38,7 +36,9 @@ class BayesianPosition:
     decision_policy: str
 
 
-def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> BayesianPosition:
+def compute_posterior(
+    prior: Prior, likelihoods: Iterable[Likelihood]
+) -> BayesianPosition:
     if not isfinite(prior.probability) or not 0.0 <= prior.probability <= 1.0:
         raise ValueError(PRIOR_PROBABILITY_INVALID)
     likes = list(likelihoods)
@@ -100,7 +100,9 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
         )
     if not isfinite(posterior):
         raise ValueError(POSTERIOR_NON_FINITE)
-    sensitivity = "Posterior sensitive to dominant likelihood." if dominant else "Stable"
+    sensitivity = (
+        "Posterior sensitive to dominant likelihood." if dominant else "Stable"
+    )
     dominant_desc = dominant[1] if dominant else "None"
     policy = "Gather more evidence"
     if posterior >= 0.75:
