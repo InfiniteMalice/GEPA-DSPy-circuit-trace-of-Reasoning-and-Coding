@@ -6,7 +6,7 @@ import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from gepa_dapo_grn import DAPOConfig, GRNConfig, RewardMixerConfig
 
@@ -20,16 +20,16 @@ from rg_tracer.dapo.logging import JSONLLogger
 
 @dataclass
 class DummyGeneration:
-    completions: list
-    actions: list
-    logprobs: list
-    metadata: list
+    completions: List[str]
+    actions: List[List[int]]
+    logprobs: List[float]
+    metadata: List[Dict[str, Any]]
 
 
 class DummyPolicy:
     def generate_with_logprobs(
         self,
-        prompts: list,
+        prompts: List[str],
         *,
         group_size: int = 1,
         temperature: float = 1.0,

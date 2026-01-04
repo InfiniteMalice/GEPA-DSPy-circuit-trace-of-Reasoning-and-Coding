@@ -55,6 +55,10 @@ class HFPolicyAdapter(Policy):
     def logprobs(
         self, obs: Any, actions: Sequence[Sequence[int]] | Sequence[int]
     ) -> Any:
+        """Return log-probabilities for the provided actions.
+
+        The actions must not exceed the logits sequence length when logits are 3D.
+        """
         logits = self.forward(obs)
         return _gather_logprobs(logits, actions)
 
@@ -225,6 +229,10 @@ def _gather_logprobs(
     logits: Any,
     actions: Sequence[Sequence[int]] | Sequence[int],
 ) -> Any:
+    """Gather log probabilities for actions.
+
+    For 3D logits, each action sequence length must be <= logits sequence length.
+    """
     log_probs = _log_softmax(logits)
     if isinstance(actions, Sequence) and actions and isinstance(actions[0], int):
         action_ids = list(actions)
@@ -237,6 +245,12 @@ def _gather_logprobs(
         return torch.tensor(gathered)
     gathered_sequences = []
     for idx, token_ids in enumerate(actions):
+        seq_len = len(log_probs[idx])
+        if len(token_ids) > seq_len:
+            raise ValueError(
+                "Action sequence length exceeds logits sequence length for batch index "
+                f"{idx}: {len(token_ids)} > {seq_len}."
+            )
         token_scores = []
         for token_index, token_id in enumerate(token_ids):
             token_scores.append(log_probs[idx][token_index][token_id])

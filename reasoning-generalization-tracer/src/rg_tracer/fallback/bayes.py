@@ -10,7 +10,10 @@ from typing import Iterable
 PRIOR_PROBABILITY_INVALID = "prior.probability must be a finite value in [0.0, 1.0]"
 LIKELIHOOD_PROBABILITY_INVALID = "Likelihood.{} must be finite and in [0.0, 1.0]"
 POSTERIOR_NON_FINITE = "Posterior became non-finite; check likelihood inputs."
-CONFLICTING_LIKELIHOODS = "Conflicting likelihoods: some evidence forces posterior=0 and others force posterior=1."
+CONFLICTING_LIKELIHOODS = (
+    "Conflicting likelihoods: some evidence forces posterior=0 and others force "
+    "posterior=1."
+)
 
 
 @dataclass
