@@ -3,20 +3,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping, Sequence
 
 from gepa_dapo_grn.gepa_interfaces import GEPAFeedback
-
-
-@dataclass(frozen=True)
-class GenerationMetadata:
-    prompt_id: str
-    completion_id: str
-    length: int
-    seed: Optional[int]
-    temperature: float
 
 
 def _feedback_to_dict(feedback: GEPAFeedback) -> Dict[str, Any]:

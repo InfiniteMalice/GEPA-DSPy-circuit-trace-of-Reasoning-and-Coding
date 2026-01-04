@@ -65,11 +65,8 @@ class HFPolicyAdapter(Policy):
     ) -> GenerationOutput:
         if seed is not None and hasattr(torch, "manual_seed"):
             torch.manual_seed(seed)
-        inputs = self.tokenizer(
-            list(prompts),
-            return_tensors="pt",
-            padding=True,
-        )
+        prompt_list = list(prompts)
+        inputs = self.tokenizer(prompt_list, return_tensors="pt", padding=True)
         if self.device:
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
         generation = self.model.generate(
@@ -82,21 +79,27 @@ class HFPolicyAdapter(Policy):
             return_dict_in_generate=True,
         )
         sequences = generation.sequences
-        decoded = self.tokenizer.batch_decode(sequences, skip_special_tokens=True)
         completions = []
         actions = []
         logprobs = []
         metadata = []
+        prompt_lengths = _prompt_lengths(
+            inputs.get("input_ids"),
+            prompt_list,
+            self.tokenizer.pad_token_id,
+        )
         if hasattr(generation, "scores") and generation.scores and hasattr(torch, "stack"):
             score_tensor = torch.stack(generation.scores, dim=1)
             token_logprobs = _log_softmax(score_tensor)
         else:
             token_logprobs = None
-        for index, text in enumerate(decoded):
+        for index in range(len(sequences)):
             prompt_index = index // group_size
-            prompt = prompts[prompt_index]
-            completion = text[len(prompt) :].lstrip()
-            completion_tokens = self.tokenizer.encode(completion, add_special_tokens=False)
+            prompt = prompt_list[prompt_index]
+            prompt_len = prompt_lengths[prompt_index]
+            token_ids = sequences[index][prompt_len:]
+            completion = self.tokenizer.decode(token_ids, skip_special_tokens=True)
+            completion_tokens = _to_token_ids(token_ids)
             completions.append(completion)
             actions.append(completion_tokens)
             if token_logprobs is not None and completion_tokens:
@@ -110,6 +113,7 @@ class HFPolicyAdapter(Policy):
                     "completion": completion,
                     "temperature": temperature,
                     "seed": seed,
+                    "logprobs_available": token_logprobs is not None,
                 }
             )
         return GenerationOutput(
@@ -126,7 +130,11 @@ class HFPolicyAdapter(Policy):
             obs = [obs]
         if isinstance(obs, Iterable):
             return self.tokenizer(list(obs), return_tensors="pt", padding=True)
-        raise TypeError("Unsupported observation format for policy inputs")
+        raise UnsupportedObservationError("Unsupported observation format")
+
+
+class UnsupportedObservationError(TypeError):
+    """Raised when observation format is not supported."""
 
 
 def _log_softmax(logits: Any) -> Any:
@@ -155,6 +163,37 @@ def _to_list(tensor: Any) -> List[List[float]]:
     if isinstance(tensor, SimpleTensor):
         return tensor.tolist()
     return list(tensor)
+
+
+def _to_token_ids(token_ids: Any) -> List[int]:
+    raw = _to_list(token_ids)
+    if not raw:
+        return []
+    if isinstance(raw[0], list):
+        raw = raw[0]
+    return [int(token_id) for token_id in raw]
+
+
+def _prompt_lengths(
+    input_ids: Any,
+    prompts: Sequence[str],
+    pad_token_id: Optional[int],
+) -> List[int]:
+    if input_ids is None:
+        return [len(prompt) for prompt in prompts]
+    rows = _to_list(input_ids)
+    lengths = []
+    for row in rows:
+        if pad_token_id is None:
+            lengths.append(len(row))
+            continue
+        length = len(row)
+        for idx, value in enumerate(row):
+            if int(value) == int(pad_token_id):
+                length = idx
+                break
+        lengths.append(length)
+    return lengths
 
 
 def _gather_logprobs(

@@ -28,7 +28,7 @@ from rg_tracer.modules.torch_stub import torch
 
 class NullScorer:
     def score(self, prompts: Iterable[str], completions: Iterable[str]) -> List[Dict[str, float]]:
-        return [{} for _ in zip(prompts, completions)]
+        return [{} for _ in zip(prompts, completions, strict=True)]
 
 
 def _load_jsonl(path: Path) -> List[Mapping[str, Any]]:
@@ -79,12 +79,30 @@ def _load_mapping_config(path: Path) -> FeedbackMappingConfig:
     )
 
 
-def _build_policy(model_name: str, device: str) -> HFPolicyAdapter:
+def _resolve_dtype(name: str | None) -> Any:
+    if not name:
+        return None
+    if not hasattr(torch, name):
+        raise ValueError(f"Unsupported torch dtype: {name}")
+    return getattr(torch, name)
+
+
+def _build_policy(
+    model_name: str,
+    device: str,
+    dtype: Any,
+    device_map: str | None,
+) -> HFPolicyAdapter:
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    model.to(device)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        torch_dtype=dtype,
+        device_map=device_map,
+    )
+    if device_map is None:
+        model.to(device)
     return HFPolicyAdapter(model=model, tokenizer=tokenizer, device=device)
 
 
@@ -105,10 +123,14 @@ def main() -> None:
     parser.add_argument("--enable-grn-value", action="store_true")
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--max-steps", type=int, default=None, help="Maximum training steps")
+    parser.add_argument("--torch-dtype", help="Torch dtype (e.g., float16, bfloat16)")
+    parser.add_argument("--device-map", help="Transformers device map (e.g., auto)")
     args = parser.parse_args()
 
     device = "cuda" if hasattr(torch, "cuda") and torch.cuda.is_available() else "cpu"
-    policy = _build_policy(args.model, device)
+    dtype = _resolve_dtype(args.torch_dtype)
+    policy = _build_policy(args.model, device, dtype, args.device_map)
 
     reward_weights = _load_reward_mixer(Path(args.reward_mixer))
     reward_mixer = RewardMixerConfig(weights=reward_weights)
@@ -146,6 +168,7 @@ def main() -> None:
             group_size=args.group_size,
             eval_every=args.eval_every,
             seed=args.seed,
+            max_steps=args.max_steps,
         ),
         logger=logger,
         curriculum=CurriculumTracker(),

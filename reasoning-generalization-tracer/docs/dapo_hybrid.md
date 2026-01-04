@@ -33,10 +33,8 @@ Your pipeline should satisfy the following contract:
 2. **Adapter** maps `local_metrics` into `GEPAFeedback` via `FeedbackMappingConfig`.
 3. **DAPOTrainer** consumes `GEPAFeedback` and returns RL metrics for logging.
 
-:::info
-The DAPO trainer expects `GEPAFeedback` objects, so any custom scorer only needs to
-return a dict of floats plus the relevant IDs for task/prompt tracking.
-:::
+> **Note:** The DAPO trainer expects `GEPAFeedback` objects, so any custom scorer only needs
+> to return a dict of floats plus the relevant IDs for task/prompt tracking.
 
 ## Custom scorers
 

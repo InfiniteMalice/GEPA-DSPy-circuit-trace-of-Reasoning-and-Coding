@@ -130,7 +130,12 @@ class DAPOHybridTrainer:
 
         generation_metadata = []
         repeated_prompts = _repeat(prompts, self.cfg.group_size)
-        for prompt, completion, meta in zip(repeated_prompts, completions, metadata):
+        for prompt, completion, meta in zip(
+            repeated_prompts,
+            completions,
+            metadata,
+            strict=True,
+        ):
             prompt_hash = _hash_text(prompt)
             completion_hash = _hash_text(completion)
             generation_metadata.append(
@@ -159,6 +164,7 @@ class DAPOHybridTrainer:
             local_metrics_list,
             task_ids,
             prompt_ids,
+            strict=True,
         ):
             meta = {}
             if task_id is not None:

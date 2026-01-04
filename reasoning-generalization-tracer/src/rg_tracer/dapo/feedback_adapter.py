@@ -18,8 +18,6 @@ class FeedbackMappingConfig:
 
 
 def _coerce_float(value: Any) -> float:
-    if isinstance(value, bool):
-        return float(value)
     return float(value)
 
 
