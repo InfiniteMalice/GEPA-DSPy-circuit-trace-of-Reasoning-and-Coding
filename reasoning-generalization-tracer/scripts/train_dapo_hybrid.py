@@ -73,7 +73,10 @@ def _load_reward_mixer(path: Path) -> Dict[str, float]:
 
 
 def _load_mapping_config(path: Path) -> FeedbackMappingConfig:
-    data = json.loads(path.read_text())
+    if path.suffix in {".yaml", ".yml"}:
+        data = yaml.safe_load(path.read_text()) or {}
+    else:
+        data = json.loads(path.read_text())
     return FeedbackMappingConfig(
         reward_keys=data.get("reward_keys", {}),
         tag_keys=data.get("tag_keys", {}),

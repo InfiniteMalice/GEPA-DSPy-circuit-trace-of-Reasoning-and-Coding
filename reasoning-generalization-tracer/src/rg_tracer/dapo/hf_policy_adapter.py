@@ -164,6 +164,8 @@ def _log_softmax(logits: Any) -> Any:
 
 
 def _log_softmax_row(row: Sequence[float]) -> List[float]:
+    if not row:
+        return []
     max_val = max(row)
     exp_vals = [math.exp(value - max_val) for value in row]
     denom = sum(exp_vals)

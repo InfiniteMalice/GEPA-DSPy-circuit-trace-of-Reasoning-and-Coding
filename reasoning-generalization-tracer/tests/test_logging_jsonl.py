@@ -33,6 +33,7 @@ def test_logging_jsonl_schema() -> None:
         logger.write(record)
 
         loaded = json.loads(path.read_text().splitlines()[0])
+        assert loaded["step"] == 1
         assert "rl" in loaded
         assert loaded["rl"]["loss"] == 0.1
         assert loaded["rl"]["policy_loss"] == 0.05

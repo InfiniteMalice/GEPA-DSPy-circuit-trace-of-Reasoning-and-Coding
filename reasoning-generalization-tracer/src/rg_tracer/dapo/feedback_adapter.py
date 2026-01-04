@@ -43,9 +43,10 @@ def make_gepa_feedback(
             tags[gepa_key] = _coerce_float(local_metrics[local_key])
 
     meta_out = dict(meta)
-    if cfg.task_id_field in meta_out and "task_id" not in meta_out:
+    # Normalize custom field names to canonical keys if different.
+    if cfg.task_id_field != "task_id" and cfg.task_id_field in meta_out:
         meta_out["task_id"] = str(meta_out[cfg.task_id_field])
-    if cfg.prompt_id_field in meta_out and "prompt_id" not in meta_out:
+    if cfg.prompt_id_field != "prompt_id" and cfg.prompt_id_field in meta_out:
         meta_out["prompt_id"] = str(meta_out[cfg.prompt_id_field])
     meta_out.setdefault("prompt", prompt)
     meta_out.setdefault("completion", completion)

@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 
 def _install_gepa_stubs() -> None:
+    """Install local GEPA stubs (kept in sync with tests/gepa_test_stubs.py)."""
     gepa_module = types.ModuleType("gepa_dapo_grn")
     interfaces_module = types.ModuleType("gepa_dapo_grn.gepa_interfaces")
     policy_module = types.ModuleType("gepa_dapo_grn.policy_interfaces")
