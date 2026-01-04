@@ -36,7 +36,11 @@ def apply_grn(x: object, eps: float = 1e-6) -> "torch.Tensor":
     """
 
     values = _to_list(x)
-    if values and isinstance(values[0], Iterable) and not isinstance(values[0], (str, bytes)):
+    if (
+        values
+        and isinstance(values[0], Iterable)
+        and not isinstance(values[0], (str, bytes))
+    ):
         normalised = [
             _normalise_vector([float(v) for v in row], eps)
             for row in values  # type: ignore[arg-type]
