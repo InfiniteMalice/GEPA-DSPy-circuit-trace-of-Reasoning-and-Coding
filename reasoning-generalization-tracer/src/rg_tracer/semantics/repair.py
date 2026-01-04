@@ -37,7 +37,9 @@ def _normalise_chain(chain: object) -> List[str]:
     if isinstance(chain, str):
         steps = [value for step in chain.split("\n") if (value := step.strip())]
     elif isinstance(chain, Mapping) and "steps" in chain:
-        steps = [value for step in chain.get("steps", []) if (value := str(step).strip())]
+        steps = [
+            value for step in chain.get("steps", []) if (value := str(step).strip())
+        ]
     elif isinstance(chain, Iterable):
         steps = [value for step in chain if (value := str(step).strip())]
     else:
@@ -152,12 +154,16 @@ def repair_once(
             if candidate:
                 pattern = build_token_boundary_pattern(candidate)
                 if pattern:
-                    new_step, replaced = pattern.subn(replacement_var, new_step, count=1)
+                    new_step, replaced = pattern.subn(
+                        replacement_var, new_step, count=1
+                    )
                     if replaced == 0:
                         ignorecase = _get_ignorecase_flag(pattern)
                         flags = pattern.flags | ignorecase
                         pattern_ci = _compile_case_insensitive(pattern, flags=flags)
-                        new_step, _ = pattern_ci.subn(replacement_var, new_step, count=1)
+                        new_step, _ = pattern_ci.subn(
+                            replacement_var, new_step, count=1
+                        )
                 else:
                     new_step = new_step.replace(candidate, replacement_var, 1)
             else:
@@ -220,7 +226,9 @@ def repair_once(
                 steps[idx] = _append_with_punctuation(step, clarification)
             break
         if fix_tag == SemanticTag.IS_OUGHT_SLIP.value:
-            normative_suffix = "This recommendation is normative and contingent on shared values."
+            normative_suffix = (
+                "This recommendation is normative and contingent on shared values."
+            )
             if normative_suffix.lower() not in step.lower():
                 steps[idx] = _append_with_punctuation(step, normative_suffix)
             break

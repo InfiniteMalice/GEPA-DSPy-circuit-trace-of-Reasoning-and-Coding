@@ -288,6 +288,12 @@ Each self-play run emits:
         sparsity_drop: 0.005
   ```
 
+## DAPO Hybrid Training
+
+Hybrid training with `gepa-dapo-grn` is available via the adapters in
+`src/rg_tracer/dapo/`. See `docs/dapo_hybrid.md` for setup, custom scorer
+integration, reward mixer configuration, and JSONL logging details.
+
 ## Release Notes
 
 * **Humanities quote metrics:** `quote_presence` is now the canonical field for
