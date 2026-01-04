@@ -87,13 +87,6 @@ def _install_gepa_stubs() -> None:
     sys.modules["gepa_dapo_grn.policy_interfaces"] = policy_module
 
 
-_install_gepa_stubs()
-
-from rg_tracer.dapo import DAPOHybridTrainer, FeedbackMappingConfig, HybridTrainingConfig
-from rg_tracer.dapo.logging import JSONLLogger
-from gepa_dapo_grn import DAPOConfig, GRNConfig, RewardMixerConfig
-
-
 @dataclass
 class DummyGeneration:
     completions: List[str]
@@ -138,14 +131,26 @@ class DummyPolicy:
 
 
 class DummyScorer:
-    def score(self, prompts: Iterable[str], completions: Iterable[str]) -> List[Dict[str, float]]:
+    def score(
+        self, prompts: Iterable[str], completions: Iterable[str]
+    ) -> List[Dict[str, float]]:
         scores = []
-        for prompt, completion in zip(prompts, completions, strict=True):
+        for _, completion in zip(prompts, completions, strict=True):
             scores.append({"correctness": 1.0, "length": float(len(completion))})
         return scores
 
 
 def main() -> None:
+    _install_gepa_stubs()
+
+    from gepa_dapo_grn import DAPOConfig, GRNConfig, RewardMixerConfig
+    from rg_tracer.dapo import (
+        DAPOHybridTrainer,
+        FeedbackMappingConfig,
+        HybridTrainingConfig,
+    )
+    from rg_tracer.dapo.logging import JSONLLogger
+
     dataloader = [
         {"prompts": ["Add 1 + 1"], "task_ids": ["toy"], "prompt_ids": ["p1"]},
         {"prompts": ["Add 2 + 2"], "task_ids": ["toy"], "prompt_ids": ["p2"]},

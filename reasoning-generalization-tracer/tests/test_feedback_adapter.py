@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-from tests.gepa_test_stubs import install_gepa_stubs
-
-install_gepa_stubs()
-
 from rg_tracer.dapo.feedback_adapter import FeedbackMappingConfig, make_gepa_feedback
 
 

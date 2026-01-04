@@ -27,7 +27,9 @@ from rg_tracer.modules.torch_stub import torch
 
 
 class NullScorer:
-    def score(self, prompts: Iterable[str], completions: Iterable[str]) -> List[Dict[str, float]]:
+    def score(
+        self, prompts: Iterable[str], completions: Iterable[str]
+    ) -> List[Dict[str, float]]:
         return [{} for _ in zip(prompts, completions, strict=True)]
 
 
@@ -49,7 +51,9 @@ def _extract_prompt(record: Mapping[str, Any]) -> str:
     return json.dumps(record)
 
 
-def _batch_records(records: List[Mapping[str, Any]], batch_size: int) -> Iterable[Dict[str, Any]]:
+def _batch_records(
+    records: List[Mapping[str, Any]], batch_size: int
+) -> Iterable[Dict[str, Any]]:
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         prompts = [_extract_prompt(record) for record in batch]
@@ -107,7 +111,9 @@ def _build_policy(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train a DAPO hybrid policy on RG tasks.")
+    parser = argparse.ArgumentParser(
+        description="Train a DAPO hybrid policy on RG tasks."
+    )
     parser.add_argument("--model", required=True, help="HuggingFace model name or path")
     parser.add_argument("--dataset", required=True, help="Path to a JSONL dataset")
     parser.add_argument("--output-dir", required=True, help="Output directory for logs")
@@ -117,13 +123,17 @@ def main() -> None:
     parser.add_argument("--clip-ratio", type=float, default=0.2)
     parser.add_argument("--kl-target", type=float, default=0.1)
     parser.add_argument("--kl-coef", type=float, default=0.1)
-    parser.add_argument("--reward-mixer", required=True, help="YAML/JSON reward mixer file")
+    parser.add_argument(
+        "--reward-mixer", required=True, help="YAML/JSON reward mixer file"
+    )
     parser.add_argument("--mapping-config", help="JSON feedback mapping config")
     parser.add_argument("--enable-grn-policy", action="store_true")
     parser.add_argument("--enable-grn-value", action="store_true")
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--max-steps", type=int, default=None, help="Maximum training steps")
+    parser.add_argument(
+        "--max-steps", type=int, default=None, help="Maximum training steps"
+    )
     parser.add_argument("--torch-dtype", help="Torch dtype (e.g., float16, bfloat16)")
     parser.add_argument("--device-map", help="Transformers device map (e.g., auto)")
     args = parser.parse_args()

@@ -5,15 +5,10 @@ from __future__ import annotations
 import json
 import tempfile
 from pathlib import Path
-from typing import Dict
 
-from tests.gepa_test_stubs import install_gepa_stubs
-
-
-install_gepa_stubs()
+from gepa_dapo_grn.gepa_interfaces import GEPAFeedback
 
 from rg_tracer.dapo.logging import JSONLLogger, build_log_record
-from gepa_dapo_grn.gepa_interfaces import GEPAFeedback
 
 
 def test_logging_jsonl_schema() -> None:

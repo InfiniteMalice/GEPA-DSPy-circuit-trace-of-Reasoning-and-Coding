@@ -41,7 +41,9 @@ class HFPolicyAdapter(Policy):
                 param.requires_grad = False
 
     def clone(self) -> Policy:
-        return HFPolicyAdapter(self.model, self.tokenizer, device=self.device, frozen=True)
+        return HFPolicyAdapter(
+            self.model, self.tokenizer, device=self.device, frozen=True
+        )
 
     def forward(self, obs: Any) -> Any:
         inputs = self._prepare_inputs(obs)
@@ -50,7 +52,9 @@ class HFPolicyAdapter(Policy):
             return outputs.logits
         return outputs
 
-    def logprobs(self, obs: Any, actions: Sequence[Sequence[int]] | Sequence[int]) -> Any:
+    def logprobs(
+        self, obs: Any, actions: Sequence[Sequence[int]] | Sequence[int]
+    ) -> Any:
         logits = self.forward(obs)
         return _gather_logprobs(logits, actions)
 
@@ -88,7 +92,11 @@ class HFPolicyAdapter(Policy):
             prompt_list,
             self.tokenizer.pad_token_id,
         )
-        if hasattr(generation, "scores") and generation.scores and hasattr(torch, "stack"):
+        if (
+            hasattr(generation, "scores")
+            and generation.scores
+            and hasattr(torch, "stack")
+        ):
             score_tensor = torch.stack(generation.scores, dim=1)
             token_logprobs = _log_softmax(score_tensor)
         else:
@@ -104,7 +112,8 @@ class HFPolicyAdapter(Policy):
             actions.append(completion_tokens)
             if token_logprobs is not None and completion_tokens:
                 token_scores = token_logprobs[index, -len(completion_tokens) :]
-                logprobs.append(float(token_scores.sum().item()))
+                sequence_logprob = _sum_token_logprobs(token_scores, completion_tokens)
+                logprobs.append(sequence_logprob)
             else:
                 logprobs.append(0.0)
             metadata.append(
@@ -172,6 +181,16 @@ def _to_token_ids(token_ids: Any) -> List[int]:
     if isinstance(raw[0], list):
         raw = raw[0]
     return [int(token_id) for token_id in raw]
+
+
+def _sum_token_logprobs(token_scores: Any, token_ids: Sequence[int]) -> float:
+    gathered = []
+    for idx, token_id in enumerate(token_ids):
+        gathered.append(token_scores[idx][token_id])
+    summed = sum(gathered)
+    if hasattr(summed, "item"):
+        return float(summed.item())
+    return float(summed)
 
 
 def _prompt_lengths(

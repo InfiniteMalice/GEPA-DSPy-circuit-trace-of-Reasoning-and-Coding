@@ -6,15 +6,16 @@ import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Iterable, Optional
 
-from tests.gepa_test_stubs import install_gepa_stubs
-
-install_gepa_stubs()
-
-from rg_tracer.dapo import DAPOHybridTrainer, FeedbackMappingConfig, HybridTrainingConfig
-from rg_tracer.dapo.logging import JSONLLogger
 from gepa_dapo_grn import DAPOConfig, GRNConfig, RewardMixerConfig
+
+from rg_tracer.dapo import (
+    DAPOHybridTrainer,
+    FeedbackMappingConfig,
+    HybridTrainingConfig,
+)
+from rg_tracer.dapo.logging import JSONLLogger
 
 
 @dataclass
@@ -34,6 +35,7 @@ class DummyPolicy:
         temperature: float = 1.0,
         seed: Optional[int] = None,
     ) -> DummyGeneration:
+        _ = group_size
         return DummyGeneration(
             completions=["ok" for _ in prompts],
             actions=[[0] for _ in prompts],

@@ -53,7 +53,11 @@ def install_gepa_stubs() -> None:
 
     class SafetyController:
         def __init__(self) -> None:
-            self.latest = {}
+            self.latest = {
+                "ema_deception": 0.0,
+                "ema_harm": 0.0,
+                "ema_calibration_err": 0.0,
+            }
 
     class DAPOTrainer:
         def __init__(self, **kwargs: object) -> None:

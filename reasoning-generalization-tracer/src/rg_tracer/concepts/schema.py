@@ -40,11 +40,15 @@ class ConceptSpec:
             source_entries: List[object] = []
         elif isinstance(raw_entries, Mapping):
             source_entries = [raw_entries]
-        elif isinstance(raw_entries, Iterable) and not isinstance(raw_entries, (str, bytes)):
+        elif isinstance(raw_entries, Iterable) and not isinstance(
+            raw_entries, (str, bytes)
+        ):
             source_entries = list(raw_entries)
         else:
             source_entries = []
-        catalog = [dict(entry) for entry in source_entries if isinstance(entry, Mapping)]
+        catalog = [
+            dict(entry) for entry in source_entries if isinstance(entry, Mapping)
+        ]
         if len(catalog) < len(source_entries):
             dropped = len(source_entries) - len(catalog)
             warnings.warn(
@@ -75,7 +79,9 @@ class ConceptSpec:
         return {
             "name": self.name,
             "definition": self.definition,
-            "tests": [{"input": test.input, "expected": test.expected} for test in self.tests],
+            "tests": [
+                {"input": test.input, "expected": test.expected} for test in self.tests
+            ],
             "expected_substructures": list(self.expected_substructures),
             "feature_catalog": [dict(entry) for entry in self.feature_catalog],
         }
