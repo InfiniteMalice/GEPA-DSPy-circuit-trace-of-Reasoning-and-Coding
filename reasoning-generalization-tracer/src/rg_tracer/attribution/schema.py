@@ -161,7 +161,9 @@ def merge_graphs(graphs: Iterable[Mapping[str, Any]]) -> AttributionGraph:
 
     graphs_list = list(graphs)
     if not graphs_list:
-        return AttributionGraph(model_ref="unknown", task_id="unknown", nodes=[], edges=[])
+        return AttributionGraph(
+            model_ref="unknown", task_id="unknown", nodes=[], edges=[]
+        )
     normalised = [normalise_graph(graph) for graph in graphs_list]
     base = normalised[0]
     node_attrs: MutableMapping[str, List[float]] = {}
