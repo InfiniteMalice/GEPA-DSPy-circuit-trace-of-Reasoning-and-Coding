@@ -103,7 +103,10 @@ class DAPOHybridTrainer:
                     rl_metrics=logs,
                     feedbacks=feedbacks,
                     generation_metadata=gen_meta,
-                    curriculum={"task_id": task_ids, "sample_weight": expanded_weights},
+                    curriculum={
+                        "task_id": task_repeated,
+                        "sample_weight": expanded_weights,
+                    },
                     safety=getattr(self.safety, "latest", None) or {},
                 )
                 self.logger.write(record)

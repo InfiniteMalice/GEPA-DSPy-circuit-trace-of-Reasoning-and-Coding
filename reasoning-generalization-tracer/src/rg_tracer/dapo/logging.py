@@ -10,6 +10,7 @@ from gepa_dapo_grn.gepa_interfaces import GEPAFeedback
 
 
 def _feedback_to_dict(feedback: GEPAFeedback) -> Dict[str, Any]:
+    """Convert a GEPAFeedback instance to a serializable dictionary."""
     return {
         "rewards": dict(feedback.rewards),
         "tags": dict(feedback.tags),
@@ -27,6 +28,7 @@ def build_log_record(
     curriculum: Optional[Mapping[str, Any]] = None,
     safety: Optional[Mapping[str, Any]] = None,
 ) -> Dict[str, Any]:
+    """Build a structured log record for DAPO hybrid training."""
     record: Dict[str, Any] = {
         "step": step,
         "rl": dict(rl_metrics),
@@ -39,6 +41,8 @@ def build_log_record(
 
 
 class JSONLLogger:
+    """Append-only JSONL logger for DAPO hybrid training metrics."""
+
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
