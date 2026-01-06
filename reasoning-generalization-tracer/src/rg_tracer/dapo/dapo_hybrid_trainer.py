@@ -19,6 +19,8 @@ from gepa_dapo_grn.gepa_interfaces import GEPAFeedback
 from .feedback_adapter import FeedbackMappingConfig, make_gepa_feedback
 from .logging import JSONLLogger, build_log_record
 
+_POLICY_METHOD_ERROR = "Policy must implement generate_with_logprobs"
+
 
 @dataclass(frozen=True)
 class HybridTrainingConfig:
@@ -133,7 +135,7 @@ class DAPOHybridTrainer:
             old_logprobs = list(output.logprobs)
             metadata = list(output.metadata)
         else:
-            raise ValueError("Policy must implement generate_with_logprobs")
+            raise ValueError(_POLICY_METHOD_ERROR)
 
         generation_metadata = []
         repeated_prompts = _repeat(prompts, self.cfg.group_size)

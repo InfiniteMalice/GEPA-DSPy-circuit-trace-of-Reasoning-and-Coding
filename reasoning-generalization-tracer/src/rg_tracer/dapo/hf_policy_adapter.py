@@ -11,6 +11,14 @@ from gepa_dapo_grn.policy_interfaces import Policy
 
 from ..modules.torch_stub import SimpleTensor, torch
 
+_NDIM_ERROR_MSG = (
+    "Expected log_probs with ndim==3 for batched action sequences; got ndim={ndim}."
+)
+_SEQ_LEN_ERROR_MSG = (
+    "Action sequence length exceeds logits sequence length for batch index "
+    "{idx}: {action_len} > {seq_len}. log_probs.ndim={ndim}."
+)
+
 
 @dataclass
 class GenerationOutput:
@@ -270,17 +278,19 @@ def _gather_logprobs(
         return torch.tensor(gathered)
     if hasattr(log_probs, "ndim") and log_probs.ndim != 3:
         raise ValueError(
-            "Expected log_probs with ndim==3 for batched action sequences; "
-            f"got ndim={getattr(log_probs, 'ndim', 'unknown')}."
+            _NDIM_ERROR_MSG.format(ndim=getattr(log_probs, "ndim", "unknown"))
         )
     gathered_sequences = []
     for idx, token_ids in enumerate(actions):
         seq_len = len(log_probs[idx])
         if len(token_ids) > seq_len:
             raise ValueError(
-                "Action sequence length exceeds logits sequence length for batch index "
-                f"{idx}: {len(token_ids)} > {seq_len}. "
-                f"log_probs.ndim={getattr(log_probs, 'ndim', 'unknown')}."
+                _SEQ_LEN_ERROR_MSG.format(
+                    idx=idx,
+                    action_len=len(token_ids),
+                    seq_len=seq_len,
+                    ndim=getattr(log_probs, "ndim", "unknown"),
+                )
             )
         token_scores = []
         for token_index, token_id in enumerate(token_ids):
