@@ -8,11 +8,33 @@ from pathlib import Path
 
 import pytest
 
+from tests.gepa_test_stubs import install_gepa_stubs
+
 repo_root = Path(__file__).resolve().parents[1]
 src_dir = repo_root / "src"
 src_path = str(src_dir)
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
+
+install_gepa_stubs()
+
+
+def _install_gepa_stubs() -> None:
+    from rg_tracer.testing.gepa_stubs import install_gepa_stubs
+
+    install_gepa_stubs()
+
+
+_install_gepa_stubs()
+
+
+def _install_gepa_stubs() -> None:
+    from rg_tracer.testing.gepa_stubs import install_gepa_stubs
+
+    install_gepa_stubs()
+
+
+_install_gepa_stubs()
 
 
 def _install_gepa_stubs() -> None:
