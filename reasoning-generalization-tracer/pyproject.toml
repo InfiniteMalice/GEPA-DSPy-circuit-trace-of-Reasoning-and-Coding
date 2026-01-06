@@ -12,6 +12,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "pyyaml>=6.0",
+    "gepa-dapo-grn>=0.1.0,<0.2.0",
     "circuit-tracer @ git+https://github.com/openai/circuit-tracer.git@8b2e5d4",
 ]
 
@@ -42,6 +43,8 @@ packages = [
     "rg_tracer.trm_baseline",
     "rg_tracer.humanities",
     "rg_tracer.fallback",
+    "rg_tracer.dapo",
+    "rg_tracer.testing",
     "circuit_tracer",
 ]
 
