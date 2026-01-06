@@ -34,7 +34,9 @@ def _build_combo_grid() -> Iterable[Mapping[str, str]]:
         yield dict(zip(keys, combo, strict=True))
 
 
-def _extract_phase_graphs(combo_digest: int, combo_name: str) -> list[Mapping[str, object]]:
+def _extract_phase_graphs(
+    combo_digest: int, combo_name: str
+) -> list[Mapping[str, object]]:
     backend = attr_graphs.get_backend("null")
     graphs: list[Mapping[str, object]] = []
     for index, phase in enumerate(PHASES):
@@ -45,7 +47,9 @@ def _extract_phase_graphs(combo_digest: int, combo_name: str) -> list[Mapping[st
             "probe_index": index,
         }
         phase_key = f"{combo_digest}_{combo_name}_{phase}_{index}"
-        phase_seed = int(hashlib.sha256(phase_key.encode("utf8")).hexdigest(), 16) % 10_000
+        phase_seed = (
+            int(hashlib.sha256(phase_key.encode("utf8")).hexdigest(), 16) % 10_000
+        )
         graph = attr_graphs.extract_graph(
             model=None,
             inputs=payload,
@@ -147,7 +151,9 @@ def run_matrix(
     if limit is not None and limit < 0:
         raise ValueError("limit must be non-negative")
     if limit == 0:
-        warnings.warn("--limit=0 produces an empty matrix run", RuntimeWarning, stacklevel=2)
+        warnings.warn(
+            "--limit=0 produces an empty matrix run", RuntimeWarning, stacklevel=2
+        )
     max_cells = min(total_cells, limit) if limit is not None else total_cells
     for idx, combo in enumerate(_build_combo_grid()):
         if idx >= max_cells:
@@ -181,7 +187,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         help="Optional limit on number of matrix cells",
     )
-    parser.add_argument("--limit", type=int, help="Optional limit on number of matrix cells")
     return parser.parse_args(argv)
 
 
