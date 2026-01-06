@@ -54,7 +54,9 @@ def evaluate(
         }
         for axis_name, score in scores.items():
             per_axis[axis_name].append(score)
-        chain_text = f"Sequence {seq} maps to activation {pred:.2f} because {PARITY_REASON}."
+        chain_text = (
+            f"Sequence {seq} maps to activation {pred:.2f} because {PARITY_REASON}."
+        )
         report = verify_chain(
             chain_text,
             {"concept": "parity", "units": "binary", "variables": ["x"]},
