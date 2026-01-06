@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping
 
@@ -24,6 +25,8 @@ from rg_tracer.dapo import (
     JSONLLogger,
 )
 from rg_tracer.modules.torch_stub import torch
+
+LOGGER = logging.getLogger(__name__)
 
 
 class NullScorer:
@@ -48,6 +51,7 @@ def _extract_prompt(record: Mapping[str, Any]) -> str:
     for key in ("prompt", "question", "problem", "text"):
         if key in record:
             return str(record[key])
+    LOGGER.warning("No standard prompt key found in record; using JSON serialization")
     return json.dumps(record)
 
 
@@ -99,14 +103,19 @@ def _build_policy(
     device: str,
     dtype: Any,
     device_map: str | None,
+    trust_remote_code: bool,
 ) -> HFPolicyAdapter:
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        trust_remote_code=trust_remote_code,
+    )
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=dtype,
         device_map=device_map,
+        trust_remote_code=trust_remote_code,
     )
     if device_map is None:
         model.to(device)
@@ -139,11 +148,22 @@ def main() -> None:
     )
     parser.add_argument("--torch-dtype", help="Torch dtype (e.g., float16, bfloat16)")
     parser.add_argument("--device-map", help="Transformers device map (e.g., auto)")
+    parser.add_argument(
+        "--trust-remote-code",
+        action="store_true",
+        help="Allow custom model code when loading from Hugging Face.",
+    )
     args = parser.parse_args()
 
     device = "cuda" if hasattr(torch, "cuda") and torch.cuda.is_available() else "cpu"
     dtype = _resolve_dtype(args.torch_dtype)
-    policy = _build_policy(args.model, device, dtype, args.device_map)
+    policy = _build_policy(
+        args.model,
+        device,
+        dtype,
+        args.device_map,
+        args.trust_remote_code,
+    )
 
     reward_weights = _load_reward_mixer(Path(args.reward_mixer))
     reward_mixer = RewardMixerConfig(weights=reward_weights)

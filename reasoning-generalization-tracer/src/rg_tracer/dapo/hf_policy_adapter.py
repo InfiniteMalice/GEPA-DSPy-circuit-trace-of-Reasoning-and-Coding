@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
@@ -41,12 +42,18 @@ class HFPolicyAdapter(Policy):
                 param.requires_grad = False
 
     def clone(self) -> Policy:
+        cloned_model = copy.deepcopy(self.model)
         return HFPolicyAdapter(
-            self.model, self.tokenizer, device=self.device, frozen=True
+            cloned_model,
+            self.tokenizer,
+            device=self.device,
+            frozen=True,
         )
 
     def forward(self, obs: Any) -> Any:
         inputs = self._prepare_inputs(obs)
+        if self.device:
+            inputs = {key: value.to(self.device) for key, value in inputs.items()}
         outputs = self.model(**inputs)
         if hasattr(outputs, "logits"):
             return outputs.logits
@@ -243,13 +250,19 @@ def _gather_logprobs(
         else:
             gathered = [log_probs[idx][action] for idx, action in enumerate(action_ids)]
         return torch.tensor(gathered)
+    if hasattr(log_probs, "ndim") and log_probs.ndim != 3:
+        raise ValueError(
+            "Expected log_probs with ndim==3 for batched action sequences; "
+            f"got ndim={getattr(log_probs, 'ndim', 'unknown')}."
+        )
     gathered_sequences = []
     for idx, token_ids in enumerate(actions):
         seq_len = len(log_probs[idx])
         if len(token_ids) > seq_len:
             raise ValueError(
                 "Action sequence length exceeds logits sequence length for batch index "
-                f"{idx}: {len(token_ids)} > {seq_len}."
+                f"{idx}: {len(token_ids)} > {seq_len}. "
+                f"log_probs.ndim={getattr(log_probs, 'ndim', 'unknown')}."
             )
         token_scores = []
         for token_index, token_id in enumerate(token_ids):

@@ -48,8 +48,13 @@ class JSONLLogger:
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def write(self, record: Mapping[str, Any]) -> None:
+        def _default(obj: Any) -> Any:
+            if hasattr(obj, "item"):
+                return obj.item()
+            return str(obj)
+
         with self.path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(record, sort_keys=True))
+            handle.write(json.dumps(record, sort_keys=True, default=_default))
             handle.write("\n")
 
     def write_step(
