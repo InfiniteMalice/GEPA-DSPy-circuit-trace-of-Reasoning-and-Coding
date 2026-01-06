@@ -27,6 +27,7 @@ from rg_tracer.dapo import (
 from rg_tracer.modules.torch_stub import torch
 
 LOGGER = logging.getLogger(__name__)
+_UNSUPPORTED_DTYPE_ERROR = "Unsupported torch dtype"
 
 
 class NullScorer:
@@ -98,7 +99,7 @@ def _resolve_dtype(name: str | None) -> Any:
     if not name:
         return None
     if not hasattr(torch, name):
-        raise ValueError(f"Unsupported torch dtype: {name}")
+        raise ValueError(f"{_UNSUPPORTED_DTYPE_ERROR}: {name}")
     return getattr(torch, name)
 
 

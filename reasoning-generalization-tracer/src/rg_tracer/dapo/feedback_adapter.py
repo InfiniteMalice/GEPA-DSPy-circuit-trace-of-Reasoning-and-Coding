@@ -50,6 +50,8 @@ def make_gepa_feedback(
 
     meta_out = dict(meta)
     # Normalize custom field names to canonical keys if different.
+    if cfg.task_id_field == cfg.prompt_id_field and cfg.task_id_field != "task_id":
+        raise ValueError("task_id_field and prompt_id_field must not collide")
     if cfg.task_id_field != "task_id" and cfg.task_id_field in meta_out:
         meta_out["task_id"] = str(meta_out[cfg.task_id_field])
         del meta_out[cfg.task_id_field]

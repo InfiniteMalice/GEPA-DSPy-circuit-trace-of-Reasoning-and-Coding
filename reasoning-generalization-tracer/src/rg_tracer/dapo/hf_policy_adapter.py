@@ -18,6 +18,7 @@ _SEQ_LEN_ERROR_MSG = (
     "Action sequence length exceeds logits sequence length for batch index "
     "{idx}: {action_len} > {seq_len}. log_probs.ndim={ndim}."
 )
+_UNSUPPORTED_OBS_ERROR_MSG = "Unsupported observation format"
 
 
 @dataclass
@@ -158,7 +159,7 @@ class HFPolicyAdapter(Policy):
             obs = [obs]
         if isinstance(obs, Iterable):
             return self.tokenizer(list(obs), return_tensors="pt", padding=True)
-        raise UnsupportedObservationError("Unsupported observation format")
+        raise UnsupportedObservationError(_UNSUPPORTED_OBS_ERROR_MSG)
 
 
 class UnsupportedObservationError(TypeError):
@@ -224,7 +225,7 @@ def _prompt_lengths(
     pad_token_id: Optional[int],
 ) -> List[int]:
     if input_ids is None:
-        return [len(prompt) for prompt in prompts]
+        raise ValueError("input_ids are required to compute prompt lengths")
     rows = _to_list(input_ids)
     lengths = []
     for row in rows:
