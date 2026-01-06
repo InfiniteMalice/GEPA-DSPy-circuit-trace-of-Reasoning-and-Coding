@@ -104,10 +104,16 @@ def test_compute_posterior_accepts_boundary_priors(prob):
 def test_conflicting_likelihoods_raise():
     prior = Prior(hypothesis="claim", probability=0.5)
     likelihoods = [
-        Likelihood(evidence="forces_zero", probability_if_true=0.0, probability_if_false=0.5),
-        Likelihood(evidence="forces_one", probability_if_true=0.5, probability_if_false=0.0),
+        Likelihood(
+            evidence="forces_zero", probability_if_true=0.0, probability_if_false=0.5
+        ),
+        Likelihood(
+            evidence="forces_one", probability_if_true=0.5, probability_if_false=0.0
+        ),
     ]
-    with pytest.raises(ValueError, match=r"forces posterior=0 and others force posterior=1"):
+    with pytest.raises(
+        ValueError, match=r"forces posterior=0 and others force posterior=1"
+    ):
         compute_posterior(prior, likelihoods)
 
 
@@ -123,7 +129,9 @@ def test_conflicting_likelihoods_raise():
 def test_invalid_likelihood_probabilities_raise(prob_true: float, prob_false: float):
     prior = Prior(hypothesis="claim", probability=0.5)
     likelihood = Likelihood(
-        evidence="invalid", probability_if_true=prob_true, probability_if_false=prob_false
+        evidence="invalid",
+        probability_if_true=prob_true,
+        probability_if_false=prob_false,
     )
     with pytest.raises(ValueError, match=r"Likelihood\."):
         compute_posterior(prior, [likelihood])
@@ -131,7 +139,9 @@ def test_invalid_likelihood_probabilities_raise(prob_true: float, prob_false: fl
 
 def test_forced_outcomes_respect_evidence():
     prior = Prior(hypothesis="claim", probability=0.4)
-    likelihood = Likelihood(evidence="certain", probability_if_true=1.0, probability_if_false=0.0)
+    likelihood = Likelihood(
+        evidence="certain", probability_if_true=1.0, probability_if_false=0.0
+    )
     result = compute_posterior(prior, [likelihood])
     assert result.posterior == 1.0
     assert result.decision_policy == "Support with caveats"
