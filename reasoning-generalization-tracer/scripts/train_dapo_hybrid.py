@@ -58,6 +58,10 @@ def _extract_prompt(record: Mapping[str, Any]) -> str:
 def _batch_records(
     records: List[Mapping[str, Any]], batch_size: int
 ) -> Iterable[Dict[str, Any]]:
+    """Yield batches of records.
+
+    Note: returns a generator; it can only be iterated once.
+    """
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         prompts = [_extract_prompt(record) for record in batch]

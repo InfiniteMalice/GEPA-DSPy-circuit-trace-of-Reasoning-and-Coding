@@ -17,12 +17,18 @@ class FeedbackMappingConfig:
     abstain_field: Optional[str] = None
 
 
+_COERCE_ERROR_MSG = "Cannot coerce {type_name} to float: {value!r}"
+
+
 def _coerce_float(value: Any) -> float:
     try:
         return float(value)
     except (TypeError, ValueError) as exc:
         raise TypeError(
-            f"Cannot coerce {type(value).__name__} to float: {value!r}"
+            _COERCE_ERROR_MSG.format(
+                type_name=type(value).__name__,
+                value=value,
+            )
         ) from exc
 
 

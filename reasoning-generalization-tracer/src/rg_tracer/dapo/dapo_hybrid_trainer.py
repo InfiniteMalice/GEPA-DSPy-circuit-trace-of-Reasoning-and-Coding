@@ -64,6 +64,10 @@ class DAPOHybridTrainer:
         self.logger = logger
 
     def run(self, *, eval_fn: Optional[Any] = None) -> None:
+        """Run the training loop.
+
+        Note: if the dataloader is a generator, it can only be iterated once.
+        """
         for step, batch in enumerate(self.dataloader):
             if self.cfg.max_steps is not None and step >= self.cfg.max_steps:
                 break

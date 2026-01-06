@@ -50,7 +50,10 @@ class JSONLLogger:
     def write(self, record: Mapping[str, Any]) -> None:
         def _default(obj: Any) -> Any:
             if hasattr(obj, "item"):
-                return obj.item()
+                try:
+                    return obj.item()
+                except (ValueError, RuntimeError):
+                    pass
             return str(obj)
 
         with self.path.open("a", encoding="utf-8") as handle:

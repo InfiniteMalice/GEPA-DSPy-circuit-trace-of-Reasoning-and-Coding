@@ -37,6 +37,15 @@ def _install_gepa_stubs() -> None:
 _install_gepa_stubs()
 
 
+def _install_gepa_stubs() -> None:
+    from rg_tracer.testing.gepa_stubs import install_gepa_stubs
+
+    install_gepa_stubs()
+
+
+_install_gepa_stubs()
+
+
 @pytest.fixture(autouse=True)
 def reset_aggregator_defaults():
     from rg_tracer.scoring import aggregator

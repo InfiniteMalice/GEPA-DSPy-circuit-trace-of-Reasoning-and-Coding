@@ -223,12 +223,30 @@ def _prompt_lengths(
         if pad_token_id is None:
             lengths.append(len(row))
             continue
-        length = len(row)
-        for idx, value in enumerate(row):
-            if int(value) == int(pad_token_id):
-                length = idx
-                break
-        lengths.append(length)
+        if not row:
+            lengths.append(0)
+            continue
+        pad_id = int(pad_token_id)
+        has_pad = any(int(value) == pad_id for value in row)
+        if not has_pad:
+            lengths.append(len(row))
+            continue
+        left_padded = int(row[0]) == pad_id and int(row[-1]) != pad_id
+        right_padded = int(row[0]) != pad_id and int(row[-1]) == pad_id
+        if left_padded:
+            non_pad_count = sum(1 for value in row if int(value) != pad_id)
+            lengths.append(non_pad_count)
+            continue
+        if right_padded:
+            length = len(row)
+            for idx, value in enumerate(row):
+                if int(value) == pad_id:
+                    length = idx
+                    break
+            lengths.append(length)
+            continue
+        non_pad_count = sum(1 for value in row if int(value) != pad_id)
+        lengths.append(non_pad_count)
     return lengths
 
 

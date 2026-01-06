@@ -97,6 +97,9 @@ python scripts/train_dapo_hybrid.py \
   --seed 42
 ```
 
+> **Note:** If using models that require remote code execution (custom modeling
+> code on Hugging Face), add the `--trust-remote-code` flag.
+
 ## Minimal CPU example
 
 Run a mocked example that finishes in seconds:
