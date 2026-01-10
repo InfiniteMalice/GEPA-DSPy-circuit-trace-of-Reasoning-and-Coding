@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -86,6 +87,16 @@ def _install_gepa_stubs() -> None:
     try:
         import gepa_dapo_grn  # noqa: F401
     except ImportError:
+        from rg_tracer.testing.gepa_stubs import install_gepa_stubs
+
+        install_gepa_stubs()
+
+
+_install_gepa_stubs()
+
+
+def _install_gepa_stubs() -> None:
+    if importlib.util.find_spec("gepa_dapo_grn") is None:
         from rg_tracer.testing.gepa_stubs import install_gepa_stubs
 
         install_gepa_stubs()

@@ -131,7 +131,7 @@ class DAPOHybridTrainer:
     ) -> Tuple[List[str], List[List[int]], List[float], List[Dict[str, Any]]]:
         gen = getattr(self.policy, "generate_with_logprobs", None)
         if not callable(gen):
-            raise ValueError(_POLICY_METHOD_ERROR)
+            raise TypeError(_POLICY_METHOD_ERROR)
 
         output = gen(
             prompts,

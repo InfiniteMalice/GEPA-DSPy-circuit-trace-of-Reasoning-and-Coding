@@ -66,8 +66,10 @@ def _batch_records(
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         prompts = [_extract_prompt(record) for record in batch]
-        task_ids = [record.get("task_id") for record in batch]
-        prompt_ids = [record.get("id") for record in batch]
+        task_ids = [
+            str(record["task_id"]) if "task_id" in record else None for record in batch
+        ]
+        prompt_ids = [str(record["id"]) if "id" in record else None for record in batch]
         yield {
             "prompts": prompts,
             "task_ids": task_ids,
@@ -84,7 +86,7 @@ def _load_reward_mixer(path: Path) -> Dict[str, float]:
     except (json.JSONDecodeError, yaml.YAMLError) as exc:
         raise ValueError(f"Failed to parse reward mixer at {path}") from exc
     if not isinstance(data, dict):
-        raise ValueError(f"Reward mixer config at {path} must be a mapping")
+        raise TypeError(f"Reward mixer config at {path} must be a mapping")
     normalized: Dict[str, float] = {}
     for key, value in data.items():
         normalized[str(key)] = float(value)
@@ -100,10 +102,16 @@ def _load_mapping_config(path: Path) -> FeedbackMappingConfig:
     except (json.JSONDecodeError, yaml.YAMLError) as exc:
         raise ValueError(f"Failed to parse mapping config at {path}") from exc
     if not isinstance(data, dict):
-        raise ValueError(f"Mapping config at {path} must be a mapping")
+        raise TypeError(f"Mapping config at {path} must be a mapping")
+    reward_keys = data.get("reward_keys", {})
+    tag_keys = data.get("tag_keys", {})
+    if not isinstance(reward_keys, dict):
+        raise TypeError(f"mapping_config.reward_keys at {path} must be a mapping")
+    if not isinstance(tag_keys, dict):
+        raise TypeError(f"mapping_config.tag_keys at {path} must be a mapping")
     return FeedbackMappingConfig(
-        reward_keys=data.get("reward_keys", {}),
-        tag_keys=data.get("tag_keys", {}),
+        reward_keys={str(k): str(v) for k, v in reward_keys.items()},
+        tag_keys={str(k): str(v) for k, v in tag_keys.items()},
         task_id_field=data.get("task_id_field", "task_id"),
         prompt_id_field=data.get("prompt_id_field", "prompt_id"),
         abstain_field=data.get("abstain_field"),
@@ -114,7 +122,7 @@ def _resolve_dtype(name: str | None) -> Any:
     if not name:
         return None
     if not hasattr(torch, name):
-        raise ValueError(f"{_UNSUPPORTED_DTYPE_ERROR}: {name}")
+        raise TypeError(f"{_UNSUPPORTED_DTYPE_ERROR}: {name}")
     return getattr(torch, name)
 
 
@@ -141,7 +149,8 @@ def _build_policy(
     )
     if device_map is None:
         model.to(device)
-    return HFPolicyAdapter(model=model, tokenizer=tokenizer, device=device)
+    adapter_device = device if device_map is None else None
+    return HFPolicyAdapter(model=model, tokenizer=tokenizer, device=adapter_device)
 
 
 def main() -> None:

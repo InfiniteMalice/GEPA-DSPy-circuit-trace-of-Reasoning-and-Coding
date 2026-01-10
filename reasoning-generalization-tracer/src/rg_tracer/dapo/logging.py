@@ -52,7 +52,7 @@ class JSONLLogger:
             if hasattr(obj, "item"):
                 try:
                     return obj.item()
-                except (ValueError, RuntimeError):
+                except (ValueError, RuntimeError, TypeError):
                     pass
             return str(obj)
 

@@ -39,7 +39,7 @@ class DummyPolicy:
         actions = []
         logprobs = []
         metadata = []
-        for prompt in prompts:
+        for prompt_index, prompt in enumerate(prompts):
             for _ in range(group_size):
                 completions.append("ok")
                 actions.append([0])
@@ -50,6 +50,7 @@ class DummyPolicy:
                         "completion": "ok",
                         "temperature": temperature,
                         "seed": seed,
+                        "prompt_index": prompt_index,
                     }
                 )
         return DummyGeneration(
@@ -88,6 +89,6 @@ def test_train_step_smoke() -> None:
         )
         trainer.run()
 
-        logged = json.loads(log_path.read_text().splitlines()[0])
+        logged = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
         assert logged["rl"]["loss"] > 0.0
         assert logged["gepa"][0]["rewards"]["reward"] == 1.0
