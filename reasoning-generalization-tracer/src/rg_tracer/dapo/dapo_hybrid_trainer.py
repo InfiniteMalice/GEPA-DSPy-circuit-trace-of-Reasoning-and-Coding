@@ -84,6 +84,12 @@ class DAPOHybridTrainer:
                 continue
             task_ids = list(batch.get("task_ids", [None] * len(prompts)))
             prompt_ids = list(batch.get("prompt_ids", [None] * len(prompts)))
+            if len(task_ids) != len(prompts) or len(prompt_ids) != len(prompts):
+                raise ValueError(
+                    "Batch length mismatch at step "
+                    f"{step}: prompts={len(prompts)}, task_ids={len(task_ids)}, "
+                    f"prompt_ids={len(prompt_ids)}."
+                )
             weights = [self.curriculum.sample_weight(task_id) for task_id in task_ids]
 
             completions, actions, old_logprobs, gen_meta = self._generate(prompts)
@@ -168,6 +174,18 @@ class DAPOHybridTrainer:
                 strict=True,
             )
         ):
+            if not isinstance(prompt, str):
+                raise TypeError(
+                    "prompt_index "
+                    f"{prompt_index} prompt must be str; got {type(prompt).__name__}: "
+                    f"{prompt!r}"
+                )
+            if not isinstance(completion, str):
+                raise TypeError(
+                    "prompt_index "
+                    f"{prompt_index} completion must be str; got {type(completion).__name__}: "
+                    f"{completion!r}"
+                )
             if not isinstance(meta, Mapping):
                 raise TypeError(
                     "Generation metadata must be a mapping at index "
@@ -250,10 +268,21 @@ def _repeat_by_group(
     )
 
 
-def _get_attr(output: Any, name: str) -> Sequence[Any]:
-    if not hasattr(output, name):
-        raise ValueError(f"Generation output missing attribute: {name}")
-    return getattr(output, name)
+_MISSING = object()
+
+
+def _get_attr(output: Any, name: str, default: Any = _MISSING) -> Sequence[Any]:
+    if isinstance(output, Mapping):
+        if name in output:
+            return output[name]
+        if default is not _MISSING:
+            return default
+        raise ValueError(f"Generation output missing key: {name}")
+    if hasattr(output, name):
+        return getattr(output, name)
+    if default is not _MISSING:
+        return default
+    raise ValueError(f"Generation output missing attribute: {name}")
 
 
 def _validate_generation_lengths(

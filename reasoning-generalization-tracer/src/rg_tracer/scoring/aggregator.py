@@ -300,7 +300,7 @@ def load_profiles(path: str | Path | None = None) -> Dict[str, Profile]:
     else:
         path = Path(path)
     global _LAST_CONFIG
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     profiles, config = _parse_profiles(text)
     merged_config = _deep_merge(DEFAULT_CONFIG, config)
     with _LAST_CONFIG_LOCK:
