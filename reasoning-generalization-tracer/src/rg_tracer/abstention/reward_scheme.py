@@ -51,7 +51,9 @@ def _extract_prediction(prediction: Any, text: str | None) -> str | None:
     return tokens[-1].casefold() if tokens else None
 
 
-def _load_config(config: Mapping[str, object] | None = None) -> tuple[float, Mapping[str, float]]:
+def _load_config(
+    config: Mapping[str, object] | None = None,
+) -> tuple[float, Mapping[str, float]]:
     cfg = dict(config) if config is not None else aggregator.get_last_config()
     abst_cfg = cfg.get("abstention", {}) if isinstance(cfg, Mapping) else {}
     if not isinstance(abst_cfg, Mapping):
@@ -239,11 +241,18 @@ def evaluate_abstention_reward(
     except AssertionError:
         raise
     except Exception:
-        LOGGER.exception("Failed to evaluate abstention reward; returning null fallback.")
+        LOGGER.exception(
+            "Failed to evaluate abstention reward; returning null fallback."
+        )
         return RewardOutcome(
             case_id=0,
             reward=0.0,
-            components={"token": 0.0, "confidence": 0.0, "thought": 0.0, "abstain": 0.0},
+            components={
+                "token": 0.0,
+                "confidence": 0.0,
+                "thought": 0.0,
+                "abstain": 0.0,
+            },
             aligned=aligned,
             abstained=abstained,
             high_confidence=False,

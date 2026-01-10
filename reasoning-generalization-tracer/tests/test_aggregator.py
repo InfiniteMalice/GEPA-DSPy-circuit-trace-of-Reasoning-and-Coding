@@ -60,7 +60,7 @@ def test_load_profiles_exposes_config(tmp_path):
         "    backend: null\n"
     )
     path = tmp_path / "profiles.yaml"
-    path.write_text(yaml_text, encoding="utf8")
+    path.write_text(yaml_text, encoding="utf-8")
     profiles = load_profiles(path)
     profile = profiles["demo"]
     assert profile.bonuses["alignment_gain"] == 0.02
@@ -86,7 +86,7 @@ def test_fallback_parser_handles_top_level_scalars(tmp_path, monkeypatch):
         "    weights:\n"
         "      rigor: 1\n"
     )
-    path.write_text(yaml_text, encoding="utf8")
+    path.write_text(yaml_text, encoding="utf-8")
     profiles = load_profiles(path)
     assert "demo" in profiles
     config = get_last_config()
@@ -111,7 +111,7 @@ def test_fallback_parser_handles_nested_config_and_bonuses(tmp_path, monkeypatch
         "    bonuses:\n"
         "      alignment_gain: 0.02\n"
     )
-    path.write_text(yaml_text, encoding="utf8")
+    path.write_text(yaml_text, encoding="utf-8")
     profiles = load_profiles(path)
     assert set(profiles.keys()) == {"demo"}
     config = get_last_config()
@@ -134,7 +134,7 @@ def test_fallback_parser_handles_empty_subsections(tmp_path, monkeypatch):
         "      rigor: 1\n"
         "    bonuses:\n"
     )
-    path.write_text(yaml_text, encoding="utf8")
+    path.write_text(yaml_text, encoding="utf-8")
     profiles = load_profiles(path)
     assert profiles["demo"].bonuses == {}
     config = get_last_config()
@@ -146,7 +146,7 @@ def test_fallback_parser_raises_on_invalid_top_level(tmp_path, monkeypatch):
 
     monkeypatch.setattr(agg, "yaml", None)
     path = tmp_path / "profiles.yaml"
-    path.write_text("notes: unsupported\n", encoding="utf8")
+    path.write_text("notes: unsupported\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Unable to parse line"):
         load_profiles(path)
 
