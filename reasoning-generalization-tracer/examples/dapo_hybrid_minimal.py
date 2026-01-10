@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -9,6 +10,9 @@ from typing import Any, Dict, Iterable, List, Optional
 
 def _install_gepa_stubs() -> None:
     """Install shared GEPA stubs for local examples."""
+
+    if importlib.util.find_spec("gepa_dapo_grn") is not None:
+        return
 
     from rg_tracer.testing.gepa_stubs import install_gepa_stubs
 
