@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from rg_tracer.dapo.feedback_adapter import FeedbackMappingConfig, make_gepa_feedback
 
 
@@ -24,3 +26,20 @@ def test_make_gepa_feedback_mapping() -> None:
     assert feedback.meta["task_id"] == "t1"
     assert feedback.meta["prompt_id"] == "p1"
     assert feedback.abstained is True
+
+
+def test_make_gepa_feedback_collision_guard() -> None:
+    cfg = FeedbackMappingConfig(
+        reward_keys={},
+        tag_keys={},
+        task_id_field="custom_id",
+        prompt_id_field="custom_id",
+    )
+    with pytest.raises(ValueError, match="must not collide"):
+        make_gepa_feedback(
+            prompt="p",
+            completion="c",
+            local_metrics={},
+            meta={"custom_id": "id1"},
+            cfg=cfg,
+        )

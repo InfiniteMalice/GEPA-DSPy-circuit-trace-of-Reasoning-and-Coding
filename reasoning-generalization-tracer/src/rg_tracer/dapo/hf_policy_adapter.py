@@ -19,6 +19,7 @@ _SEQ_LEN_ERROR_MSG = (
     "{idx}: {action_len} > {seq_len}. log_probs.ndim={ndim}."
 )
 _UNSUPPORTED_OBS_ERROR_MSG = "Unsupported observation format"
+_INPUT_IDS_REQUIRED_MSG = "input_ids are required to compute prompt lengths"
 
 
 @dataclass
@@ -109,7 +110,6 @@ class HFPolicyAdapter(Policy):
         metadata = []
         prompt_lengths = _prompt_lengths(
             inputs.get("input_ids"),
-            prompt_list,
             self.tokenizer.pad_token_id,
         )
         if (
@@ -221,11 +221,10 @@ def _sum_token_logprobs(token_scores: Any, token_ids: Sequence[int]) -> float:
 
 def _prompt_lengths(
     input_ids: Any,
-    prompts: Sequence[str],
     pad_token_id: Optional[int],
 ) -> List[int]:
     if input_ids is None:
-        raise ValueError("input_ids are required to compute prompt lengths")
+        raise ValueError(_INPUT_IDS_REQUIRED_MSG)
     rows = _to_list(input_ids)
     lengths = []
     for row in rows:
