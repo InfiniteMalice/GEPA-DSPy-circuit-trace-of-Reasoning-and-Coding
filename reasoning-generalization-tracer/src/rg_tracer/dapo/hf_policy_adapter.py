@@ -162,7 +162,10 @@ class HFPolicyAdapter(Policy):
                 logprobs.append(sequence_logprob)
             else:
                 if token_logprobs is None:
-                    warnings.warn("Logprobs unavailable; using sentinel 0.0")
+                    warnings.warn(
+                        "Logprobs unavailable; using sentinel 0.0",
+                        stacklevel=2,
+                    )
                 logprobs.append(0.0)
             metadata.append(
                 {
@@ -260,36 +263,8 @@ def _prompt_lengths(
         if pad_token_id is None:
             lengths.append(len(row))
             continue
-        if not row:
-            lengths.append(0)
-            continue
         pad_id = int(pad_token_id)
-        has_pad = any(int(value) == pad_id for value in row)
-        if not has_pad:
-            lengths.append(len(row))
-            continue
-        left_padded = int(row[0]) == pad_id and int(row[-1]) != pad_id
-        right_padded = int(row[0]) != pad_id and int(row[-1]) == pad_id
-        if left_padded:
-            first_non_pad = next(
-                (idx for idx, value in enumerate(row) if int(value) != pad_id),
-                len(row),
-            )
-            lengths.append(first_non_pad)
-            continue
-        if right_padded:
-            length = len(row)
-            for idx, value in enumerate(row):
-                if int(value) == pad_id:
-                    length = idx
-                    break
-            lengths.append(length)
-            continue
-        first_non_pad = next(
-            (idx for idx, value in enumerate(row) if int(value) != pad_id),
-            len(row),
-        )
-        lengths.append(first_non_pad)
+        lengths.append(sum(1 for value in row if int(value) != pad_id))
     return lengths
 
 

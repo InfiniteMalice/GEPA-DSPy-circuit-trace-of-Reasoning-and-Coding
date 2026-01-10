@@ -194,9 +194,16 @@ def compute_concept_reward(
         contradictory_ids,
     )
     if use_grn and features:
-        importances = [
-            float(feature.get("importance", 0.0) or 0.0) for feature in features
-        ]
+        importances: list[float] = []
+        for feature in features:
+            raw_importance = feature.get("importance", 0.0) or 0.0
+            try:
+                value = float(raw_importance)
+            except (TypeError, ValueError):
+                value = 0.0
+            if not math.isfinite(value):
+                value = 0.0
+            importances.append(value)
         normalised = apply_grn(importances, eps=grn_eps).tolist()
         aligned_features = []
         for feature, importance in zip(features, normalised, strict=True):
