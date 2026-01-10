@@ -263,7 +263,8 @@ def _prompt_lengths(
         if pad_token_id is None:
             lengths.append(len(row))
             continue
-        lengths.append(len(row))
+        pad_id = int(pad_token_id)
+        lengths.append(sum(1 for value in row if int(value) != pad_id))
     return lengths
 
 

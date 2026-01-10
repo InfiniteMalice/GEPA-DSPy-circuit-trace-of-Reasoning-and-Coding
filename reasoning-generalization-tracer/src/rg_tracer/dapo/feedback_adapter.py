@@ -47,6 +47,7 @@ def _parse_boolish(value: Any) -> bool:
             return False
         if lowered in _TRUE_STRINGS:
             return True
+        return False
     return bool(value)
 
 
