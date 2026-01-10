@@ -33,6 +33,12 @@ class HybridTrainingConfig:
     seed: int = 0
     temperature: float = 1.0
 
+    def __post_init__(self) -> None:
+        if self.group_size <= 0:
+            raise ValueError("HybridTrainingConfig.group_size must be > 0")
+        if self.eval_every <= 0:
+            raise ValueError("HybridTrainingConfig.eval_every must be > 0")
+
 
 class DAPOHybridTrainer:
     def __init__(
@@ -123,28 +129,49 @@ class DAPOHybridTrainer:
     def _generate(
         self, prompts: Sequence[str]
     ) -> Tuple[List[str], List[List[int]], List[float], List[Dict[str, Any]]]:
-        if hasattr(self.policy, "generate_with_logprobs"):
-            output = self.policy.generate_with_logprobs(
-                prompts,
-                group_size=self.cfg.group_size,
-                temperature=self.cfg.temperature,
-                seed=self.cfg.seed,
-            )
-            completions = list(output.completions)
-            actions = list(output.actions)
-            old_logprobs = list(output.logprobs)
-            metadata = list(output.metadata)
-        else:
+        gen = getattr(self.policy, "generate_with_logprobs", None)
+        if not callable(gen):
             raise ValueError(_POLICY_METHOD_ERROR)
+
+        output = gen(
+            prompts,
+            group_size=self.cfg.group_size,
+            temperature=self.cfg.temperature,
+            seed=self.cfg.seed,
+        )
+        completions = list(_get_attr(output, "completions"))
+        actions = list(_get_attr(output, "actions"))
+        old_logprobs = list(_get_attr(output, "logprobs"))
+        metadata = list(_get_attr(output, "metadata"))
+
+        prompt_count = len(prompts)
+        expected_len = prompt_count * self.cfg.group_size
+        _validate_generation_lengths(
+            expected_len,
+            prompt_count=prompt_count,
+            group_size=self.cfg.group_size,
+            completions=completions,
+            actions=actions,
+            logprobs=old_logprobs,
+            metadata=metadata,
+        )
 
         generation_metadata = []
         repeated_prompts = _repeat(prompts, self.cfg.group_size)
-        for prompt, completion, meta in zip(
-            repeated_prompts,
-            completions,
-            metadata,
-            strict=True,
+        for prompt_index, (prompt, completion, meta) in enumerate(
+            zip(
+                repeated_prompts,
+                completions,
+                metadata,
+                strict=True,
+            )
         ):
+            _validate_prompt_grouping(
+                prompt_index,
+                prompt,
+                meta,
+                self.cfg.group_size,
+            )
             prompt_hash = _hash_text(prompt)
             completion_hash = _hash_text(completion)
             generation_metadata.append(
@@ -213,4 +240,51 @@ def _repeat_by_group(
         _repeat(prompts, group_size),
         _repeat(list(task_ids), group_size),
         _repeat(list(prompt_ids), group_size),
+    )
+
+
+def _get_attr(output: Any, name: str) -> Sequence[Any]:
+    if not hasattr(output, name):
+        raise ValueError(f"Generation output missing attribute: {name}")
+    return getattr(output, name)
+
+
+def _validate_generation_lengths(
+    expected_len: int,
+    *,
+    prompt_count: int,
+    group_size: int,
+    **fields: Sequence[Any],
+) -> None:
+    for name, values in fields.items():
+        if len(values) != expected_len:
+            raise ValueError(
+                f"Generation output {name} length {len(values)} does not match "
+                f"expected length {expected_len} "
+                f"(prompt_count={prompt_count}, group_size={group_size})."
+            )
+
+
+def _validate_prompt_grouping(
+    index: int,
+    prompt: str,
+    meta: Mapping[str, Any],
+    group_size: int,
+) -> None:
+    expected_prompt_index = index // group_size
+    if "prompt_index" in meta:
+        if int(meta["prompt_index"]) != expected_prompt_index:
+            raise ValueError(
+                "Generation metadata prompt_index does not match expected grouping: "
+                f"{meta['prompt_index']} != {expected_prompt_index}"
+            )
+        return
+    if "prompt" in meta:
+        if meta["prompt"] != prompt:
+            raise ValueError(
+                "Generation metadata prompt does not match expected prompt"
+            )
+        return
+    raise ValueError(
+        "Generation metadata must include prompt_index or prompt to validate grouping"
     )

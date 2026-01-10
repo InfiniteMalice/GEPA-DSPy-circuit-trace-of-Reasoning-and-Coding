@@ -76,19 +76,31 @@ def _batch_records(
 
 
 def _load_reward_mixer(path: Path) -> Dict[str, float]:
-    if path.suffix in {".yaml", ".yml"}:
-        return yaml.safe_load(path.read_text()) or {}
-    return json.loads(path.read_text())
+    try:
+        if path.suffix in {".yaml", ".yml"}:
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        else:
+            data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, yaml.YAMLError) as exc:
+        raise ValueError(f"Failed to parse reward mixer at {path}") from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"Reward mixer config at {path} must be a mapping")
+    normalized: Dict[str, float] = {}
+    for key, value in data.items():
+        normalized[str(key)] = float(value)
+    return normalized
 
 
 def _load_mapping_config(path: Path) -> FeedbackMappingConfig:
     try:
         if path.suffix in {".yaml", ".yml"}:
-            data = yaml.safe_load(path.read_text()) or {}
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         else:
-            data = json.loads(path.read_text())
+            data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, yaml.YAMLError) as exc:
         raise ValueError(f"Failed to parse mapping config at {path}") from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"Mapping config at {path} must be a mapping")
     return FeedbackMappingConfig(
         reward_keys=data.get("reward_keys", {}),
         tag_keys=data.get("tag_keys", {}),
@@ -119,6 +131,8 @@ def _build_policy(
         model_name,
         trust_remote_code=trust_remote_code,
     )
+    if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
+        tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=dtype,
@@ -146,7 +160,10 @@ def main() -> None:
     parser.add_argument(
         "--reward-mixer", required=True, help="YAML/JSON reward mixer file"
     )
-    parser.add_argument("--mapping-config", help="JSON feedback mapping config")
+    parser.add_argument(
+        "--mapping-config",
+        help="YAML/JSON feedback mapping config",
+    )
     parser.add_argument("--enable-grn-policy", action="store_true")
     parser.add_argument("--enable-grn-value", action="store_true")
     parser.add_argument("--eval-every", type=int, default=100)

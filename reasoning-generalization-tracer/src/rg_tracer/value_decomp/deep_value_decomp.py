@@ -162,7 +162,8 @@ def parse_user_shallow_prefs(prompt: str) -> ShallowFeatureVector:
 
 
 def analyze_output_deep_values(
-    output_text: str, scores: ScoreVector
+    output_text: str,
+    scores: ScoreVector,
 ) -> DeepValueVector:
     heuristic = _score_from_keywords(output_text, _DEEP_KEYWORDS)
     heuristic["correctness"] = max(

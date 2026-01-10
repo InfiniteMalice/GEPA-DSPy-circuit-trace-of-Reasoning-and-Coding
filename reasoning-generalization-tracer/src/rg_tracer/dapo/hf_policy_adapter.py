@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import math
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
@@ -52,7 +51,19 @@ class HFPolicyAdapter(Policy):
                 param.requires_grad = False
 
     def clone(self) -> Policy:
-        cloned_model = copy.deepcopy(self.model)
+        if not hasattr(self.model, "state_dict"):
+            raise ValueError("HFPolicyAdapter.clone requires a model with state_dict")
+        if not hasattr(self.model, "config") or not hasattr(
+            self.model.__class__, "from_config"
+        ):
+            raise ValueError(
+                "HFPolicyAdapter.clone requires model.__class__.from_config and config"
+            )
+        state_dict = self.model.state_dict()
+        cloned_model = self.model.__class__.from_config(self.model.config)
+        cloned_model.load_state_dict(state_dict)
+        if self.device:
+            cloned_model.to(self.device)
         return HFPolicyAdapter(
             cloned_model,
             self.tokenizer,
@@ -121,17 +132,27 @@ class HFPolicyAdapter(Policy):
             token_logprobs = _log_softmax(score_tensor)
         else:
             token_logprobs = None
+        generated_steps = None
+        if token_logprobs is not None:
+            if hasattr(token_logprobs, "shape"):
+                generated_steps = token_logprobs.shape[1]
+            else:
+                generated_steps = len(generation.scores)
         for index in range(len(sequences)):
             prompt_index = index // group_size
             prompt = prompt_list[prompt_index]
             prompt_len = prompt_lengths[prompt_index]
-            token_ids = sequences[index][prompt_len:]
+            if generated_steps is not None:
+                token_ids = sequences[index][-generated_steps:]
+                token_scores = token_logprobs[index, -generated_steps:]
+            else:
+                token_ids = sequences[index][prompt_len:]
+                token_scores = None
             completion = self.tokenizer.decode(token_ids, skip_special_tokens=True)
             completion_tokens = _to_token_ids(token_ids)
             completions.append(completion)
             actions.append(completion_tokens)
-            if token_logprobs is not None and completion_tokens:
-                token_scores = token_logprobs[index, -len(completion_tokens) :]
+            if token_scores is not None and completion_tokens:
                 sequence_logprob = _sum_token_logprobs(token_scores, completion_tokens)
                 logprobs.append(sequence_logprob)
             else:
@@ -142,6 +163,7 @@ class HFPolicyAdapter(Policy):
                     "completion": completion,
                     "temperature": temperature,
                     "seed": seed,
+                    "prompt_index": prompt_index,
                     "logprobs_available": token_logprobs is not None,
                 }
             )

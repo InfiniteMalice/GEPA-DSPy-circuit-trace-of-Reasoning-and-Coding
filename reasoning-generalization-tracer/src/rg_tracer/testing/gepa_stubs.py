@@ -13,6 +13,7 @@ def install_gepa_stubs() -> None:
         return
 
     gepa_module = types.ModuleType("gepa_dapo_grn")
+    gepa_module.__path__ = []
     interfaces_module = types.ModuleType("gepa_dapo_grn.gepa_interfaces")
     policy_module = types.ModuleType("gepa_dapo_grn.policy_interfaces")
 
@@ -48,7 +49,7 @@ def install_gepa_stubs() -> None:
         weights: Dict[str, float]
 
     class CurriculumTracker:
-        def sample_weight(self, task_id: Optional[str]) -> float:
+        def sample_weight(self, _task_id: Optional[str]) -> float:
             return 1.0
 
     class SafetyController:
@@ -63,7 +64,9 @@ def install_gepa_stubs() -> None:
         def __init__(self, **kwargs: object) -> None:
             self.kwargs = kwargs
 
-        def train_step(self, dapo_batch: object, feedbacks: object) -> Dict[str, float]:
+        def train_step(
+            self, _dapo_batch: object, _feedbacks: object
+        ) -> Dict[str, float]:
             return {"loss": 0.1}
 
     gepa_module.DAPOConfig = DAPOConfig
