@@ -82,10 +82,13 @@ def _load_reward_mixer(path: Path) -> Dict[str, float]:
 
 
 def _load_mapping_config(path: Path) -> FeedbackMappingConfig:
-    if path.suffix in {".yaml", ".yml"}:
-        data = yaml.safe_load(path.read_text()) or {}
-    else:
-        data = json.loads(path.read_text())
+    try:
+        if path.suffix in {".yaml", ".yml"}:
+            data = yaml.safe_load(path.read_text()) or {}
+        else:
+            data = json.loads(path.read_text())
+    except (json.JSONDecodeError, yaml.YAMLError) as exc:
+        raise ValueError(f"Failed to parse mapping config at {path}") from exc
     return FeedbackMappingConfig(
         reward_keys=data.get("reward_keys", {}),
         tag_keys=data.get("tag_keys", {}),

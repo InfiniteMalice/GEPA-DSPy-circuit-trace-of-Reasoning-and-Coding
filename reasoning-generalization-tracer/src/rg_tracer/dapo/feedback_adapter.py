@@ -19,6 +19,7 @@ class FeedbackMappingConfig:
 
 _COERCE_ERROR_MSG = "Cannot coerce {type_name} to float: {value!r}"
 _COLLISION_ERROR_MSG = "task_id_field and prompt_id_field must not collide"
+_META_OVERWRITE_ERROR_MSG = "metadata contains both {custom} and {canonical} keys"
 
 
 def _coerce_float(value: Any) -> float:
@@ -40,6 +41,9 @@ def make_gepa_feedback(
     meta: Dict[str, str],
     cfg: FeedbackMappingConfig,
 ) -> GEPAFeedback:
+    if cfg.task_id_field == cfg.prompt_id_field:
+        raise ValueError(_COLLISION_ERROR_MSG)
+
     rewards: Dict[str, float] = {}
     tags: Dict[str, float] = {}
     for local_key, gepa_key in cfg.reward_keys.items():
@@ -51,12 +55,24 @@ def make_gepa_feedback(
 
     meta_out = dict(meta)
     # Normalize custom field names to canonical keys if different.
-    if cfg.task_id_field == cfg.prompt_id_field:
-        raise ValueError(_COLLISION_ERROR_MSG)
     if cfg.task_id_field != "task_id" and cfg.task_id_field in meta_out:
+        if "task_id" in meta_out:
+            raise ValueError(
+                _META_OVERWRITE_ERROR_MSG.format(
+                    custom=cfg.task_id_field,
+                    canonical="task_id",
+                )
+            )
         meta_out["task_id"] = str(meta_out[cfg.task_id_field])
         del meta_out[cfg.task_id_field]
     if cfg.prompt_id_field != "prompt_id" and cfg.prompt_id_field in meta_out:
+        if "prompt_id" in meta_out:
+            raise ValueError(
+                _META_OVERWRITE_ERROR_MSG.format(
+                    custom=cfg.prompt_id_field,
+                    canonical="prompt_id",
+                )
+            )
         meta_out["prompt_id"] = str(meta_out[cfg.prompt_id_field])
         del meta_out[cfg.prompt_id_field]
     meta_out.setdefault("prompt", prompt)

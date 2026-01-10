@@ -43,3 +43,20 @@ def test_make_gepa_feedback_collision_guard() -> None:
             meta={"custom_id": "id1"},
             cfg=cfg,
         )
+
+
+def test_make_gepa_feedback_meta_overwrite_guard() -> None:
+    cfg = FeedbackMappingConfig(
+        reward_keys={},
+        tag_keys={},
+        task_id_field="custom_id",
+        prompt_id_field="prompt_id",
+    )
+    with pytest.raises(ValueError, match="metadata contains both"):
+        make_gepa_feedback(
+            prompt="p",
+            completion="c",
+            local_metrics={},
+            meta={"custom_id": "id1", "task_id": "t1"},
+            cfg=cfg,
+        )

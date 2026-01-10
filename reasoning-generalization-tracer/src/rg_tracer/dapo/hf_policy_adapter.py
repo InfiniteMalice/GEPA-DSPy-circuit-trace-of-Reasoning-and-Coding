@@ -242,8 +242,11 @@ def _prompt_lengths(
         left_padded = int(row[0]) == pad_id and int(row[-1]) != pad_id
         right_padded = int(row[0]) != pad_id and int(row[-1]) == pad_id
         if left_padded:
-            non_pad_count = sum(1 for value in row if int(value) != pad_id)
-            lengths.append(non_pad_count)
+            first_non_pad = next(
+                (idx for idx, value in enumerate(row) if int(value) != pad_id),
+                len(row),
+            )
+            lengths.append(first_non_pad)
             continue
         if right_padded:
             length = len(row)
@@ -253,8 +256,11 @@ def _prompt_lengths(
                     break
             lengths.append(length)
             continue
-        non_pad_count = sum(1 for value in row if int(value) != pad_id)
-        lengths.append(non_pad_count)
+        first_non_pad = next(
+            (idx for idx, value in enumerate(row) if int(value) != pad_id),
+            len(row),
+        )
+        lengths.append(first_non_pad)
     return lengths
 
 
