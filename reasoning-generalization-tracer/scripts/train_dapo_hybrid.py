@@ -34,17 +34,23 @@ class NullScorer:
     def score(
         self, prompts: Iterable[str], completions: Iterable[str]
     ) -> List[Dict[str, float]]:
+        LOGGER.warning("NullScorer in use; rewards will be empty")
         return [{} for _ in zip(prompts, completions, strict=True)]
 
 
 def _load_jsonl(path: Path) -> List[Mapping[str, Any]]:
     rows = []
     with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
+        for line_number, line in enumerate(handle, start=1):
             line = line.strip()
             if not line:
                 continue
-            rows.append(json.loads(line))
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    f"Invalid JSON in {path} at line {line_number}: {line}"
+                ) from exc
     return rows
 
 
@@ -69,7 +75,14 @@ def _batch_records(
         task_ids = [
             str(record["task_id"]) if "task_id" in record else None for record in batch
         ]
-        prompt_ids = [str(record["id"]) if "id" in record else None for record in batch]
+        prompt_ids = [
+            (
+                str(record["prompt_id"])
+                if "prompt_id" in record
+                else (str(record["id"]) if "id" in record else None)
+            )
+            for record in batch
+        ]
         yield {
             "prompts": prompts,
             "task_ids": task_ids,
@@ -89,7 +102,12 @@ def _load_reward_mixer(path: Path) -> Dict[str, float]:
         raise TypeError(f"Reward mixer config at {path} must be a mapping")
     normalized: Dict[str, float] = {}
     for key, value in data.items():
-        normalized[str(key)] = float(value)
+        try:
+            normalized[str(key)] = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Cannot convert reward mixer key '{key}' to float: {value}"
+            ) from exc
     return normalized
 
 
@@ -109,12 +127,21 @@ def _load_mapping_config(path: Path) -> FeedbackMappingConfig:
         raise TypeError(f"mapping_config.reward_keys at {path} must be a mapping")
     if not isinstance(tag_keys, dict):
         raise TypeError(f"mapping_config.tag_keys at {path} must be a mapping")
+    task_id_field = data.get("task_id_field", "task_id")
+    prompt_id_field = data.get("prompt_id_field", "prompt_id")
+    abstain_field = data.get("abstain_field")
+    if not isinstance(task_id_field, str):
+        raise TypeError(f"mapping_config.task_id_field at {path} must be a string")
+    if not isinstance(prompt_id_field, str):
+        raise TypeError(f"mapping_config.prompt_id_field at {path} must be a string")
+    if abstain_field is not None and not isinstance(abstain_field, str):
+        raise TypeError(f"mapping_config.abstain_field at {path} must be a string")
     return FeedbackMappingConfig(
         reward_keys={str(k): str(v) for k, v in reward_keys.items()},
         tag_keys={str(k): str(v) for k, v in tag_keys.items()},
-        task_id_field=data.get("task_id_field", "task_id"),
-        prompt_id_field=data.get("prompt_id_field", "prompt_id"),
-        abstain_field=data.get("abstain_field"),
+        task_id_field=str(task_id_field),
+        prompt_id_field=str(prompt_id_field),
+        abstain_field=abstain_field,
     )
 
 
@@ -149,8 +176,19 @@ def _build_policy(
     )
     if device_map is None:
         model.to(device)
-    adapter_device = device if device_map is None else None
+    adapter_device = device if device_map is None else _resolve_adapter_device(model)
     return HFPolicyAdapter(model=model, tokenizer=tokenizer, device=adapter_device)
+
+
+def _resolve_adapter_device(model: Any) -> str | None:
+    device_map = getattr(model, "hf_device_map", None) or getattr(
+        model, "device_map", None
+    )
+    if isinstance(device_map, dict):
+        for value in device_map.values():
+            if isinstance(value, str) and value != "cpu":
+                return value
+    return None
 
 
 def main() -> None:

@@ -80,6 +80,8 @@ class DAPOHybridTrainer:
             if self.cfg.max_steps is not None and step >= self.cfg.max_steps:
                 break
             prompts = list(batch.get("prompts", []))
+            if not prompts:
+                continue
             task_ids = list(batch.get("task_ids", [None] * len(prompts)))
             prompt_ids = list(batch.get("prompt_ids", [None] * len(prompts)))
             weights = [self.curriculum.sample_weight(task_id) for task_id in task_ids]
@@ -166,6 +168,11 @@ class DAPOHybridTrainer:
                 strict=True,
             )
         ):
+            if not isinstance(meta, Mapping):
+                raise TypeError(
+                    "Generation metadata must be a mapping at index "
+                    f"{prompt_index}: {meta!r}"
+                )
             _validate_prompt_grouping(
                 prompt_index,
                 prompt,

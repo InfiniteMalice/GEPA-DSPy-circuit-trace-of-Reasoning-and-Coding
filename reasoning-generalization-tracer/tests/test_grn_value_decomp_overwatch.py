@@ -141,7 +141,7 @@ def test_self_play_with_grn_and_value_decomposition(tmp_path):
     run_dir = Path(result["run_dir"])
     scores = [
         json.loads(line)
-        for line in (run_dir / "scores.jsonl").read_text(encoding="utf8").splitlines()
+        for line in (run_dir / "scores.jsonl").read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
     assert scores and "grn_flags" in scores[0]

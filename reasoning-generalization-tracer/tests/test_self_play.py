@@ -28,7 +28,7 @@ def test_self_play_creates_artifacts(tmp_path):
     assert attr_dir.exists()
     json_files = list(attr_dir.glob("*.json"))
     assert json_files, "attr directory should contain at least one JSON file"
-    with open(run_dir / "scores.jsonl", "r", encoding="utf8") as handle:
+    with open(run_dir / "scores.jsonl", "r", encoding="utf-8") as handle:
         lines = [json.loads(line) for line in handle if line.strip()]
     assert any(
         candidate.get("passes_gates") for candidate in lines
@@ -39,12 +39,12 @@ def test_self_play_creates_artifacts(tmp_path):
     assert all(
         "thought_scores" in candidate for candidate in lines
     ), "missing thought_scores in scores.jsonl"
-    semantics_text = (run_dir / "semantics.jsonl").read_text(encoding="utf8")
+    semantics_text = (run_dir / "semantics.jsonl").read_text(encoding="utf-8")
     semantics = [
         json.loads(line) for line in semantics_text.splitlines() if line.strip()
     ]
     assert semantics and all("score" in entry for entry in semantics)
     assert all("s_match" in entry and "s_epistemic" in entry for entry in semantics)
-    summary = (run_dir / "summary.md").read_text(encoding="utf8")
+    summary = (run_dir / "summary.md").read_text(encoding="utf-8")
     assert "Attribution Metrics" in summary
     assert result["frontier"], "Pareto frontier should not be empty"

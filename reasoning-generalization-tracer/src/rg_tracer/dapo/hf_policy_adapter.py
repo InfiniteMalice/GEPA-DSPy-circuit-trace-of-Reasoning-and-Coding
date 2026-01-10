@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
@@ -99,6 +100,10 @@ class HFPolicyAdapter(Policy):
         seed: Optional[int] = None,
         max_new_tokens: int = 64,
     ) -> GenerationOutput:
+        if getattr(self.tokenizer, "pad_token_id", None) is None:
+            eos_token = getattr(self.tokenizer, "eos_token", None)
+            if eos_token is not None:
+                self.tokenizer.pad_token = eos_token
         if seed is not None and hasattr(torch, "manual_seed"):
             torch.manual_seed(seed)
         prompt_list = list(prompts)
@@ -156,6 +161,8 @@ class HFPolicyAdapter(Policy):
                 sequence_logprob = _sum_token_logprobs(token_scores, completion_tokens)
                 logprobs.append(sequence_logprob)
             else:
+                if token_logprobs is None:
+                    warnings.warn("Logprobs unavailable; using sentinel 0.0")
                 logprobs.append(0.0)
             metadata.append(
                 {

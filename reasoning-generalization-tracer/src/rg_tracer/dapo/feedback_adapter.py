@@ -75,8 +75,9 @@ def make_gepa_feedback(
             )
         meta_out["prompt_id"] = str(meta_out[cfg.prompt_id_field])
         del meta_out[cfg.prompt_id_field]
-    meta_out.setdefault("prompt", prompt)
-    meta_out.setdefault("completion", completion)
+    meta_out = {key: str(value) for key, value in meta_out.items()}
+    meta_out.setdefault("prompt", str(prompt))
+    meta_out.setdefault("completion", str(completion))
 
     abstained = False
     if cfg.abstain_field:
