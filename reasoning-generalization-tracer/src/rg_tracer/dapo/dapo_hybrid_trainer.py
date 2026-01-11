@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, overload
 
 from gepa_dapo_grn import (
     CurriculumTracker,
@@ -176,15 +176,13 @@ class DAPOHybridTrainer:
         ):
             if not isinstance(prompt, str):
                 raise TypeError(
-                    "prompt_index "
-                    f"{prompt_index} prompt type {type(prompt).__name__} "
-                    f"value {_short_repr(prompt)}"
+                    f"Expected string prompt at index {prompt_index}, "
+                    f"got {type(prompt).__name__}: {_short_repr(prompt)}"
                 )
             if not isinstance(completion, str):
                 raise TypeError(
-                    "prompt_index "
-                    f"{prompt_index} completion type {type(completion).__name__} "
-                    f"value {_short_repr(completion)}"
+                    f"Expected string completion at index {prompt_index}, "
+                    f"got {type(completion).__name__}: {_short_repr(completion)}"
                 )
             if not isinstance(meta, Mapping):
                 raise TypeError(
@@ -279,7 +277,17 @@ def _short_repr(value: Any) -> str:
     return f"{text[:_MAX_REPR_LEN - 3]}..."
 
 
-def _get_attr(output: Any, name: str, default: Any = _MISSING) -> Sequence[Any]:
+@overload
+def _get_attr(output: Any, name: str) -> Any:
+    ...
+
+
+@overload
+def _get_attr(output: Any, name: str, default: Any) -> Any:
+    ...
+
+
+def _get_attr(output: Any, name: str, default: Any = _MISSING) -> Any:
     if isinstance(output, Mapping):
         try:
             return output[name]
