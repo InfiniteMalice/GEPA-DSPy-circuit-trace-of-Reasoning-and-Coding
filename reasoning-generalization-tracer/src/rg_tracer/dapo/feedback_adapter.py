@@ -70,6 +70,7 @@ def make_gepa_feedback(
         if local_key in local_metrics:
             tags[gepa_key] = _coerce_float(local_metrics[local_key])
 
+    meta_raw = dict(meta)
     meta_out = dict(meta)
     meta_raw = dict(meta_out)
     # Normalize custom field names to canonical keys if different.

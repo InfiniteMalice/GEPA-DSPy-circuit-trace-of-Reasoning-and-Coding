@@ -177,14 +177,14 @@ class DAPOHybridTrainer:
             if not isinstance(prompt, str):
                 raise TypeError(
                     "prompt_index "
-                    f"{prompt_index} prompt must be str; got {type(prompt).__name__}: "
-                    f"{prompt!r}"
+                    f"{prompt_index} prompt type {type(prompt).__name__} "
+                    f"value {_short_repr(prompt)}"
                 )
             if not isinstance(completion, str):
                 raise TypeError(
                     "prompt_index "
-                    f"{prompt_index} completion must be str; got {type(completion).__name__}: "
-                    f"{completion!r}"
+                    f"{prompt_index} completion type {type(completion).__name__} "
+                    f"value {_short_repr(completion)}"
                 )
             if not isinstance(meta, Mapping):
                 raise TypeError(
@@ -269,20 +269,30 @@ def _repeat_by_group(
 
 
 _MISSING = object()
+_MAX_REPR_LEN = 40
+
+
+def _short_repr(value: Any) -> str:
+    text = repr(value)
+    if len(text) <= _MAX_REPR_LEN:
+        return text
+    return f"{text[:_MAX_REPR_LEN - 3]}..."
 
 
 def _get_attr(output: Any, name: str, default: Any = _MISSING) -> Sequence[Any]:
     if isinstance(output, Mapping):
-        if name in output:
+        try:
             return output[name]
+        except KeyError:
+            if default is not _MISSING:
+                return default
+            raise ValueError(f"Generation output missing key: {name}") from None
+    try:
+        return getattr(output, name)
+    except AttributeError:
         if default is not _MISSING:
             return default
-        raise ValueError(f"Generation output missing key: {name}")
-    if hasattr(output, name):
-        return getattr(output, name)
-    if default is not _MISSING:
-        return default
-    raise ValueError(f"Generation output missing attribute: {name}")
+        raise ValueError(f"Generation output missing attribute: {name}") from None
 
 
 def _validate_generation_lengths(

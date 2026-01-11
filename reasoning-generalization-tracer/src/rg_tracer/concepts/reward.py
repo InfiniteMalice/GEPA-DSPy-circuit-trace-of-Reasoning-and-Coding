@@ -17,6 +17,17 @@ DEFAULT_WEIGHTS = {
 }
 
 
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    """Convert to float, returning default for invalid or non-finite values."""
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return default
+    if not math.isfinite(result):
+        return default
+    return result
+
+
 def _validate_float_param(
     value: Any,
     name: str,
@@ -105,7 +116,7 @@ def _compute_selectivity(
     importance_target = 0.0
     importance_other = 0.0
     for feature in features:
-        weight = float(feature.get("importance", 0.0) or 0.0)
+        weight = _safe_float(feature.get("importance", 0.0) or 0.0)
         feature_tags = _feature_tags(feature)
         if feature_tags & target_tags:
             importance_target += weight
@@ -122,12 +133,12 @@ def _compute_parsimony(
     features: Iterable[Mapping[str, Any]],
 ) -> float:
     lengths = trace_json.get("path_lengths", {})
-    mean_length = float(lengths.get("mean", 0.0) or 0.0)
+    mean_length = _safe_float(lengths.get("mean", 0.0) or 0.0)
     if mean_length <= 0:
         return 0.0
     target_ids = {str(feature.get("id", "")) for feature in features}
     target_weight = sum(
-        float(edge.get("weight", 0.0) or 0.0)
+        _safe_float(edge.get("weight", 0.0) or 0.0)
         for edge in trace_json.get("edges", [])
         if edge.get("src") in target_ids or edge.get("dst") in target_ids
     )
@@ -135,8 +146,11 @@ def _compute_parsimony(
 
 
 def _compute_transfer(task_metrics: Mapping[str, Any]) -> float:
-    reuse = float(task_metrics.get("concept_reuse", 0.0) or 0.0)
-    support = float(task_metrics.get("supporting_tasks", 1.0) or 1.0)
+    reuse = _safe_float(task_metrics.get("concept_reuse", 0.0) or 0.0)
+    support = _safe_float(
+        task_metrics.get("supporting_tasks", 1.0) or 1.0,
+        default=1.0,
+    )
     if support <= 0:
         return 0.0
     return min(1.0, reuse / support)
@@ -194,16 +208,9 @@ def compute_concept_reward(
         contradictory_ids,
     )
     if use_grn and features:
-        importances: list[float] = []
-        for feature in features:
-            raw_importance = feature.get("importance", 0.0) or 0.0
-            try:
-                value = float(raw_importance)
-            except (TypeError, ValueError):
-                value = 0.0
-            if not math.isfinite(value):
-                value = 0.0
-            importances.append(value)
+        importances = [
+            _safe_float(feature.get("importance", 0.0) or 0.0) for feature in features
+        ]
         normalised = apply_grn(importances, eps=grn_eps).tolist()
         aligned_features = []
         for feature, importance in zip(features, normalised, strict=True):

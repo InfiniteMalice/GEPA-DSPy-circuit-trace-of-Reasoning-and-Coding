@@ -125,8 +125,9 @@ class HFPolicyAdapter(Policy):
         logprobs = []
         metadata = []
         prompt_lengths = _prompt_lengths(
-            inputs.get("input_ids"),
-            self.tokenizer.pad_token_id,
+            input_ids=inputs.get("input_ids"),
+            attention_mask=inputs.get("attention_mask"),
+            pad_token_id=self.tokenizer.pad_token_id,
         )
         if (
             hasattr(generation, "scores")
@@ -253,19 +254,19 @@ def _sum_token_logprobs(token_scores: Any, token_ids: Sequence[int]) -> float:
 
 def _prompt_lengths(
     input_ids: Any,
+    attention_mask: Any,
     pad_token_id: Optional[int],
 ) -> List[int]:
     if input_ids is None:
         raise ValueError(_INPUT_IDS_REQUIRED_MSG)
+    if attention_mask is not None:
+        mask_rows = _to_list(attention_mask)
+        return [sum(1 for value in row if int(value) != 0) for row in mask_rows]
     rows = _to_list(input_ids)
-    lengths = []
-    for row in rows:
-        if pad_token_id is None:
-            lengths.append(len(row))
-            continue
-        pad_id = int(pad_token_id)
-        lengths.append(sum(1 for value in row if int(value) != pad_id))
-    return lengths
+    if pad_token_id is None:
+        return [len(row) for row in rows]
+    pad_id = int(pad_token_id)
+    return [sum(1 for value in row if int(value) != pad_id) for row in rows]
 
 
 def _gather_logprobs(
