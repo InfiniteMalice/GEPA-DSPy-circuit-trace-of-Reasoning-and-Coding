@@ -20,6 +20,8 @@ class FeedbackMappingConfig:
 _COERCE_ERROR_MSG = "Cannot coerce {type_name} to float: {value!r}"
 _COLLISION_ERROR_MSG = "task_id_field and prompt_id_field must not collide"
 _META_OVERWRITE_ERROR_MSG = "metadata contains both {custom} and {canonical} keys"
+_FALSE_STRINGS = {"false", "0", "no", "none"}
+_TRUE_STRINGS = {"true", "1", "yes"}
 
 
 def _coerce_float(value: Any) -> float:
@@ -32,6 +34,21 @@ def _coerce_float(value: Any) -> float:
                 value=value,
             )
         ) from exc
+
+
+def _parse_boolish(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in _FALSE_STRINGS:
+            return False
+        if lowered in _TRUE_STRINGS:
+            return True
+        return False
+    return bool(value)
 
 
 def make_gepa_feedback(
@@ -53,6 +70,7 @@ def make_gepa_feedback(
         if local_key in local_metrics:
             tags[gepa_key] = _coerce_float(local_metrics[local_key])
 
+    meta_raw = dict(meta)
     meta_out = dict(meta)
     # Normalize custom field names to canonical keys if different.
     if cfg.task_id_field != "task_id" and cfg.task_id_field in meta_out:
@@ -82,9 +100,11 @@ def make_gepa_feedback(
     abstained = False
     if cfg.abstain_field:
         if cfg.abstain_field in local_metrics:
-            abstained = bool(local_metrics[cfg.abstain_field])
+            abstained = _parse_boolish(local_metrics[cfg.abstain_field])
+        elif cfg.abstain_field in meta_raw:
+            abstained = _parse_boolish(meta_raw[cfg.abstain_field])
         elif cfg.abstain_field in meta_out:
-            abstained = bool(meta_out[cfg.abstain_field])
+            abstained = _parse_boolish(meta_out[cfg.abstain_field])
 
     return GEPAFeedback(
         rewards=rewards,

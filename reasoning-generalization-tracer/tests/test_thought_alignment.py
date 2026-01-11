@@ -62,9 +62,7 @@ def test_random_speculation_unaligned():
 
 def test_confident_wrong_reasoning_can_align():
     """Alignment focuses on reasoning coherence, not answer correctness."""
-    trace = (
-        "Therefore the sum yields 9 because the factors align after consistent steps."
-    )
+    trace = "Therefore the sum yields 9 because the factors align after consistent steps."
     aligned, s_match, s_epi = classify_thought_alignment(
         trace,
         "9",

@@ -7,15 +7,31 @@ import types
 from dataclasses import dataclass
 from typing import Dict, Optional
 
+_GEPA_MODULE_NAME = "gepa_dapo_grn"
+_GEPA_INTERFACES_NAME = "gepa_dapo_grn.gepa_interfaces"
+_GEPA_POLICY_NAME = "gepa_dapo_grn.policy_interfaces"
+
+
+def _ensure_module(name: str) -> types.ModuleType:
+    existing = sys.modules.get(name)
+    if existing is not None:
+        return existing
+    module = types.ModuleType(name)
+    sys.modules[name] = module
+    return module
+
+
+def _ensure_attr(module: types.ModuleType, name: str, value: object) -> None:
+    if not hasattr(module, name):
+        setattr(module, name, value)
+
 
 def install_gepa_stubs() -> None:
-    if "gepa_dapo_grn" in sys.modules:
-        return
-
-    gepa_module = types.ModuleType("gepa_dapo_grn")
-    gepa_module.__path__ = []
-    interfaces_module = types.ModuleType("gepa_dapo_grn.gepa_interfaces")
-    policy_module = types.ModuleType("gepa_dapo_grn.policy_interfaces")
+    gepa_module = _ensure_module(_GEPA_MODULE_NAME)
+    if not hasattr(gepa_module, "__path__"):
+        gepa_module.__path__ = []
+    interfaces_module = _ensure_module(_GEPA_INTERFACES_NAME)
+    policy_module = _ensure_module(_GEPA_POLICY_NAME)
 
     @dataclass(frozen=True)
     class GEPAFeedback:
@@ -24,12 +40,12 @@ def install_gepa_stubs() -> None:
         meta: Dict[str, str]
         abstained: bool
 
-    interfaces_module.GEPAFeedback = GEPAFeedback
+    _ensure_attr(interfaces_module, "GEPAFeedback", GEPAFeedback)
 
     class Policy:
         pass
 
-    policy_module.Policy = Policy
+    _ensure_attr(policy_module, "Policy", Policy)
 
     @dataclass(frozen=True)
     class DAPOConfig:
@@ -69,15 +85,11 @@ def install_gepa_stubs() -> None:
         ) -> Dict[str, float]:
             return {"loss": 0.1}
 
-    gepa_module.DAPOConfig = DAPOConfig
-    gepa_module.GRNConfig = GRNConfig
-    gepa_module.RewardMixerConfig = RewardMixerConfig
-    gepa_module.CurriculumTracker = CurriculumTracker
-    gepa_module.SafetyController = SafetyController
-    gepa_module.DAPOTrainer = DAPOTrainer
-    gepa_module.gepa_interfaces = interfaces_module
-    gepa_module.policy_interfaces = policy_module
-
-    sys.modules["gepa_dapo_grn"] = gepa_module
-    sys.modules["gepa_dapo_grn.gepa_interfaces"] = interfaces_module
-    sys.modules["gepa_dapo_grn.policy_interfaces"] = policy_module
+    _ensure_attr(gepa_module, "DAPOConfig", DAPOConfig)
+    _ensure_attr(gepa_module, "GRNConfig", GRNConfig)
+    _ensure_attr(gepa_module, "RewardMixerConfig", RewardMixerConfig)
+    _ensure_attr(gepa_module, "CurriculumTracker", CurriculumTracker)
+    _ensure_attr(gepa_module, "SafetyController", SafetyController)
+    _ensure_attr(gepa_module, "DAPOTrainer", DAPOTrainer)
+    _ensure_attr(gepa_module, "gepa_interfaces", interfaces_module)
+    _ensure_attr(gepa_module, "policy_interfaces", policy_module)
