@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Mapping
@@ -13,6 +12,7 @@ except Exception:  # pragma: no cover
     yaml = None
 
 from .axes import HUMANITIES_AXES, HumanitiesScores, score_axis
+from ..utils.math import weighted_geometric_mean
 
 DEFAULT_EPSILON = 1e-3
 
@@ -44,7 +44,7 @@ class HumanitiesProfile:
 
 def _parse_profiles(text: str) -> Dict[str, HumanitiesProfile]:
     if yaml is not None:
-        data = yaml.safe_load(text)
+        data = yaml.safe_load(text) or {}
     else:
         data = {}
         current = None
@@ -79,23 +79,6 @@ def score_axes(metrics: Mapping[str, Mapping[str, object]]) -> HumanitiesScores:
         for axis in HUMANITIES_AXES
     }
     return HumanitiesScores(scores=scores)
-
-
-def weighted_geometric_mean(
-    scores: Mapping[str, int],
-    weights: Mapping[str, float],
-    *,
-    epsilon: float = DEFAULT_EPSILON,
-) -> float:
-    if not weights:
-        raise ValueError("weights must not be empty")
-    total = sum(weights.values())
-    if total <= 0:
-        raise ValueError("weights must sum to positive")
-    log_sum = 0.0
-    for axis, weight in weights.items():
-        log_sum += (weight / total) * math.log(scores.get(axis, 0) + epsilon)
-    return math.exp(log_sum)
 
 
 def evaluate_profile(

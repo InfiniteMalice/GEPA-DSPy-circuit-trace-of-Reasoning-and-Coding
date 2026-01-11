@@ -3,20 +3,20 @@
 from __future__ import annotations
 
 import copy
-import math
 import threading
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping
 
-from ..modules.grn import apply_grn
-from ..modules.torch_stub import torch
-
 try:  # pragma: no cover - optional dependency
     import yaml
 except ImportError:  # pragma: no cover
     yaml = None
+
+from ..modules.grn import apply_grn
+from ..modules.torch_stub import torch
+from ..utils.math import weighted_geometric_mean
 
 
 DEFAULT_EPSILON = 1e-3
@@ -355,26 +355,6 @@ def apply_hard_gates(
         if score < threshold:
             failed[axis] = score
     return (len(failed) == 0, failed)
-
-
-def weighted_geometric_mean(
-    axis_scores: Mapping[str, float],
-    weights: Mapping[str, float],
-    epsilon: float = DEFAULT_EPSILON,
-) -> float:
-    """Compute the weighted geometric mean of ``axis_scores``."""
-    if epsilon <= 0:
-        raise ValueError("epsilon must be positive")
-    if not weights:
-        raise ValueError("weights must not be empty")
-    total_weight = sum(weights.values())
-    if total_weight <= 0:
-        raise ValueError("total weight must be positive")
-    log_sum = 0.0
-    for axis, weight in weights.items():
-        score = axis_scores.get(axis, 0.0)
-        log_sum += (weight / total_weight) * math.log(score + epsilon)
-    return math.exp(log_sum)
 
 
 def evaluate_profile(
