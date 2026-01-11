@@ -72,6 +72,7 @@ def make_gepa_feedback(
 
     meta_raw = dict(meta)
     meta_out = dict(meta)
+    meta_raw = dict(meta_out)
     # Normalize custom field names to canonical keys if different.
     if cfg.task_id_field != "task_id" and cfg.task_id_field in meta_out:
         if "task_id" in meta_out:
