@@ -278,7 +278,7 @@ def _short_repr(value: Any) -> str:
 
 
 @overload
-def _get_attr(output: Any, name: str) -> Sequence[Any]:
+def _get_attr(output: Any, name: str) -> Any:
     ...
 
 
