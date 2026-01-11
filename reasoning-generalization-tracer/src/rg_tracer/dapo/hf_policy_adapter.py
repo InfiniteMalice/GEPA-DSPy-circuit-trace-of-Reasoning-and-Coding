@@ -138,6 +138,7 @@ class HFPolicyAdapter(Policy):
             token_logprobs = _log_softmax(score_tensor)
         else:
             token_logprobs = None
+        warned_logprobs_unavailable = False
         generated_steps = None
         if token_logprobs is not None:
             if hasattr(token_logprobs, "shape"):
@@ -162,11 +163,12 @@ class HFPolicyAdapter(Policy):
                 sequence_logprob = _sum_token_logprobs(token_scores, completion_tokens)
                 logprobs.append(sequence_logprob)
             else:
-                if token_logprobs is None:
+                if token_logprobs is None and not warned_logprobs_unavailable:
                     warnings.warn(
                         "Logprobs unavailable; using sentinel 0.0",
                         stacklevel=2,
                     )
+                    warned_logprobs_unavailable = True
                 logprobs.append(0.0)
             metadata.append(
                 {
@@ -254,15 +256,19 @@ def _sum_token_logprobs(token_scores: Any, token_ids: Sequence[int]) -> float:
 
 def _prompt_lengths(
     input_ids: Any,
-    attention_mask: Any,
+    attention_mask: Optional[Any],
     pad_token_id: Optional[int],
 ) -> List[int]:
     if input_ids is None:
         raise ValueError(_INPUT_IDS_REQUIRED_MSG)
     if attention_mask is not None:
         mask_rows = _to_list(attention_mask)
+        if mask_rows and not isinstance(mask_rows[0], Sequence):
+            mask_rows = [mask_rows]
         return [sum(1 for value in row if int(value) != 0) for row in mask_rows]
     rows = _to_list(input_ids)
+    if rows and not isinstance(rows[0], Sequence):
+        rows = [rows]
     if pad_token_id is None:
         return [len(row) for row in rows]
     pad_id = int(pad_token_id)
