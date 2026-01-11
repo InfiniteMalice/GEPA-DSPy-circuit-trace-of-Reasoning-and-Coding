@@ -263,10 +263,12 @@ def _prompt_lengths(
         raise ValueError(_INPUT_IDS_REQUIRED_MSG)
     if attention_mask is not None:
         mask_rows = _to_list(attention_mask)
+        # Normalize 1D attention_mask into a 2D batch with a single row.
         if mask_rows and not isinstance(mask_rows[0], Sequence):
             mask_rows = [mask_rows]
         return [sum(1 for value in row if int(value) != 0) for row in mask_rows]
     rows = _to_list(input_ids)
+    # Normalize 1D input_ids into a 2D batch with a single row.
     if rows and not isinstance(rows[0], Sequence):
         rows = [rows]
     if pad_token_id is None:

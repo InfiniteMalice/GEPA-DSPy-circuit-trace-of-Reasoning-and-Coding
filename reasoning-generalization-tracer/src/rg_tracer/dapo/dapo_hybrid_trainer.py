@@ -287,7 +287,7 @@ def _get_attr(output: Any, name: str, default: Any) -> Any:
     ...
 
 
-def _get_attr(output: Any, name: str, default: Any = _MISSING) -> Sequence[Any]:
+def _get_attr(output: Any, name: str, default: Any = _MISSING) -> Any:
     if isinstance(output, Mapping):
         try:
             return output[name]
