@@ -177,6 +177,9 @@ For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 - ✅ Check `bd ready` before asking "what should I work on?"
 - ✅ Store AI planning docs in `history/` directory
 - ✅ Run `bd <cmd> --help` to discover available flags
+- ✅ Remember: Codex automation (agents/scripts) must avoid `bd`, while humans and onboarding
+  flows should continue to use `bd` for issue tracking and CLI workflows; direct `.beads/*`
+  edits are acceptable for artifact updates or when the CLI is unavailable.
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
