@@ -173,14 +173,14 @@ For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 
 ### Important Rules
 
-- ✅ Use bd for ALL task tracking
-- ✅ Use `bd` with `--json` for programmatic use in human workflows
+- ✅ Humans should use `bd` for ALL task tracking
+- ✅ Humans should use `bd --json` for programmatic CLI workflows
 - ✅ Link discovered work with `discovered-from` dependencies
 - ✅ Check `bd ready` before asking "what should I work on?"
 - ✅ Store AI planning docs in `history/` directory
 - ✅ Run `bd <cmd> --help` to discover available flags
-- ✅ Codex automation (agents/scripts) must avoid `bd` and edit `.beads/*` directly; direct
-  edits are acceptable for automation when the CLI is unavailable.
+- ✅ Non-interactive agents/scripts must avoid `bd` and edit `.beads/*` directly; direct edits
+  are acceptable for automation when the CLI is unavailable.
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
