@@ -95,16 +95,19 @@ bd close bd-42 --reason "Completed" --json
 
 ### Workflow for AI Agents
 
-1. **Check ready work**: Review `.beads/issues.jsonl` for unblocked issues.
-2. **Claim your task**: Edit the relevant issue in `.beads/issues.jsonl` and set
-   `"status": "in_progress"`.
-3. **Work on it**: Implement, test, document.
-4. **Discover new work?** Add a new JSONL issue entry with a
+1. **Choose your update path** (see decision tree in **Important Rules**).
+2. **Coordinate with bd auto-sync before direct edits**: stop/suspend bd's watcher (or use a
+   documented "disable auto-sync" option if available), edit `.beads/issues.jsonl`, run an
+   explicit sync/import (e.g., `bd sync`) to push changes into bd, then restart/enable
+   auto-sync.
+3. **Check ready work**: Review `.beads/issues.jsonl` for unblocked issues.
+4. **Claim your task**: Update the relevant issue to `"status": "in_progress"`.
+5. **Work on it**: Implement, test, document.
+6. **Discover new work?** Add a new JSONL issue entry with a
    `discovered-from:<parent-id>` dependency in `"deps"`.
-5. **Complete**: Update the issue in `.beads/issues.jsonl` to
-   `"status": "closed"` with `"reason": "Completed"`.
-6. **Commit together**: Always commit `.beads/issues.jsonl` with code changes so issue state
-   stays in sync with code state.
+7. **Complete**: Update the issue to `"status": "closed"` with `"reason": "Completed"`.
+8. **Resolve conflicts**: check bd import logs and `.beads/issues.jsonl` git history, resolve
+   merge conflicts locally, re-run `bd sync`, and commit the resolved JSONL with code changes.
 
 ### Auto-Sync
 
@@ -179,8 +182,11 @@ For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 - ✅ Check `bd ready` before asking "what should I work on?"
 - ✅ Store AI planning docs in `history/` directory
 - ✅ Run `bd <cmd> --help` to discover available flags
-- ✅ Non-interactive agents/scripts must avoid `bd` and edit `.beads/*` directly; direct edits
-  are acceptable for automation when the CLI is unavailable.
+- ✅ Automation decision tree (non-interactive agents/scripts):
+  1) Prefer `mcp__beads__*` if available.
+  2) If MCP is unavailable, use `bd --json` for programmatic CLI workflows.
+  3) If the CLI is unavailable (technical or permission-based restrictions), edit `.beads/*`
+     directly as the last resort and follow the **Workflow for AI Agents** guidance.
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
