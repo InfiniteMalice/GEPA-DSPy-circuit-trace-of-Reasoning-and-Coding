@@ -95,14 +95,16 @@ bd close bd-42 --reason "Completed" --json
 
 ### Workflow for AI Agents
 
-1. **Check ready work**: `bd ready` shows unblocked issues.
-2. **Claim your task**: `bd update <id> --status in_progress`.
+1. **Check ready work**: Review `.beads/issues.jsonl` for unblocked issues.
+2. **Claim your task**: Edit the relevant issue in `.beads/issues.jsonl` and set
+   `"status": "in_progress"`.
 3. **Work on it**: Implement, test, document.
-4. **Discover new work?** Create linked issues with
-   `bd create "Found bug" -p 1 --deps discovered-from:<parent-id> --json`.
-5. **Complete**: `bd close <id> --reason "Done" --json`.
-6. **Commit together**: Always commit the `.beads/issues.jsonl` file together with code changes
-   so issue state stays in sync with code state.
+4. **Discover new work?** Add a new JSONL issue entry with a
+   `discovered-from:<parent-id>` dependency in `"deps"`.
+5. **Complete**: Update the issue in `.beads/issues.jsonl` to
+   `"status": "closed"` with `"reason": "Completed"`.
+6. **Commit together**: Always commit `.beads/issues.jsonl` with code changes so issue state
+   stays in sync with code state.
 
 ### Auto-Sync
 
@@ -166,17 +168,19 @@ history/
 
 ### CLI Help
 
-Run `bd <command> --help` to see all available flags for any command.
+When using `bd` manually, run `bd <command> --help` to see all available flags.
 For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 
 ### Important Rules
 
-- ✅ Use bd for ALL task tracking
-- ✅ Always use `--json` flag for programmatic use
+- ✅ Humans should use `bd` for ALL task tracking
+- ✅ Humans should use `bd --json` for programmatic CLI workflows
 - ✅ Link discovered work with `discovered-from` dependencies
 - ✅ Check `bd ready` before asking "what should I work on?"
 - ✅ Store AI planning docs in `history/` directory
 - ✅ Run `bd <cmd> --help` to discover available flags
+- ✅ Non-interactive agents/scripts must avoid `bd` and edit `.beads/*` directly; direct edits
+  are acceptable for automation when the CLI is unavailable.
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
