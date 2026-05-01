@@ -173,3 +173,27 @@ def test_mapping_contains_only_emitted_cleaned_clauses():
     emitted = [c.text for c in claims]
     mapped = [x for vals in mapping.values() for x in vals]
     assert emitted == mapped
+
+
+def test_overall_label_contradiction_heavy_in_gated_mode():
+    ev = [
+        EvidenceItem(
+            id="e1",
+            text="Paris is not the capital of France.",
+            quality_score=1.0,
+            retrieval_score=1.0,
+        )
+    ]
+    cfg = FactualityCertificationConfig(mode="gated")
+    cfg.overrefusal_guard.enabled = False
+    res = certify_answer("Q", "Paris is the capital of France.", evidence=ev, config=cfg)
+    assert res.overall_label in {"should_abstain", "should_refuse"}
+
+
+def test_non_gated_refuse_not_forced_to_qualification_without_guard_or_scope():
+    cfg = FactualityCertificationConfig(mode="shadow")
+    cfg.overrefusal_guard.enabled = False
+    cfg.certification.allow_partial_answers = False
+    cfg.certification.allow_uncertainty_qualified_answers = True
+    res = certify_answer("Q", "Unknown claim.", evidence=[], config=cfg)
+    assert res.recommended_action in {"refuse", "abstain"}

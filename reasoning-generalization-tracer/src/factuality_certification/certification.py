@@ -67,8 +67,18 @@ def certify_answer(
     risk = hallucination_rate(supports)
 
     th = cfg.certification
+    contradiction_trigger = contradiction_ratio >= (1.0 - th.certified_threshold)
     if total == 0:
         overall = "uncertified"
+    elif contradiction_trigger and (
+        unsupported_ratio >= th.refusal_threshold or contradiction_ratio >= th.refusal_threshold
+    ):
+        overall = "should_refuse" if cfg.mode == "gated" else "uncertified"
+    elif contradiction_trigger and (
+        unsupported_ratio >= th.abstention_threshold
+        or contradiction_ratio >= th.abstention_threshold
+    ):
+        overall = "should_abstain" if cfg.mode == "gated" else "uncertified"
     elif support_ratio >= th.certified_threshold and contradiction_ratio < (
         1.0 - th.certified_threshold
     ):
@@ -117,7 +127,9 @@ def certify_answer(
             action = alt.action
 
     if cfg.mode != "gated" and action in {"refuse", "abstain"}:
-        if th.allow_uncertainty_qualified_answers:
+        if th.allow_uncertainty_qualified_answers and (
+            cfg.mode == "gated" or cfg.overrefusal_guard.enabled or alt_scoped
+        ):
             action = "answer_with_qualifications"
 
     declared_conf = _declared_confidence(answer)
