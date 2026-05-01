@@ -45,7 +45,7 @@ def certify_answer(
     prompt: str,
     answer: str,
     evidence: list[EvidenceItem] | None = None,
-    context: str | None = None,
+    context: dict | None = None,
     trace_summary: str | None = None,
     config: FactualityCertificationConfig | None = None,
 ) -> CertificationResult:
@@ -151,7 +151,7 @@ def certify_answer(
 
     original_action_before_mode_rewrite = action
     if cfg.mode != "gated" and action in {"refuse", "abstain"}:
-        if th.allow_uncertainty_qualified_answers and (cfg.mode == "gated" or alt_scoped):
+        if th.allow_uncertainty_qualified_answers and alt_scoped:
             action = "answer_with_qualifications"
 
     declared_conf = _declared_confidence(answer)

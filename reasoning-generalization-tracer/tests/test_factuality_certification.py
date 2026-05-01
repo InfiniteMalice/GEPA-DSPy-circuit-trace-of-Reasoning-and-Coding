@@ -149,7 +149,7 @@ def test_extract_atomic_claims_respects_max_claims_for_mapping():
     claims, mapping = extract_atomic_claims("A, B, C, D.", max_claims=2, split_compound_claims=True)
     assert len(claims) == 2
     total_mapped_clauses = sum(len(v) for v in mapping.values())
-    assert total_mapped_clauses >= len(claims)
+    assert total_mapped_clauses == len(claims)
     assert len(mapping) == 1
 
 
@@ -216,7 +216,9 @@ def test_refuse_path_only_accepts_qualification_alt_action(monkeypatch):
     cfg.certification.allow_uncertainty_qualified_answers = False
     cfg.certification.abstention_threshold = 0.99
     cfg.certification.refusal_threshold = 0.1
-    res = certify_answer("Q", "No support claim.", evidence=[], context="unsafe", config=cfg)
+    res = certify_answer(
+        "Q", "No support claim.", evidence=[], context={"unsafe": True}, config=cfg
+    )
     assert res.recommended_action == "refuse"
 
 
@@ -232,8 +234,10 @@ def test_scoped_alternative_receives_context(monkeypatch):
 
     monkeypatch.setattr(cert_mod, "find_scoped_alternative", fake_alt)
     cfg = FactualityCertificationConfig(mode="gated")
-    certify_answer("Q", "No support claim.", evidence=[], context="CTX_PAYLOAD", config=cfg)
-    assert seen["ctx"] == "CTX_PAYLOAD"
+    certify_answer(
+        "Q", "No support claim.", evidence=[], context={"payload": "CTX_PAYLOAD"}, config=cfg
+    )
+    assert seen["ctx"] == {"payload": "CTX_PAYLOAD"}
 
 
 def test_declared_confidence_token_aware_matching():
