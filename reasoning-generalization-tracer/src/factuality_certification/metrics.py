@@ -18,4 +18,7 @@ def contradicted_claim_rate(supports: list[ClaimSupport]) -> float:
 
 
 def overrefusal_rate(overrefusal_cases: int, answerable_cases: int) -> float:
-    return overrefusal_cases / max(answerable_cases, 1)
+    if answerable_cases <= 0:
+        return 0.0
+    raw = overrefusal_cases / answerable_cases
+    return min(max(raw, 0.0), 1.0)

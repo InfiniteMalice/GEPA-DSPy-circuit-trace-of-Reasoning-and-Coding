@@ -19,6 +19,7 @@ def match_claims_to_evidence(
         best_score = 0.0
         best_eids: list[str] = []
         contradiction = 0.0
+        contradiction_eids: list[str] = []
         for item in evidence:
             e_tokens = _tokens(item.text)
             overlap = len(c_tokens & e_tokens) / max(len(c_tokens), 1)
@@ -31,6 +32,7 @@ def match_claims_to_evidence(
             if (" not " in f" {claim.text.lower()} ") ^ (" not " in f" {item.text.lower()} "):
                 if overlap >= 0.2:
                     contradiction = max(contradiction, 0.8)
+                    contradiction_eids.append(item.id)
         if contradiction >= config.contradiction_threshold:
             label = "contradicted"
         elif best_score >= config.min_support_score:
@@ -39,13 +41,14 @@ def match_claims_to_evidence(
             label = "partially_supported"
         else:
             label = "unsupported"
+        evidence_ids = contradiction_eids if label == "contradicted" else best_eids
         supports.append(
             ClaimSupport(
                 claim_id=claim.id,
                 support_label=label,
                 support_score=min(best_score, 1.0),
                 contradiction_score=contradiction,
-                evidence_ids=best_eids,
+                evidence_ids=evidence_ids,
                 rationale=f"lexical_weighted={best_score:.3f}",
                 needs_abstention=label in {"unsupported", "contradicted"},
                 needs_qualification=label in {"unsupported", "partially_supported", "contradicted"},
