@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from .claim_extraction import extract_atomic_claims
 from .config import FactualityCertificationConfig
 from .constraints import compute_constraint_scores
@@ -16,11 +18,26 @@ from .types import CertificationResult, EvidenceItem
 
 
 def _declared_confidence(answer: str) -> float:
+    """Estimate declared confidence using token-aware phrase matching."""
     lowered = answer.lower()
-    if any(tok in lowered for tok in ["definitely", "certainly", "always"]):
-        return 0.9
-    if any(tok in lowered for tok in ["maybe", "might", "uncertain", "not sure"]):
+    tokens = re.findall(r"\w+", lowered)
+    token_set = set(tokens)
+
+    negative_phrases = ["not sure"]
+    negative_tokens = ["maybe", "might", "uncertain"]
+    positive_tokens = ["definitely", "certainly", "always"]
+
+    if any(re.search(rf"\b{re.escape(phrase)}\b", lowered) for phrase in negative_phrases):
         return 0.3
+    if any(tok in token_set for tok in negative_tokens):
+        return 0.3
+
+    for tok in positive_tokens:
+        if re.search(rf"\bnot\s+{re.escape(tok)}\b", lowered):
+            return 0.3
+
+    if any(tok in token_set for tok in positive_tokens):
+        return 0.9
     return 0.6
 
 
@@ -117,6 +134,7 @@ def certify_answer(
     else:
         action = "refuse"
 
+    original_action = action
     alt_scoped = False
     if cfg.overrefusal_guard.enabled:
         alt = find_scoped_alternative(prompt, answer, claims, supports, safety_context=context)
@@ -131,6 +149,7 @@ def certify_answer(
             elif th.allow_partial_answers and alt.action in allowed_partial_actions:
                 action = alt.action
 
+    original_action_before_mode_rewrite = action
     if cfg.mode != "gated" and action in {"refuse", "abstain"}:
         if th.allow_uncertainty_qualified_answers and (cfg.mode == "gated" or alt_scoped):
             action = "answer_with_qualifications"
@@ -161,6 +180,19 @@ def certify_answer(
         ]
     logs = make_log_bundle(**log_payload)
 
+    if not supports:
+        retention_value = 0.0
+    else:
+        supported_fraction = (supported + 0.5 * partial) / len(supports)
+        retention_value = (
+            max(0.0, 1.0 - (unsupported_ratio + contradiction_ratio)) * supported_fraction
+        )
+
+    overrefusal_detected = original_action in {"abstain", "refuse"} and alt_scoped
+    mode_rewrite_overrefusal_detected = (
+        original_action_before_mode_rewrite in {"abstain", "refuse"} and alt_scoped
+    )
+
     case_projection = {
         **to_gepa_features(
             CertificationResult(
@@ -168,13 +200,14 @@ def certify_answer(
                 overall,
                 risk,
                 0.0,
-                max(0.0, 1.0 - (unsupported_ratio + contradiction_ratio)),
+                retention_value,
                 supports,
                 action,
             )
         ),
         "confidence_score": declared_conf,
-        "overrefusal_detected": action in {"abstain", "refuse"} and alt_scoped,
+        "overrefusal_detected": overrefusal_detected,
+        "overrefusal_detected_pre_mode_rewrite": mode_rewrite_overrefusal_detected,
         "scoped_answer_possible": alt_scoped,
         "has_references": any(e.citation for e in evidence),
         "has_current_references": any(e.timestamp for e in evidence),
@@ -196,8 +229,8 @@ def certify_answer(
         mode=cfg.mode,
         overall_label=overall,
         hallucination_risk=risk,
-        overrefusal_risk=1.0 if case_projection["overrefusal_detected"] else 0.0,
-        useful_answer_retention_score=max(0.0, 1.0 - (unsupported_ratio + contradiction_ratio)),
+        overrefusal_risk=1.0 if overrefusal_detected else 0.0,
+        useful_answer_retention_score=retention_value,
         claim_support=supports,
         recommended_action=action,
         revised_answer=answer,

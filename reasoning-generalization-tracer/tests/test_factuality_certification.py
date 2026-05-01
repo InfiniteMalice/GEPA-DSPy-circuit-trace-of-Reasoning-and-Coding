@@ -5,6 +5,7 @@ from factuality_certification.config import CertificationThresholdConfig, Eviden
 from factuality_certification.integrations import reward_features
 from factuality_certification.metrics import overrefusal_rate
 from factuality_certification.routing import choose_routing_action
+from factuality_certification.certification import _declared_confidence
 from factuality_certification.claim_extraction import extract_atomic_claims
 
 
@@ -233,3 +234,16 @@ def test_scoped_alternative_receives_context(monkeypatch):
     cfg = FactualityCertificationConfig(mode="gated")
     certify_answer("Q", "No support claim.", evidence=[], context="CTX_PAYLOAD", config=cfg)
     assert seen["ctx"] == "CTX_PAYLOAD"
+
+
+def test_declared_confidence_token_aware_matching():
+    assert _declared_confidence("I am uncertainly optimistic") == 0.6
+    assert _declared_confidence("This is not always true") == 0.3
+    assert _declared_confidence("This is definitely true") == 0.9
+
+
+def test_retention_zero_when_no_supports():
+    cfg = FactualityCertificationConfig(mode="shadow")
+    cfg.claim_extraction.enabled = False
+    res = certify_answer("Q", "No claims processed.", evidence=[], config=cfg)
+    assert res.useful_answer_retention_score == 0.0
