@@ -46,6 +46,7 @@ packages = [
     "rg_tracer.dapo",
     "rg_tracer.testing",
     "circuit_tracer",
+    "factuality_certification",
 ]
 
 [tool.setuptools.package-data]
