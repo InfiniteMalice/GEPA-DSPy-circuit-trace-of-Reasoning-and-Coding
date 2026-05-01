@@ -5,6 +5,7 @@ from factuality_certification.config import CertificationThresholdConfig, Eviden
 from factuality_certification.integrations import reward_features
 from factuality_certification.metrics import overrefusal_rate
 from factuality_certification.routing import choose_routing_action
+from factuality_certification.claim_extraction import extract_atomic_claims
 
 
 def test_supported_claim():
@@ -126,3 +127,25 @@ def test_abstain_before_qualification_when_threshold_hit():
     cfg.overrefusal_guard.enabled = False
     res = certify_answer("Q", "Unverifiable claim.", evidence=[], config=cfg)
     assert res.recommended_action in {"abstain", "refuse"}
+
+
+def test_warnings_only_for_qualification_action():
+    cfg = FactualityCertificationConfig(mode="gated")
+    cfg.certification.allow_partial_answers = False
+    cfg.certification.allow_uncertainty_qualified_answers = False
+    cfg.overrefusal_guard.enabled = False
+    abstain_res = certify_answer("Q", "Unverifiable claim.", evidence=[], config=cfg)
+    assert "qualification_recommended" not in abstain_res.warnings
+
+    qual_cfg = FactualityCertificationConfig(mode="shadow")
+    qual_res = certify_answer("Q", "Unverifiable claim.", evidence=[], config=qual_cfg)
+    if qual_res.recommended_action == "answer_with_qualifications":
+        assert "qualification_recommended" in qual_res.warnings
+
+
+def test_extract_atomic_claims_respects_max_claims_for_mapping():
+    claims, mapping = extract_atomic_claims("A, B, C, D.", max_claims=2, split_compound_claims=True)
+    assert len(claims) == 2
+    total_mapped_clauses = sum(len(v) for v in mapping.values())
+    assert total_mapped_clauses >= len(claims)
+    assert len(mapping) == 1

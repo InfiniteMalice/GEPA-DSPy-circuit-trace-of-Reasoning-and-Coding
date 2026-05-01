@@ -15,6 +15,7 @@ def extract_atomic_claims(
     claims: list[AtomicClaim] = []
     mapping: dict[int, list[str]] = {}
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", answer) if s.strip()]
+    reached_max = False
     for i, sentence in enumerate(sentences):
         if split_compound_claims:
             parts = re.split(r"\b(?:and|but)\b|[;,]", sentence)
@@ -24,6 +25,7 @@ def extract_atomic_claims(
         mapping[i] = clauses
         for clause in clauses:
             if len(claims) >= max_claims:
+                reached_max = True
                 break
             cleaned = _HEDGE_PREFIX.sub("", clause).strip()
             if not cleaned:
@@ -43,4 +45,9 @@ def extract_atomic_claims(
                     verifiability_class="directly_verifiable",
                 )
             )
+            if len(claims) >= max_claims:
+                reached_max = True
+                break
+        if reached_max:
+            break
     return claims, mapping

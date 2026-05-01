@@ -164,7 +164,9 @@ def certify_answer(
             "routing_path": route,
         }
     )
-    warnings = [] if action == "answer" else ["qualification_recommended"]
+    warnings: list[str] = []
+    if action == "answer_with_qualifications":
+        warnings.append("qualification_recommended")
     return CertificationResult(
         mode=cfg.mode,
         overall_label=overall,
