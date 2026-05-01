@@ -149,3 +149,27 @@ def test_extract_atomic_claims_respects_max_claims_for_mapping():
     total_mapped_clauses = sum(len(v) for v in mapping.values())
     assert total_mapped_clauses >= len(claims)
     assert len(mapping) == 1
+
+
+def test_contradicted_heavy_routes_to_abstain_or_refuse_not_partial_or_qualification():
+    ev = [
+        EvidenceItem(
+            id="e1",
+            text="Paris is not the capital of France.",
+            quality_score=1.0,
+            retrieval_score=1.0,
+        )
+    ]
+    cfg = FactualityCertificationConfig(mode="gated")
+    cfg.overrefusal_guard.enabled = False
+    res = certify_answer("Q", "Paris is the capital of France.", evidence=ev, config=cfg)
+    assert res.recommended_action in {"abstain", "refuse"}
+
+
+def test_mapping_contains_only_emitted_cleaned_clauses():
+    claims, mapping = extract_atomic_claims(
+        "I think, A and in my opinion, B and C.", max_claims=2, split_compound_claims=True
+    )
+    emitted = [c.text for c in claims]
+    mapped = [x for vals in mapping.values() for x in vals]
+    assert emitted == mapped

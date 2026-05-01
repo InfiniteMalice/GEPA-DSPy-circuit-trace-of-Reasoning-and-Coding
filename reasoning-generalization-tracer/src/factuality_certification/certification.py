@@ -84,15 +84,25 @@ def certify_answer(
 
     if overall == "certified":
         action = "answer"
-    elif contradiction_ratio >= th.partial_threshold and th.allow_partial_answers:
-        action = "answer_partially"
-    elif support_ratio >= th.partial_threshold and th.allow_partial_answers:
-        action = "answer_partially"
-    elif unsupported_ratio >= th.refusal_threshold:
+    elif unsupported_ratio >= th.refusal_threshold or contradiction_ratio >= th.refusal_threshold:
         action = "refuse"
-    elif unsupported_ratio >= th.abstention_threshold:
+    elif (
+        unsupported_ratio >= th.abstention_threshold
+        or contradiction_ratio >= th.abstention_threshold
+    ):
         action = "abstain"
-    elif th.allow_uncertainty_qualified_answers:
+    elif (
+        th.allow_partial_answers
+        and support_ratio > 0
+        and contradiction_ratio < th.refusal_threshold
+        and (contradiction_ratio >= th.partial_threshold or support_ratio >= th.partial_threshold)
+    ):
+        action = "answer_partially"
+    elif (
+        th.allow_uncertainty_qualified_answers
+        and support_ratio > 0
+        and contradiction_ratio < th.refusal_threshold
+    ):
         action = "answer_with_qualifications"
     else:
         action = "refuse"

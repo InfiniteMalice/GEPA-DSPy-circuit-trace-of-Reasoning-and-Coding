@@ -22,7 +22,7 @@ def extract_atomic_claims(
         else:
             parts = [sentence]
         clauses = [c.strip() for c in parts if c.strip()]
-        mapping[i] = clauses
+        emitted_clauses: list[str] = []
         for clause in clauses:
             if len(claims) >= max_claims:
                 reached_max = True
@@ -30,6 +30,7 @@ def extract_atomic_claims(
             cleaned = _HEDGE_PREFIX.sub("", clause).strip()
             if not cleaned:
                 continue
+            emitted_clauses.append(cleaned)
             lowered = cleaned.lower()
             claim_type = ClaimType.FACTUAL.value
             if re.search(r"\d", cleaned):
@@ -48,6 +49,8 @@ def extract_atomic_claims(
             if len(claims) >= max_claims:
                 reached_max = True
                 break
+        if emitted_clauses:
+            mapping[i] = emitted_clauses
         if reached_max:
             break
     return claims, mapping
