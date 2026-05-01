@@ -127,9 +127,7 @@ def certify_answer(
             action = alt.action
 
     if cfg.mode != "gated" and action in {"refuse", "abstain"}:
-        if th.allow_uncertainty_qualified_answers and (
-            cfg.mode == "gated" or cfg.overrefusal_guard.enabled or alt_scoped
-        ):
+        if th.allow_uncertainty_qualified_answers and (cfg.mode == "gated" or alt_scoped):
             action = "answer_with_qualifications"
 
     declared_conf = _declared_confidence(answer)
@@ -165,7 +163,7 @@ def certify_answer(
                 overall,
                 risk,
                 0.0,
-                1.0 - unsupported_ratio,
+                max(0.0, 1.0 - (unsupported_ratio + contradiction_ratio)),
                 supports,
                 action,
             )
@@ -194,7 +192,7 @@ def certify_answer(
         overall_label=overall,
         hallucination_risk=risk,
         overrefusal_risk=1.0 if case_projection["overrefusal_detected"] else 0.0,
-        useful_answer_retention_score=1.0 - unsupported_atomic_claim_rate(supports),
+        useful_answer_retention_score=max(0.0, 1.0 - (unsupported_ratio + contradiction_ratio)),
         claim_support=supports,
         recommended_action=action,
         revised_answer=answer,

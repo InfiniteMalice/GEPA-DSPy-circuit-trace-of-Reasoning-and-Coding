@@ -85,6 +85,7 @@ def test_claim_extraction_disable_skips_claims():
 def test_split_compound_toggle_changes_fact_count():
     cfg = FactualityCertificationConfig(mode="shadow")
     cfg.claim_extraction.split_compound_claims = False
+    cfg.logging.log_atomic_claims = True
     res = certify_answer("Q", "A and B, C.", evidence=[], config=cfg)
     assert len(res.logs.get("atomic_fact_list", [])) == 1
 
