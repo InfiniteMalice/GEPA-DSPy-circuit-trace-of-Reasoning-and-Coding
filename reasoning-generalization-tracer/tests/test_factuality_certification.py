@@ -112,3 +112,17 @@ def test_config_validation_and_routing_validation():
 def test_overrefusal_rate_clamped():
     assert overrefusal_rate(1, 0) == 0.0
     assert overrefusal_rate(5, 2) == 1.0
+
+
+def test_temporal_hint_uses_word_boundaries():
+    res = certify_answer("Q", "This is currentlyness only.", evidence=[])
+    assert res.metrics["requires_current_source"] is False
+
+
+def test_abstain_before_qualification_when_threshold_hit():
+    cfg = FactualityCertificationConfig(mode="gated")
+    cfg.certification.allow_partial_answers = False
+    cfg.certification.allow_uncertainty_qualified_answers = True
+    cfg.overrefusal_guard.enabled = False
+    res = certify_answer("Q", "Unverifiable claim.", evidence=[], config=cfg)
+    assert res.recommended_action in {"abstain", "refuse"}

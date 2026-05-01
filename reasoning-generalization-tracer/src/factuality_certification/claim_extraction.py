@@ -32,7 +32,7 @@ def extract_atomic_claims(
             claim_type = ClaimType.FACTUAL.value
             if re.search(r"\d", cleaned):
                 claim_type = ClaimType.NUMERIC.value
-            if any(h in lowered for h in _TEMPORAL_HINTS):
+            if any(re.search(rf"\b{re.escape(h)}\b", lowered) for h in _TEMPORAL_HINTS):
                 claim_type = ClaimType.TEMPORAL.value
             claims.append(
                 AtomicClaim(

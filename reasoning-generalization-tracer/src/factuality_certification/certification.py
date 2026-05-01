@@ -88,10 +88,12 @@ def certify_answer(
         action = "answer_partially"
     elif support_ratio >= th.partial_threshold and th.allow_partial_answers:
         action = "answer_partially"
-    elif th.allow_uncertainty_qualified_answers:
-        action = "answer_with_qualifications"
+    elif unsupported_ratio >= th.refusal_threshold:
+        action = "refuse"
     elif unsupported_ratio >= th.abstention_threshold:
         action = "abstain"
+    elif th.allow_uncertainty_qualified_answers:
+        action = "answer_with_qualifications"
     else:
         action = "refuse"
 
