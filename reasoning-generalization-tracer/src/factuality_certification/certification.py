@@ -119,12 +119,17 @@ def certify_answer(
 
     alt_scoped = False
     if cfg.overrefusal_guard.enabled:
-        alt = find_scoped_alternative(prompt, answer, claims, supports, safety_context=None)
+        alt = find_scoped_alternative(prompt, answer, claims, supports, safety_context=context)
         alt_scoped = alt.scoped_answer_possible
+        allowed_partial_actions = {"answer_partially"}
         if action == "refuse" and th.require_scope_before_refusal and alt.scoped_answer_possible:
-            action = alt.action
-        if action == "abstain" and alt.scoped_answer_possible and th.allow_partial_answers:
-            action = alt.action
+            if alt.action == "answer_with_qualifications":
+                action = alt.action
+        if action == "abstain" and alt.scoped_answer_possible:
+            if alt.action == "answer_with_qualifications":
+                action = alt.action
+            elif th.allow_partial_answers and alt.action in allowed_partial_actions:
+                action = alt.action
 
     if cfg.mode != "gated" and action in {"refuse", "abstain"}:
         if th.allow_uncertainty_qualified_answers and (cfg.mode == "gated" or alt_scoped):

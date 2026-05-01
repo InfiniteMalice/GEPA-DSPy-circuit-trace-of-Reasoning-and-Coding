@@ -198,3 +198,38 @@ def test_non_gated_refuse_not_forced_to_qualification_without_guard_or_scope():
     cfg.certification.allow_uncertainty_qualified_answers = True
     res = certify_answer("Q", "Unknown claim.", evidence=[], config=cfg)
     assert res.recommended_action in {"refuse", "abstain"}
+
+
+def test_refuse_path_only_accepts_qualification_alt_action(monkeypatch):
+    from factuality_certification import certification as cert_mod
+    from factuality_certification.overrefusal_guard import ScopedAlternative
+
+    def fake_alt(prompt, answer, claims, supports, safety_context=None):
+        return ScopedAlternative(
+            scoped_answer_possible=True, action="answer_partially", reason="test"
+        )
+
+    monkeypatch.setattr(cert_mod, "find_scoped_alternative", fake_alt)
+    cfg = FactualityCertificationConfig(mode="gated")
+    cfg.certification.allow_partial_answers = True
+    cfg.certification.allow_uncertainty_qualified_answers = False
+    cfg.certification.abstention_threshold = 0.99
+    cfg.certification.refusal_threshold = 0.1
+    res = certify_answer("Q", "No support claim.", evidence=[], context="unsafe", config=cfg)
+    assert res.recommended_action == "refuse"
+
+
+def test_scoped_alternative_receives_context(monkeypatch):
+    from factuality_certification import certification as cert_mod
+    from factuality_certification.overrefusal_guard import ScopedAlternative
+
+    seen = {"ctx": None}
+
+    def fake_alt(prompt, answer, claims, supports, safety_context=None):
+        seen["ctx"] = safety_context
+        return ScopedAlternative(scoped_answer_possible=False, action="abstain", reason="test")
+
+    monkeypatch.setattr(cert_mod, "find_scoped_alternative", fake_alt)
+    cfg = FactualityCertificationConfig(mode="gated")
+    certify_answer("Q", "No support claim.", evidence=[], context="CTX_PAYLOAD", config=cfg)
+    assert seen["ctx"] == "CTX_PAYLOAD"
