@@ -74,6 +74,11 @@ def test_modes_do_not_crash():
         cfg = FactualityCertificationConfig(mode=mode, enabled=True)
         res = certify_answer("Q", "A fact.", evidence=[], config=cfg)
         assert res.mode == mode
+    off_res = certify_answer(
+        "Q", "A fact.", evidence=[], config=FactualityCertificationConfig(mode="off")
+    )
+    assert off_res.overall_label == "unevaluated"
+    assert off_res.useful_answer_retention_score == 0.0
 
 
 def test_claim_extraction_disable_skips_claims():

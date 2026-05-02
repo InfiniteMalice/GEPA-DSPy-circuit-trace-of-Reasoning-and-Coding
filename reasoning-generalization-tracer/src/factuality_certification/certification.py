@@ -53,7 +53,20 @@ def certify_answer(
     cfg = config or FactualityCertificationConfig()
     if not cfg.enabled or cfg.mode == "off":
         return CertificationResult(
-            "off", "certified", 0.0, 0.0, 1.0, [], "answer", revised_answer=answer
+            mode="off",
+            overall_label="unevaluated",
+            hallucination_risk=0.0,
+            overrefusal_risk=0.0,
+            useful_answer_retention_score=0.0,
+            claim_support=[],
+            recommended_action="answer",
+            revised_answer=answer,
+            warnings=["certification_disabled"],
+            metrics={},
+            logs={},
+            taxonomy={},
+            case_projection={},
+            trace_bundle_id=None,
         )
 
     evidence = evidence or []
