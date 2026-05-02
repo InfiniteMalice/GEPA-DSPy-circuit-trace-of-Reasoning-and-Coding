@@ -220,8 +220,6 @@ def test_refuse_path_only_accepts_qualification_alt_action(monkeypatch):
     cfg = FactualityCertificationConfig(mode="gated")
     cfg.certification.allow_partial_answers = True
     cfg.certification.allow_uncertainty_qualified_answers = False
-    cfg.certification.abstention_threshold = 0.99
-    cfg.certification.refusal_threshold = 0.1
     res = certify_answer(
         "Q", "No support claim.", evidence=[], context={"unsafe": True}, config=cfg
     )
