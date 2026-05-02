@@ -146,8 +146,9 @@ def test_warnings_only_for_qualification_action():
 
     qual_cfg = FactualityCertificationConfig(mode="shadow")
     qual_res = certify_answer("Q", "Unverifiable claim.", evidence=[], config=qual_cfg)
-    if qual_res.recommended_action == "answer_with_qualifications":
-        assert "qualification_recommended" in qual_res.warnings
+    assert ("qualification_recommended" in qual_res.warnings) == (
+        qual_res.recommended_action == "answer_with_qualifications"
+    )
 
 
 def test_extract_atomic_claims_respects_max_claims_for_mapping():
