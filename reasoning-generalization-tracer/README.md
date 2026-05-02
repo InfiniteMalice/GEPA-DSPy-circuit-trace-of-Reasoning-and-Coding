@@ -337,3 +337,31 @@ deltas. Look for stabilising trends across interventions—for example, compare
 `sft_only` vs `srl_pretrain_then_sft` to see how supervised reasoning raises
 repeatability before accuracy improves, and toggle weight decay to confirm the
 shift from spiky memorisers to broader rule circuits.
+
+
+## GeoCert-Inspired Factuality Certification, Observability, and Over-Refusal Guard
+
+This repository includes an optional `factuality_certification` layer inspired by practical
+constraint-based certification (not a formal truth proof). It certifies final answers relative
+to available evidence and context, supports `off` / `shadow` / `advisory` / `gated` / `training`
+modes, and is designed to avoid IDK/refusal collapse via a scoped-answer over-refusal guard.
+
+It separates refusal, abstention, scoped partial answers, and uncertainty-qualified answers. It
+also preserves positive-only thought-trace reward: no negative scoring is applied to hidden
+reasoning traces; negative signals only apply to observable final-answer behavior when needed.
+
+```python
+from factuality_certification import EvidenceItem, certify_answer
+
+result = certify_answer(
+    prompt="What does the paper claim?",
+    answer="The paper reports a 12% gain.",
+    evidence=[EvidenceItem(id="e1", text="The paper reports a 12% gain.", quality_score=0.9, retrieval_score=0.8)],
+)
+
+print(result.overall_label)
+print(result.recommended_action)
+print(result.hallucination_risk)
+```
+
+Preset configs are available in `configs/factuality_certification/{off,shadow,advisory,gated,training}.yaml`.
