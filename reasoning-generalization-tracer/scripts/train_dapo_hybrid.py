@@ -31,9 +31,7 @@ _UNSUPPORTED_DTYPE_ERROR = "Unsupported torch dtype"
 
 
 class NullScorer:
-    def score(
-        self, prompts: Iterable[str], completions: Iterable[str]
-    ) -> List[Dict[str, float]]:
+    def score(self, prompts: Iterable[str], completions: Iterable[str]) -> List[Dict[str, float]]:
         LOGGER.warning("NullScorer in use; rewards will be empty")
         return [{} for _ in zip(prompts, completions, strict=True)]
 
@@ -48,9 +46,7 @@ def _load_jsonl(path: Path) -> List[Mapping[str, Any]]:
             try:
                 rows.append(json.loads(line))
             except json.JSONDecodeError as exc:
-                raise ValueError(
-                    f"Invalid JSON in {path} at line {line_number}: {line}"
-                ) from exc
+                raise ValueError(f"Invalid JSON in {path} at line {line_number}: {line}") from exc
     return rows
 
 
@@ -62,9 +58,7 @@ def _extract_prompt(record: Mapping[str, Any]) -> str:
     return json.dumps(record)
 
 
-def _batch_records(
-    records: List[Mapping[str, Any]], batch_size: int
-) -> Iterable[Dict[str, Any]]:
+def _batch_records(records: List[Mapping[str, Any]], batch_size: int) -> Iterable[Dict[str, Any]]:
     """Yield batches of records.
 
     Note: returns a generator; it can only be iterated once.
@@ -72,9 +66,7 @@ def _batch_records(
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         prompts = [_extract_prompt(record) for record in batch]
-        task_ids = [
-            str(record["task_id"]) if "task_id" in record else None for record in batch
-        ]
+        task_ids = [str(record["task_id"]) if "task_id" in record else None for record in batch]
         prompt_ids = [
             (
                 str(record["prompt_id"])
@@ -105,9 +97,7 @@ def _load_reward_mixer(path: Path) -> Dict[str, float]:
         try:
             normalized[str(key)] = float(value)
         except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"Cannot convert reward mixer key '{key}' to float: {value}"
-            ) from exc
+            raise ValueError(f"Cannot convert reward mixer key '{key}' to float: {value}") from exc
     return normalized
 
 
@@ -181,9 +171,7 @@ def _build_policy(
 
 
 def _resolve_adapter_device(model: Any) -> str | None:
-    device_map = getattr(model, "hf_device_map", None) or getattr(
-        model, "device_map", None
-    )
+    device_map = getattr(model, "hf_device_map", None) or getattr(model, "device_map", None)
     if isinstance(device_map, dict):
         for value in device_map.values():
             if isinstance(value, str) and value != "cpu":
@@ -192,9 +180,7 @@ def _resolve_adapter_device(model: Any) -> str | None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Train a DAPO hybrid policy on RG tasks."
-    )
+    parser = argparse.ArgumentParser(description="Train a DAPO hybrid policy on RG tasks.")
     parser.add_argument("--model", required=True, help="HuggingFace model name or path")
     parser.add_argument("--dataset", required=True, help="Path to a JSONL dataset")
     parser.add_argument("--output-dir", required=True, help="Output directory for logs")
@@ -204,9 +190,7 @@ def main() -> None:
     parser.add_argument("--clip-ratio", type=float, default=0.2)
     parser.add_argument("--kl-target", type=float, default=0.1)
     parser.add_argument("--kl-coef", type=float, default=0.1)
-    parser.add_argument(
-        "--reward-mixer", required=True, help="YAML/JSON reward mixer file"
-    )
+    parser.add_argument("--reward-mixer", required=True, help="YAML/JSON reward mixer file")
     parser.add_argument(
         "--mapping-config",
         help="YAML/JSON feedback mapping config",
@@ -215,9 +199,7 @@ def main() -> None:
     parser.add_argument("--enable-grn-value", action="store_true")
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument(
-        "--max-steps", type=int, default=None, help="Maximum training steps"
-    )
+    parser.add_argument("--max-steps", type=int, default=None, help="Maximum training steps")
     parser.add_argument("--torch-dtype", help="Torch dtype (e.g., float16, bfloat16)")
     parser.add_argument("--device-map", help="Transformers device map (e.g., auto)")
     parser.add_argument(

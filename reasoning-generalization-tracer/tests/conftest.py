@@ -96,6 +96,9 @@ _install_gepa_stubs()
 
 
 def _install_gepa_stubs() -> None:
+    module = sys.modules.get("gepa_dapo_grn")
+    if module is not None:
+        return
     if importlib.util.find_spec("gepa_dapo_grn") is None:
         from rg_tracer.testing.gepa_stubs import install_gepa_stubs
 
@@ -106,6 +109,9 @@ _install_gepa_stubs()
 
 
 def _install_gepa_stubs() -> None:
+    module = sys.modules.get("gepa_dapo_grn")
+    if module is not None:
+        return
     if importlib.util.find_spec("gepa_dapo_grn") is None:
         from rg_tracer.testing.gepa_stubs import install_gepa_stubs
 

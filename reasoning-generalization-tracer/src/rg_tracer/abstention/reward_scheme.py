@@ -241,9 +241,7 @@ def evaluate_abstention_reward(
     except AssertionError:
         raise
     except Exception:
-        LOGGER.exception(
-            "Failed to evaluate abstention reward; returning null fallback."
-        )
+        LOGGER.exception("Failed to evaluate abstention reward; returning null fallback.")
         return RewardOutcome(
             case_id=0,
             reward=0.0,

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Validate attribution artifacts emitted by CI smoke tests."""
+
 from __future__ import annotations
 
 import json
 import os
 import sys
 from pathlib import Path
-
 
 REQUIRED_KEYS: tuple[str, ...] = (
     "delta_alignment",

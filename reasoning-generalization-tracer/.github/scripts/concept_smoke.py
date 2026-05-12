@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Smoke test concept reward alignment path."""
+
 from __future__ import annotations
 
 import sys

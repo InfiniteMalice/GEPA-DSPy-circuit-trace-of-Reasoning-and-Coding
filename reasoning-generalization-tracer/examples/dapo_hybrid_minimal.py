@@ -63,9 +63,7 @@ class DummyPolicy:
 
 
 class DummyScorer:
-    def score(
-        self, prompts: Iterable[str], completions: Iterable[str]
-    ) -> List[Dict[str, float]]:
+    def score(self, prompts: Iterable[str], completions: Iterable[str]) -> List[Dict[str, float]]:
         scores = []
         for _, completion in zip(prompts, completions, strict=True):
             scores.append({"correctness": 1.0, "length": float(len(completion))})

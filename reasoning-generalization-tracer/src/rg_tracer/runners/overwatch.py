@@ -84,10 +84,7 @@ class OverwatchAgent:
             )
         else:
             decision = self._apply_heuristic_fallback(response, default_reason)
-        if (
-            decision.action not in self.config.allowed_actions
-            and decision.action != "allow"
-        ):
+        if decision.action not in self.config.allowed_actions and decision.action != "allow":
             return OverwatchDecision(
                 action="allow",
                 reason=(

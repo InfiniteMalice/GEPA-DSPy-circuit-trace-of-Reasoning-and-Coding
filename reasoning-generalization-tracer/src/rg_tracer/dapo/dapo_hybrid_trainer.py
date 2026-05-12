@@ -186,8 +186,7 @@ class DAPOHybridTrainer:
                 )
             if not isinstance(meta, Mapping):
                 raise TypeError(
-                    "Generation metadata must be a mapping at index "
-                    f"{prompt_index}: {meta!r}"
+                    "Generation metadata must be a mapping at index " f"{prompt_index}: {meta!r}"
                 )
             _validate_prompt_grouping(
                 prompt_index,
@@ -278,13 +277,11 @@ def _short_repr(value: Any) -> str:
 
 
 @overload
-def _get_attr(output: Any, name: str) -> Any:
-    ...
+def _get_attr(output: Any, name: str) -> Any: ...
 
 
 @overload
-def _get_attr(output: Any, name: str, default: Any) -> Any:
-    ...
+def _get_attr(output: Any, name: str, default: Any) -> Any: ...
 
 
 def _get_attr(output: Any, name: str, default: Any = _MISSING) -> Any:
@@ -335,10 +332,6 @@ def _validate_prompt_grouping(
         return
     if "prompt" in meta:
         if meta["prompt"] != prompt:
-            raise ValueError(
-                "Generation metadata prompt does not match expected prompt"
-            )
+            raise ValueError("Generation metadata prompt does not match expected prompt")
         return
-    raise ValueError(
-        "Generation metadata must include prompt_index or prompt to validate grouping"
-    )
+    raise ValueError("Generation metadata must include prompt_index or prompt to validate grouping")

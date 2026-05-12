@@ -10,6 +10,10 @@ def _tokens(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9]+", text.lower()))
 
 
+def _symbol_tokens(text: str) -> set[str]:
+    return set(re.findall(r"\b[a-zA-Z]\b", text.lower()))
+
+
 def match_claims_to_evidence(
     claims: list[AtomicClaim], evidence: list[EvidenceItem], config: EvidenceMatchingConfig
 ) -> list[ClaimSupport]:
@@ -23,9 +27,16 @@ def match_claims_to_evidence(
         for item in evidence:
             e_tokens = _tokens(item.text)
             overlap = len(c_tokens & e_tokens) / max(len(c_tokens), 1)
+            c_symbols = _symbol_tokens(claim.text)
+            e_symbols = _symbol_tokens(item.text)
+            symbol_mismatch = c_symbols and e_symbols and c_symbols.isdisjoint(e_symbols)
+            if symbol_mismatch:
+                overlap = min(overlap, 0.5)
             weighted = overlap * config.entailment_weight
             weighted += item.quality_score * config.source_quality_weight
             weighted += item.retrieval_score * config.retrieval_weight
+            if symbol_mismatch:
+                weighted = min(weighted, config.min_support_score * 0.9)
             if weighted > best_score:
                 best_score = weighted
                 best_eids = [item.id]

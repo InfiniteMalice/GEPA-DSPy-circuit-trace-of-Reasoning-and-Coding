@@ -80,9 +80,7 @@ class TRMSampler:
     def __init__(self) -> None:
         self.model = TinyRecursionModel()
 
-    def generate(
-        self, problem: Mapping[str, object], k: int
-    ) -> List[Dict[str, object]]:
+    def generate(self, problem: Mapping[str, object], k: int) -> List[Dict[str, object]]:
         numbers = problem.get("numbers", [])
         answer = problem.get("answer")
         parity_task = problem.get("task") == "parity"
@@ -161,9 +159,7 @@ def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
     return frontier
 
 
-def _candidate_to_record(
-    candidate: Candidate, overwatch_enabled: bool
-) -> Dict[str, object]:
+def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[str, object]:
     record: Dict[str, object] = {
         "text": candidate.text,
         "confidence": candidate.confidence,
@@ -352,9 +348,7 @@ def _apply_attribution_rewards(
     if isinstance(backend_value, MappingABC):
         backend_config = dict(backend_value)
         backend_name = (
-            str(backend_config.pop("name", DEFAULT_ATTR_CONFIG["backend"]))
-            .strip()
-            .lower()
+            str(backend_config.pop("name", DEFAULT_ATTR_CONFIG["backend"])).strip().lower()
         )
         kwargs_value = backend_config.pop("kwargs", {})
         if isinstance(kwargs_value, MappingABC):
@@ -363,9 +357,7 @@ def _apply_attribution_rewards(
             backend_kwargs = {}
         backend_kwargs.update(backend_config)
     else:
-        backend_name = (
-            str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
-        )
+        backend_name = str(backend_value or DEFAULT_ATTR_CONFIG["backend"]).strip().lower()
     if not backend_name:
         backend_name = DEFAULT_ATTR_CONFIG["backend"]
     backend_spec: Mapping[str, object] = {"name": backend_name, **backend_kwargs}
@@ -412,9 +404,7 @@ def _apply_attribution_rewards(
                     attr_path = attr_dir / f"candidate{idx}_probe{probe_index}.json"
                     with attr_path.open("w", encoding="utf8") as graph_handle:
                         json.dump(graph, graph_handle, indent=2)
-                metrics = _compute_and_apply_attr_metrics(
-                    candidate, graphs, bonuses, concept
-                )
+                metrics = _compute_and_apply_attr_metrics(candidate, graphs, bonuses, concept)
                 record = {
                     "candidate_index": idx,
                     "problem_id": candidate.problem_id,
@@ -453,9 +443,7 @@ def _map_semantics_to_features(
     raw_features = trace.get("features", []) or []
     if isinstance(raw_features, MappingABC):
         features_iterable = [raw_features]
-    elif isinstance(raw_features, Iterable) and not isinstance(
-        raw_features, (str, bytes)
-    ):
+    elif isinstance(raw_features, Iterable) and not isinstance(raw_features, (str, bytes)):
         features_iterable = list(raw_features)
     else:
         features_iterable = []
@@ -469,12 +457,8 @@ def _map_semantics_to_features(
         for entry in report.get("tags", [])
         if SemanticTag.CONTRADICTION.value in entry.get("tags", [])
     ]
-    entailed_lower = [
-        str(step).casefold() for step in entailed_steps if step is not None
-    ]
-    contradictory_lower = [
-        str(step).casefold() for step in contradictory_steps if step is not None
-    ]
+    entailed_lower = [str(step).casefold() for step in entailed_steps if step is not None]
+    contradictory_lower = [str(step).casefold() for step in contradictory_steps if step is not None]
     entailed_ids: List[str] = []
     contradictory_ids: List[str] = []
     for feature in features_iterable:
@@ -607,9 +591,7 @@ def run_self_play(
         else bool(profile_config_safe.get("log_dvgr_metrics", False))
     )
     overwatch_settings = overwatch_config or OverwatchConfig()
-    overwatch_agent = (
-        OverwatchAgent(overwatch_settings) if overwatch_settings.enabled else None
-    )
+    overwatch_agent = OverwatchAgent(overwatch_settings) if overwatch_settings.enabled else None
     run_dir = _prepare_output_dir(output_dir)
 
     results: List[Candidate] = []
@@ -679,9 +661,7 @@ def run_self_play(
         dvgr_score: float | None = None
         if dvgr_logging:
             examples = problem.get("dvgr_examples") or []
-            if isinstance(examples, Iterable) and not isinstance(
-                examples, (str, bytes)
-            ):
+            if isinstance(examples, Iterable) and not isinstance(examples, (str, bytes)):
                 examples_list = list(examples)
                 predictions_list = [text_after_repair] * len(examples_list)
                 dvgr_score = compute_dvgr(examples_list, predictions_list)
@@ -830,9 +810,7 @@ def run_self_play(
                 grn_eps=aggregator.DEFAULT_EPSILON,
             )
             candidate.composite = (
-                candidate.base_composite
-                + candidate.attr_bonus
-                + candidate.concept_reward
+                candidate.base_composite + candidate.attr_bonus + candidate.concept_reward
             )
     else:
         for candidate in results:
@@ -854,12 +832,8 @@ def run_self_play(
 
     summary_path = run_dir / "summary.md"
     with summary_path.open("w", encoding="utf8") as handle:
-        handle.write(
-            "| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n"
-        )
-        handle.write(
-            "| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n"
-        )
+        handle.write("| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n")
+        handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):
             summary_row = (
                 "| {idx} | {comp:.3f} | {gates} | {reward:.3f} | {abst} | {sem} | {repair} |\n"

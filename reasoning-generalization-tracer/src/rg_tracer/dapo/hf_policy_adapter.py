@@ -11,9 +11,7 @@ from gepa_dapo_grn.policy_interfaces import Policy
 
 from ..modules.torch_stub import SimpleTensor, torch
 
-_NDIM_ERROR_MSG = (
-    "Expected log_probs with ndim==3 for batched action sequences; got ndim={ndim}."
-)
+_NDIM_ERROR_MSG = "Expected log_probs with ndim==3 for batched action sequences; got ndim={ndim}."
 _SEQ_LEN_ERROR_MSG = (
     "Action sequence length exceeds logits sequence length for batch index "
     "{idx}: {action_len} > {seq_len}. log_probs.ndim={ndim}."
@@ -54,9 +52,7 @@ class HFPolicyAdapter(Policy):
     def clone(self) -> Policy:
         if not hasattr(self.model, "state_dict"):
             raise ValueError("HFPolicyAdapter.clone requires a model with state_dict")
-        if not hasattr(self.model, "config") or not hasattr(
-            self.model.__class__, "from_config"
-        ):
+        if not hasattr(self.model, "config") or not hasattr(self.model.__class__, "from_config"):
             raise ValueError(
                 "HFPolicyAdapter.clone requires model.__class__.from_config and config"
             )
@@ -81,9 +77,7 @@ class HFPolicyAdapter(Policy):
             return outputs.logits
         return outputs
 
-    def logprobs(
-        self, obs: Any, actions: Sequence[Sequence[int]] | Sequence[int]
-    ) -> Any:
+    def logprobs(self, obs: Any, actions: Sequence[Sequence[int]] | Sequence[int]) -> Any:
         """Return log-probabilities for the provided actions.
 
         The actions must not exceed the logits sequence length when logits are 3D.
@@ -129,11 +123,7 @@ class HFPolicyAdapter(Policy):
             attention_mask=inputs.get("attention_mask"),
             pad_token_id=self.tokenizer.pad_token_id,
         )
-        if (
-            hasattr(generation, "scores")
-            and generation.scores
-            and hasattr(torch, "stack")
-        ):
+        if hasattr(generation, "scores") and generation.scores and hasattr(torch, "stack"):
             score_tensor = torch.stack(generation.scores, dim=1)
             token_logprobs = _log_softmax(score_tensor)
         else:
@@ -207,14 +197,8 @@ def _log_softmax(logits: Any) -> Any:
     data = _to_list(logits)
     if not data:
         return torch.tensor([])
-    if (
-        isinstance(data[0], Sequence)
-        and len(data[0]) > 0
-        and isinstance(data[0][0], list)
-    ):
-        return torch.tensor(
-            [[_log_softmax_row(step) for step in sequence] for sequence in data]
-        )
+    if isinstance(data[0], Sequence) and len(data[0]) > 0 and isinstance(data[0][0], list):
+        return torch.tensor([[_log_softmax_row(step) for step in sequence] for sequence in data])
     return torch.tensor([_log_softmax_row(row) for row in data])
 
 
@@ -289,16 +273,12 @@ def _gather_logprobs(
     if isinstance(actions, Sequence) and actions and isinstance(actions[0], int):
         action_ids = list(actions)
         if hasattr(log_probs, "ndim") and log_probs.ndim == 3:
-            gathered = [
-                log_probs[idx, -1, action] for idx, action in enumerate(action_ids)
-            ]
+            gathered = [log_probs[idx, -1, action] for idx, action in enumerate(action_ids)]
         else:
             gathered = [log_probs[idx][action] for idx, action in enumerate(action_ids)]
         return torch.tensor(gathered)
     if hasattr(log_probs, "ndim") and log_probs.ndim != 3:
-        raise ValueError(
-            _NDIM_ERROR_MSG.format(ndim=getattr(log_probs, "ndim", "unknown"))
-        )
+        raise ValueError(_NDIM_ERROR_MSG.format(ndim=getattr(log_probs, "ndim", "unknown")))
     gathered_sequences = []
     for idx, token_ids in enumerate(actions):
         seq_len = len(log_probs[idx])
