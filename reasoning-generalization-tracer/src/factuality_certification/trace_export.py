@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 
-
 _RESERVED = {
     "trace_package_id",
     "graph_candidate_priority",

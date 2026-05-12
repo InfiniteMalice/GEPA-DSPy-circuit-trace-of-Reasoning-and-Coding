@@ -185,9 +185,7 @@ def compute_concept_reward(
     if weights is None:
         weights = DEFAULT_WEIGHTS
     raw_entailed = task_metrics.get("entailed_feature_ids") if task_metrics else None
-    raw_contradictory = (
-        task_metrics.get("contradictory_feature_ids") if task_metrics else None
-    )
+    raw_contradictory = task_metrics.get("contradictory_feature_ids") if task_metrics else None
 
     def _iter_ids(raw: object) -> IterableABC[object]:
         if raw is None:
@@ -208,9 +206,7 @@ def compute_concept_reward(
         contradictory_ids,
     )
     if use_grn and features:
-        importances = [
-            _safe_float(feature.get("importance", 0.0) or 0.0) for feature in features
-        ]
+        importances = [_safe_float(feature.get("importance", 0.0) or 0.0) for feature in features]
         normalised = apply_grn(importances, eps=grn_eps).tolist()
         aligned_features = []
         for feature, importance in zip(features, normalised, strict=True):

@@ -18,7 +18,6 @@ from ..modules.grn import apply_grn
 from ..modules.torch_stub import torch
 from ..utils.math import weighted_geometric_mean
 
-
 DEFAULT_EPSILON = 1e-3
 DEFAULT_CONFIG = {
     "use_grn_for_scoring": False,
@@ -51,9 +50,7 @@ _LAST_CONFIG: Dict[str, object] = copy.deepcopy(DEFAULT_CONFIG)
 _LAST_CONFIG_LOCK = threading.Lock()
 
 
-def _deep_merge(
-    base: Mapping[str, object], override: Mapping[str, object]
-) -> Dict[str, object]:
+def _deep_merge(base: Mapping[str, object], override: Mapping[str, object]) -> Dict[str, object]:
     merged: Dict[str, object] = copy.deepcopy(base)
     for key, value in override.items():
         if isinstance(value, Mapping) and isinstance(merged.get(key), Mapping):
@@ -161,12 +158,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
             result["profiles"][current_profile] = {}
             continue
         # State: indent 4 under profiles marks nested subsection (e.g. bonuses).
-        if (
-            section == "profiles"
-            and indent == 4
-            and line.endswith(":")
-            and current_profile
-        ):
+        if section == "profiles" and indent == 4 and line.endswith(":") and current_profile:
             has_child = next_indent is not None and next_indent > indent
             if has_child:
                 current_subsection = line[:-1]
@@ -202,9 +194,7 @@ def _fallback_parse(text: str) -> Dict[str, object]:
                     parent = _find_container(config_stack, indent, inclusive=False)
                     target: Dict[str, object] = {}
                     parent[key] = target
-                    config_stack = [
-                        entry for entry in config_stack if entry[0] < indent
-                    ]
+                    config_stack = [entry for entry in config_stack if entry[0] < indent]
                     config_stack.append((indent, target))
                 else:
                     container = _find_container(config_stack, indent, inclusive=False)
@@ -240,9 +230,7 @@ def _split_profile_payload(
                 raise TypeError("weights section must be a mapping")
             weights_source = weights_value.items()
         else:
-            weights_source = (
-                (key, value) for key, value in raw.items() if key != "bonuses"
-            )
+            weights_source = ((key, value) for key, value in raw.items() if key != "bonuses")
     else:
         bonuses_raw = {}
         weights_source = raw

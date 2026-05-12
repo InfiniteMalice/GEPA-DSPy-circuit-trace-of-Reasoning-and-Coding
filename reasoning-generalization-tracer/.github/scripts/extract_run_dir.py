@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Extract run_dir from rg-tracer JSON output."""
+
 from __future__ import annotations
 
 import json

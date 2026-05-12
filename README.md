@@ -24,7 +24,16 @@ Inside the package you will find the following important components:
 - `src/rg_tracer/trm_baseline/` – Tiny Recursion Model implementation,
   training, and evaluation utilities.
 - `tests/` – unit tests covering the scoring rubric, aggregation, self-play,
-  concept rewards, abstention, and TRM baseline.
+  concept rewards, abstention, schema V3 overlays, and TRM baseline.
+
+## Schema V3 Overlay
+
+RG-Tracer now includes a conservative 13-case schema V3 overlay under
+`reasoning-generalization-tracer/src/rg_tracer/schema_v3/`. V3 preserves the
+original 13+0 abstention and hallucination schema while adding public structured
+metadata for reasoning units, control-loop operations, causal/scientific checks,
+MDL-control gates, and group-theoretic symmetry/invariance diagnostics. See
+[`reasoning-generalization-tracer/docs/schema_v3.md`](reasoning-generalization-tracer/docs/schema_v3.md).
 
 For detailed documentation, installation steps, and usage examples please refer
 to [`reasoning-generalization-tracer/README.md`](reasoning-generalization-tracer/README.md).

@@ -45,6 +45,7 @@ packages = [
     "rg_tracer.fallback",
     "rg_tracer.dapo",
     "rg_tracer.testing",
+    "rg_tracer.schema_v3",
     "circuit_tracer",
     "factuality_certification",
 ]
@@ -52,3 +53,4 @@ packages = [
 [tool.setuptools.package-data]
 "rg_tracer.scoring" = ["profiles.yaml"]
 "rg_tracer.humanities" = ["profiles.yaml"]
+"rg_tracer.schema_v3" = ["registry.yaml"]

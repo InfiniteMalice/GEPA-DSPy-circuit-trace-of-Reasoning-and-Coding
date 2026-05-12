@@ -174,9 +174,7 @@ def analyze_output_deep_values(
         heuristic["spec_faithfulness"], _safe_score(scores.get("completeness", 0.0))
     )
     # Safety leans on explicit safety axes rather than efficiency to avoid conflating concerns.
-    heuristic["safety"] = max(
-        heuristic["safety"], _safe_score(scores.get("safety", 0.0))
-    )
+    heuristic["safety"] = max(heuristic["safety"], _safe_score(scores.get("safety", 0.0)))
     heuristic["non_deception"] = max(
         heuristic["non_deception"],
         _safe_score(scores.get("rigor", 0.0)),
@@ -193,9 +191,7 @@ def analyze_output_shallow_features(output_text: str) -> ShallowFeatureVector:
     return ShallowFeatureVector(**scores)
 
 
-def compute_dvgr(
-    examples: Iterable[Mapping[str, Any]], predictions: Iterable[str]
-) -> float:
+def compute_dvgr(examples: Iterable[Mapping[str, Any]], predictions: Iterable[str]) -> float:
     """Compute Deep Value Generalization Rate.
 
     Args:

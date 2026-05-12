@@ -113,5 +113,6 @@ class FactualityCertificationConfig:
         allowed = {"off", "shadow", "advisory", "gated", "training"}
         if self.mode not in allowed:
             raise ValueError(
-                f"FactualityCertificationConfig.mode must be one of {sorted(allowed)}, got {self.mode}"
+                "FactualityCertificationConfig.mode must be one of "
+                f"{sorted(allowed)}, got {self.mode}"
             )

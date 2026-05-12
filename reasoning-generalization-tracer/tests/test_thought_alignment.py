@@ -1,6 +1,5 @@
 from rg_tracer.thought_alignment import classify_thought_alignment
 
-
 THRESHOLDS = (0.8, 0.5)
 
 

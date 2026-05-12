@@ -92,6 +92,28 @@ The implementation and this schema enforce a small set of invariants:
 This 13+0 schema is applied **on top of** any optimizer (PPO, GRPO, supervised)
 and is the behavioral backbone for all experiments in this repository.
 
+### 13-Case Schema V3: Control + Compositional Reasoning Overlay
+
+Schema V3 adds a control and compositional-reasoning overlay without replacing
+the 13+0 behavioral cases or the V2 observability/factuality tiers. The original
+case IDs, the default `τ = 0.75` threshold, and decomposed `R_token`,
+`R_confidence`, `R_thought`, and `R_abstain` components are preserved.
+`R_thought` remains positive-only (`H` or `0`) and V3 does not introduce
+negative hidden-thought penalties or deception penalties into the main training
+path.
+
+V3 adds structured fields for reasoning units, control operations,
+causal/scientific diagnostics, MDL-control escalation, and group-theoretic
+transformation analysis. It separates answer correctness, verification quality,
+reasoning-unit use, control-loop quality, and transformation-stability
+diagnostics while staying compatible with GEPA, GRPO, PPO+GRN, DAPO-hybrid,
+DSPy pipelines, circuit tracing, attribution graphs, semantic intent robustness,
+and factuality certification.
+
+See [`docs/schema_v3.md`](docs/schema_v3.md) and
+[`src/rg_tracer/schema_v3/README.md`](src/rg_tracer/schema_v3/README.md) for the
+registry, dataclasses, DSPy stubs, synthetic examples, and tests.
+
 ## Rubric Axes
 
 Scores are deterministic integers from 0 to 4 across eleven axes:

@@ -62,9 +62,7 @@ class DummyPolicy:
 
 
 class DummyScorer:
-    def score(
-        self, prompts: Iterable[str], completions: Iterable[str]
-    ) -> List[Dict[str, Any]]:
+    def score(self, prompts: Iterable[str], completions: Iterable[str]) -> List[Dict[str, Any]]:
         return [{"reward": 1.0} for _ in zip(prompts, completions, strict=True)]
 
 

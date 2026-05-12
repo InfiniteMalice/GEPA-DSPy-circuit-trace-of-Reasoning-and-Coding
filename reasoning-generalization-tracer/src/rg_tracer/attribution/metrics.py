@@ -9,7 +9,6 @@ from typing import Iterable, List, Mapping, Sequence
 from .schema import AttributionGraph, GraphEdge, normalise_graph
 from .utils import safe_float
 
-
 GraphLike = Mapping[str, object] | AttributionGraph
 
 
@@ -278,9 +277,7 @@ def delta_repeatability(
     return float(post - overfit)
 
 
-_GRAPH_TYPE_ERROR = (
-    "graphs must be a graph (mapping/AttributionGraph) or an iterable of graphs"
-)
+_GRAPH_TYPE_ERROR = "graphs must be a graph (mapping/AttributionGraph) or an iterable of graphs"
 
 
 def _coerce_sequence(graphs: Sequence[GraphLike] | GraphLike | None) -> List[GraphLike]:
@@ -321,9 +318,7 @@ def _top_node_ids(graph: AttributionGraph, *, top_k: int) -> set[str]:
     return {str(node.id) for node in ranked}
 
 
-def _edge_weight_map(
-    graph: AttributionGraph, *, top_k: int
-) -> dict[tuple[str, str], float]:
+def _edge_weight_map(graph: AttributionGraph, *, top_k: int) -> dict[tuple[str, str], float]:
     if top_k <= 0:
         raise ValueError("top_k must be positive")
     mass_by_pair: dict[tuple[str, str], float] = {}
@@ -333,9 +328,7 @@ def _edge_weight_map(
             continue
         key = (edge.src, edge.dst)
         mass_by_pair[key] = mass_by_pair.get(key, 0.0) + mass
-    ranked = sorted(mass_by_pair.items(), key=lambda item: item[1], reverse=True)[
-        :top_k
-    ]
+    ranked = sorted(mass_by_pair.items(), key=lambda item: item[1], reverse=True)[:top_k]
     total = sum(mass for _, mass in ranked)
     if total <= 0:
         return {}

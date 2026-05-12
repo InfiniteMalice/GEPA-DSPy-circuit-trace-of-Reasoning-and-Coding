@@ -80,9 +80,7 @@ def install_gepa_stubs() -> None:
         def __init__(self, **kwargs: object) -> None:
             self.kwargs = kwargs
 
-        def train_step(
-            self, _dapo_batch: object, _feedbacks: object
-        ) -> Dict[str, float]:
+        def train_step(self, _dapo_batch: object, _feedbacks: object) -> Dict[str, float]:
             return {"loss": 0.1}
 
     _ensure_attr(gepa_module, "DAPOConfig", DAPOConfig)
