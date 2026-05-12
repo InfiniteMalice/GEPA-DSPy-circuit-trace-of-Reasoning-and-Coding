@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Mapping
 
-CAUSAL_SUBTYPES = [
+CAUSAL_SUBTYPES = (
     "temporal_order",
     "mechanism",
     "counterfactual_dependence",
@@ -20,9 +21,9 @@ CAUSAL_SUBTYPES = [
     "material_formal_efficient_final",
     "agentic_causality",
     "normative_responsibility",
-]
+)
 
-GROUP_THEORETIC_SUBTYPES = [
+GROUP_THEORETIC_SUBTYPES = (
     "identity_transformation",
     "inverse_transformation",
     "closure_under_operation",
@@ -37,9 +38,9 @@ GROUP_THEORETIC_SUBTYPES = [
     "isomorphism_detection",
     "symmetry_breaking",
     "conservation_law_analogy",
-]
+)
 
-REASONING_FAMILIES = [
+REASONING_FAMILIES = (
     "recursive",
     "functional_composition",
     "type_constrained_composition",
@@ -58,7 +59,7 @@ REASONING_FAMILIES = [
     "dialectical_composition",
     "compression_expansion",
     "group_theoretic_reasoning",
-]
+)
 
 
 @dataclass(frozen=True)
@@ -68,15 +69,31 @@ class ReasoningUnitEntry:
     name: str
     display_name: str
     definition: str
-    input_type: list[str]
-    output_type: list[str]
-    dependencies: list[str] = field(default_factory=list)
-    minimal_tests: list[str] = field(default_factory=list)
-    transfer_tests: list[str] = field(default_factory=list)
-    failure_modes: list[str] = field(default_factory=list)
-    composition_partners: list[str] = field(default_factory=list)
-    example_domains: list[str] = field(default_factory=list)
-    subtypes: list[str] = field(default_factory=list)
+    input_type: tuple[str, ...]
+    output_type: tuple[str, ...]
+    dependencies: tuple[str, ...] = field(default_factory=tuple)
+    minimal_tests: tuple[str, ...] = field(default_factory=tuple)
+    transfer_tests: tuple[str, ...] = field(default_factory=tuple)
+    failure_modes: tuple[str, ...] = field(default_factory=tuple)
+    composition_partners: tuple[str, ...] = field(default_factory=tuple)
+    example_domains: tuple[str, ...] = field(default_factory=tuple)
+    subtypes: tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        """Convert sequence fields to tuples so frozen entries are immutable."""
+
+        for name in (
+            "input_type",
+            "output_type",
+            "dependencies",
+            "minimal_tests",
+            "transfer_tests",
+            "failure_modes",
+            "composition_partners",
+            "example_domains",
+            "subtypes",
+        ):
+            object.__setattr__(self, name, tuple(getattr(self, name)))
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation."""
@@ -103,14 +120,14 @@ def _basic_entry(name: str) -> ReasoningUnitEntry:
         name=name,
         display_name=display,
         definition=f"Use {display.lower()} as a public, auditable reasoning unit.",
-        input_type=["task_context", "candidate_answer"],
-        output_type=["unit_trace", "diagnostic_tags"],
-        dependencies=[],
-        minimal_tests=[f"{name} applies to a simple benchmark example"],
-        transfer_tests=[f"{name} transfers across natural-language and code tasks"],
-        failure_modes=["unit_missing", "unit_misapplied"],
-        composition_partners=["abstraction", "constraint_composition"],
-        example_domains=["math", "natural_language", "code"],
+        input_type=("task_context", "candidate_answer"),
+        output_type=("unit_trace", "diagnostic_tags"),
+        dependencies=(),
+        minimal_tests=(f"{name} applies to a simple benchmark example",),
+        transfer_tests=(f"{name} transfers across natural-language and code tasks",),
+        failure_modes=("unit_missing", "unit_misapplied"),
+        composition_partners=("abstraction", "constraint_composition"),
+        example_domains=("math", "natural_language", "code"),
     )
 
 
@@ -209,13 +226,13 @@ def _group_entry() -> ReasoningUnitEntry:
     )
 
 
-def build_reasoning_unit_registry() -> dict[str, ReasoningUnitEntry]:
+def build_reasoning_unit_registry() -> Mapping[str, ReasoningUnitEntry]:
     """Build the V3 reasoning-unit registry."""
 
     entries = {name: _basic_entry(name) for name in REASONING_FAMILIES}
     entries["causal_reasoning"] = _causal_entry()
     entries["group_theoretic_reasoning"] = _group_entry()
-    return entries
+    return MappingProxyType(entries)
 
 
 REASONING_UNIT_REGISTRY = build_reasoning_unit_registry()

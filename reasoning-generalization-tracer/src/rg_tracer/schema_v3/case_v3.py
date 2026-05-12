@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass, field
+from numbers import Real
 from typing import Any, Literal
 
 from rg_tracer.abstention.reward_scheme import evaluate_abstention_reward
@@ -215,15 +217,30 @@ def compact_label_for(result: CaseV3Result) -> str:
     return "-".join(tags)
 
 
+def _validate_probability(value: float | None, parameter_name: str, *, allow_none: bool) -> None:
+    if value is None:
+        if allow_none:
+            return
+        raise ValueError(f"{parameter_name} must be between 0 and 1")
+    if isinstance(value, bool) or not isinstance(value, Real):
+        if allow_none:
+            raise ValueError(f"{parameter_name} must be between 0 and 1 or None")
+        raise ValueError(f"{parameter_name} must be between 0 and 1")
+    if math.isnan(float(value)) or value < 0.0 or value > 1.0:
+        if allow_none:
+            raise ValueError(f"{parameter_name} must be between 0 and 1 or None")
+        raise ValueError(f"{parameter_name} must be between 0 and 1")
+
+
 def _confidence_band(confidence: float | None, threshold_tau: float) -> ConfidenceBand:
+    _validate_probability(threshold_tau, "threshold_tau", allow_none=False)
+    _validate_probability(confidence, "confidence", allow_none=True)
     if confidence is None:
         return "unknown"
     return "high" if confidence >= threshold_tau else "low"
 
 
-def _base_prediction(output_text: str, expected_answer: str | None) -> str:
-    if expected_answer is None:
-        return output_text
+def _base_prediction(output_text: str) -> str:
     return output_text
 
 
@@ -245,6 +262,9 @@ def classify_case_v3(
 ) -> CaseV3Result:
     """Classify an output with V3 metadata while preserving V1/V2 case IDs."""
 
+    _validate_probability(threshold_tau, "threshold_tau", allow_none=False)
+    _validate_probability(confidence, "confidence", allow_none=True)
+
     obs = observability or ObservabilityOverlay()
     reasoning = reasoning_overlay or ReasoningOverlay()
     control = control_overlay or ControlOverlay()
@@ -258,7 +278,7 @@ def classify_case_v3(
     if is_idk:
         prediction = expected_answer if hidden_answer_supported else "I don't know"
     else:
-        prediction = _base_prediction(output_text, expected_answer)
+        prediction = _base_prediction(output_text)
     outcome = evaluate_abstention_reward(
         expected_answer=expected_answer,
         prediction=prediction,

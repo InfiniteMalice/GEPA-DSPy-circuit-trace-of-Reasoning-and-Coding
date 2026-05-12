@@ -7,6 +7,7 @@ from factuality_certification.metrics import overrefusal_rate
 from factuality_certification.routing import choose_routing_action
 from factuality_certification.certification import _declared_confidence
 from factuality_certification.claim_extraction import extract_atomic_claims
+from factuality_certification.evidence_matching import _symbol_tokens
 
 
 def test_supported_claim():
@@ -255,3 +256,8 @@ def test_retention_zero_when_no_supports():
     cfg.claim_extraction.enabled = False
     res = certify_answer("Q", "No claims processed.", evidence=[], config=cfg)
     assert res.useful_answer_retention_score == 0.0
+
+
+def test_symbol_tokens_ignore_common_single_letter_words():
+    assert _symbol_tokens("a claim and I said B") == {"b"}
+    assert _symbol_tokens("Fact A and Fact B") == {"b"}

@@ -11,7 +11,7 @@ def _tokens(text: str) -> set[str]:
 
 
 def _symbol_tokens(text: str) -> set[str]:
-    return set(re.findall(r"\b[a-zA-Z]\b", text.lower()))
+    return {token for token in re.findall(r"\b[a-zA-Z]\b", text.lower()) if token not in {"a", "i"}}
 
 
 def match_claims_to_evidence(
@@ -20,6 +20,7 @@ def match_claims_to_evidence(
     supports: list[ClaimSupport] = []
     for claim in claims:
         c_tokens = _tokens(claim.text)
+        c_symbols = _symbol_tokens(claim.text)
         best_score = 0.0
         best_eids: list[str] = []
         contradiction = 0.0
@@ -27,9 +28,8 @@ def match_claims_to_evidence(
         for item in evidence:
             e_tokens = _tokens(item.text)
             overlap = len(c_tokens & e_tokens) / max(len(c_tokens), 1)
-            c_symbols = _symbol_tokens(claim.text)
             e_symbols = _symbol_tokens(item.text)
-            symbol_mismatch = c_symbols and e_symbols and c_symbols.isdisjoint(e_symbols)
+            symbol_mismatch = bool(c_symbols or e_symbols) and c_symbols != e_symbols
             if symbol_mismatch:
                 overlap = min(overlap, 0.5)
             weighted = overlap * config.entailment_weight

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from rg_tracer.schema_v3 import (
     CASE_NAMES,
     CONTROL_LOOP_REGISTRY,
@@ -28,6 +30,7 @@ from rg_tracer.schema_v3.group_theoretic import (
     variable_renaming_preserves_equation,
 )
 from rg_tracer.schema_v3.mdl_control import build_mdl_control_overlay
+from rg_tracer.schema_v3.validators import validate_case_v3
 
 
 def _case(**kwargs):
@@ -253,3 +256,38 @@ def test_causal_scientific_overlay_accepts_overclaim_diagnostics():
         causal_scientific_overlay=CausalScientificOverlay(causal_claim_strength="overclaimed")
     )
     assert result.diagnostics.primary_failure_mode == "causal_overclaim"
+
+
+def test_probability_inputs_are_validated_before_classification():
+    with pytest.raises(ValueError, match="threshold_tau"):
+        _case(threshold_tau=float("nan"))
+    with pytest.raises(ValueError, match="confidence"):
+        _case(confidence=1.2)
+
+
+def test_mdl_control_uses_explicit_none_checks():
+    empty_answers = build_mdl_control_overlay(default_answer="", controlled_answer="")
+    assert empty_answers.compression_candidate
+    missing_answers = build_mdl_control_overlay(default_answer=None, controlled_answer=None)
+    assert not missing_answers.compression_candidate
+    conflict = build_mdl_control_overlay(default_answer="", controlled_answer="controlled")
+    assert conflict.default_control_conflict
+    assert conflict.escalation_taken
+
+
+def test_reasoning_unit_registry_entries_are_immutable():
+    registry_entry = REASONING_UNIT_REGISTRY["group_theoretic_reasoning"]
+    assert isinstance(registry_entry.subtypes, tuple)
+    with pytest.raises(TypeError):
+        REASONING_UNIT_REGISTRY["new"] = registry_entry
+
+
+def test_validator_rejects_nan_threshold_and_uses_reward_invariant_helper():
+    result = _case()
+    result.threshold_tau = float("nan")
+    with pytest.raises(ValueError, match="threshold_tau"):
+        validate_case_v3(result)
+    result.threshold_tau = 0.75
+    result.reward_components.r_thought = -0.1
+    with pytest.raises(ValueError, match="r_thought"):
+        validate_case_v3(result)
