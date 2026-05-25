@@ -68,15 +68,57 @@ pipeline and should not be introduced as framework categories here.
 
 ## Stakes and Ambiguity Calibration
 
-| Dimension | Low-stakes signal | High-stakes signal |
-| --- | --- | --- |
-| Reversibility | Easy to undo, edit, retry, or correct | Hard or impossible to undo |
-| Category of impact | Preference, wording, formatting, organization, entertainment | Legal, medical, financial, employment, safety, rights, privacy, security, identity, reputation, or major operational impact |
-| Authority | User clearly controls the object or decision | Authority is unclear, delegated, contested, or affects others |
-| Target clarity | Object, person, file, account, or goal is obvious | Target is ambiguous or multiple targets fit |
-| External action | No external side effect | Sends, deletes, buys, files, reports, publishes, modifies records, contacts people, executes code, or changes permissions |
-| Error cost | Minor annoyance or easy rework | Harm, loss, exposure, breach, rights violation, irreversible damage, or serious misinformation |
-| Time pressure | No urgency or easy review | Urgency may cause rushed harmful action |
+<table>
+  <tr>
+    <th>Dimension</th>
+    <th>Low-stakes signal</th>
+    <th>High-stakes signal</th>
+  </tr>
+  <tr>
+    <td>Reversibility</td>
+    <td>Easy to undo, edit, retry, or correct</td>
+    <td>Hard or impossible to undo</td>
+  </tr>
+  <tr>
+    <td>Category of impact</td>
+    <td>Preference, wording, formatting, organization, entertainment</td>
+    <td>
+      Legal, medical, financial, employment, safety, rights, privacy,
+      security, identity, reputation, or major operational impact
+    </td>
+  </tr>
+  <tr>
+    <td>Authority</td>
+    <td>User clearly controls the object or decision</td>
+    <td>Authority is unclear, delegated, contested, or affects others</td>
+  </tr>
+  <tr>
+    <td>Target clarity</td>
+    <td>Object, person, file, account, or goal is obvious</td>
+    <td>Target is ambiguous or multiple targets fit</td>
+  </tr>
+  <tr>
+    <td>External action</td>
+    <td>No external side effect</td>
+    <td>
+      Sends, deletes, buys, files, reports, publishes, modifies records,
+      contacts people, executes code, or changes permissions
+    </td>
+  </tr>
+  <tr>
+    <td>Error cost</td>
+    <td>Minor annoyance or easy rework</td>
+    <td>
+      Harm, loss, exposure, breach, rights violation, irreversible damage,
+      or serious misinformation
+    </td>
+  </tr>
+  <tr>
+    <td>Time pressure</td>
+    <td>No urgency or easy review</td>
+    <td>Urgency may cause rushed harmful action</td>
+  </tr>
+</table>
 
 Decision rule: ask for clarification when the expected cost of guessing exceeds
 the cost of asking. For low-stakes or reversible ambiguity, proceed with a

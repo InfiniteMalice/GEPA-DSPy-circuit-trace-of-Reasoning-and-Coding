@@ -166,7 +166,9 @@ AMBIGUITY_SYNTHETIC_EXAMPLES: list[dict[str, Any]] = [
         "prompt": "Delete the old records.",
         "preferred_mode": "clarify",
         "preferred_case_id": 14,
-        "preferred_response": "Do you mean archive, anonymize, or permanently delete these records?",
+        "preferred_response": (
+            "Do you mean archive, anonymize, or permanently delete these records?"
+        ),
         "stakes_dimensions": ["reversibility", "external_action", "target_clarity"],
     },
     {
