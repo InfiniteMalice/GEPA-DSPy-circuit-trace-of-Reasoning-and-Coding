@@ -12,7 +12,9 @@ CPU-friendly, and designed for reproducible experimentation.
 ## Abstention, Hallucination Control, and Thought-Trace Rewards
 
 All training modes in this repo (GEPA-from-scratch, GRPO with GEPA scoring,
-PPO+GRN) share a **13-case behavioral schema plus a null fallback (case 0)**.
+PPO+GRN) share a **17-case behavioral schema plus a null fallback (case 0)**:
+the original 13-case epistemic confidence, truthfulness, and IDK abstention
+schema is preserved, and cases 14-17 append ambiguity handling across stakes.
 
 Each case describes a unique combination of:
 
@@ -24,6 +26,9 @@ Each case describes a unique combination of:
   behavior.
 - For IDK, whether the model is **lazy/sandbagging**, **miscalibrated**, or
   **honestly unsure**.
+- For ambiguity handling, whether the model should **assumptive proceed** under
+  low-stakes ambiguity or use **clarifying abstention** when ambiguity plus
+  stakes makes guessing irresponsible.
 
 Rewards are decomposed into:
 
@@ -92,7 +97,36 @@ The implementation and this schema enforce a small set of invariants:
 This 13+0 schema is applied **on top of** any optimizer (PPO, GRPO, supervised)
 and is the behavioral backbone for all experiments in this repository.
 
-### 13-Case Schema V3: Control + Compositional Reasoning Overlay
+### 17-Case Clarifying Abstention Extension
+
+The 17-case framework keeps cases 1-13 stable and appends four ambiguity cases:
+
+| Case | Behavior | Description |
+|------|----------|-------------|
+| 14 | Clarifying abstention | Correct high-stakes clarification before proceeding. |
+| 15 | Over-eager ambiguous compliance | Guesses under unclear high-stakes instructions instead of clarifying. |
+| 16 | Low-stakes over-clarification | Asks when ambiguity is reversible or better handled by assumptive proceed. |
+| 17 | Clarification loop / stall | Repeats vague questions or fails to resume after the answer. |
+
+This adds calibrated stakes estimation, including **category of impact**, target
+clarity, authority, reversibility, external action, error cost, and time
+pressure. It distinguishes ordinary IDK abstention from high-stakes ambiguity
+abstention: the model may know relevant facts and still need to pause because
+the requested target, authority, or success criteria are underspecified.
+
+Low-stakes ambiguity should usually use **assumptive proceed**: briefly state a
+reasonable assumption, complete the task, and leave room for correction.
+Clarification is not intrinsically rewarded; it is rewarded when it is the
+minimum useful pause required for context-sensitive agency under uncertainty.
+Multi-turn scoring checks whether the model asks once, incorporates the answer,
+preserves constraints, and resumes rather than stalling.
+
+Safety abstention and procedural abstention are outside this framework; safety
+refusal and unsafe compliance remain part of the normal safety/RL pipeline. See
+[`docs/17_case_framework.md`](docs/17_case_framework.md) for the full rubric and
+synthetic data guidance.
+
+### 17-Case Schema V3: Control + Compositional Reasoning Overlay
 
 Schema V3 adds a control and compositional-reasoning overlay without replacing
 the 13+0 behavioral cases or the V2 observability/factuality tiers. The original
@@ -110,7 +144,8 @@ diagnostics while staying compatible with GEPA, GRPO, PPO+GRN, DAPO-hybrid,
 DSPy pipelines, circuit tracing, attribution graphs, semantic intent robustness,
 and factuality certification.
 
-See [`docs/schema_v3.md`](docs/schema_v3.md) and
+See [`docs/schema_v3.md`](docs/schema_v3.md),
+[`docs/17_case_framework.md`](docs/17_case_framework.md), and
 [`src/rg_tracer/schema_v3/README.md`](src/rg_tracer/schema_v3/README.md) for the
 registry, dataclasses, DSPy stubs, synthetic examples, and tests.
 
@@ -284,8 +319,10 @@ Each self-play run emits:
   pass `--profiles /path/to/custom.yaml` to use any other file.
 * **Concept Rewards:** override weights via the `weights` parameter in
   `compute_concept_reward`.
-* **Abstention:** calibrate model confidences using `abstention/calibrate.py`. Reward cases follow
-  the 13-case schema described in `docs/epistemic_alignment.md`.
+* **Abstention:** calibrate model confidences using `abstention/calibrate.py`.
+  Reward cases follow the preserved 13-case schema described in
+  `docs/epistemic_alignment.md`, with cases 14-17 documented in
+  `docs/17_case_framework.md` for ambiguity handling.
 * **Semantic Repair:** customise behaviour by editing `semantics/repair.py` and
   `semantics/verifier.py` heuristics.
 * **Humanities Profiles:** adjust humanities weights in

@@ -41,3 +41,30 @@ bonuses. The net reward can be negative when token or confidence penalties domin
 Thought bonuses only apply when reasoning is epistemically grounded; high-confidence but
 unaligned correct answers fall back to the low-confidence token weight. Logs include `s_match`,
 `s_epistemic`, `thought_alignment`, and `reward_case` for downstream analysis.
+
+## Appended ambiguity-handling cases
+
+The original 13 IDK and answer cases are preserved. Schema V3 appends four
+ambiguity-handling cases for context-sensitive agency under uncertainty:
+
+14. **Correct High-Stakes Clarifying Abstention** - targeted clarification when
+    ambiguity plus stakes makes guessing irresponsible.
+15. **Over-Eager Ambiguous Compliance** - guessing under unclear high-stakes
+    instructions instead of clarifying.
+16. **Unnecessary Clarification on Low-Stakes Ambiguity** - asking when the
+    ambiguity is reversible or better handled by assumptive proceed.
+17. **Clarification Loop / Failure to Resume** - vague repeated questions, or a
+    useful clarification followed by failure to incorporate the answer.
+
+High-stakes ambiguity abstention is not ordinary IDK abstention. The model may
+know relevant facts but still need to pause because the instruction, target,
+authority, success criteria, or constraints are unclear relative to the stakes.
+Safety abstention and procedural abstention are outside this framework.
+
+Use stakes calibration, including category of impact, reversibility, authority,
+target clarity, external action, error cost, and time pressure, to decide between
+answering, assumptive proceed, clarifying abstention, and IDK abstention. Low
+stakes ambiguity can score positively when handled with a reasonable stated
+assumption; high-stakes ambiguity rewards targeted clarification over silent
+guessing. Multi-turn scoring checks whether the model asks once, incorporates
+the answer, preserves constraints, and resumes.
