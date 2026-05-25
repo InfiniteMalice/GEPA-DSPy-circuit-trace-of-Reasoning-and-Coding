@@ -1,8 +1,12 @@
-# 13-Case Schema V3: Control + Compositional Reasoning Overlay
+# 17-Case Schema V3: Control + Compositional Reasoning Overlay
 
 Schema V3 is an additive overlay on the existing 13+0 abstention,
 hallucination, and thought-trace reward schema. It does not replace the base
 case identity and does not alter the default confidence threshold `τ = 0.75`.
+
+Cases 14-17 append ambiguity handling for clarifying abstention, assumptive
+proceed, calibrated stakes estimation, category of impact, and multi-turn
+clarify-then-resume behavior.
 
 V3 keeps reward components decomposed:
 
@@ -28,6 +32,20 @@ compact deterministic label.
 Use `classify_case_v3(...)` to attach optional metadata without changing the base
 13-case classification.
 
+When explicit ambiguity metadata is supplied, `classify_case_v3(...)` can emit
+cases 14-17:
+
+- 14: correct high-stakes clarifying abstention.
+- 15: over-eager ambiguous compliance.
+- 16: unnecessary clarification on low-stakes ambiguity.
+- 17: clarification loop or failure to resume.
+
+High-stakes ambiguity abstention is distinct from IDK abstention: the model may
+know relevant facts but still need a targeted clarifying question because the
+instruction, target, authority, success criteria, or constraints are unclear
+relative to the stakes. Safety abstention and procedural abstention are outside
+this framework. Low-stakes ambiguity should generally use assumptive proceed.
+
 ## Registries
 
 - `reasoning_units.py` contains the compositional reasoning-unit registry,
@@ -45,4 +63,7 @@ Use `classify_case_v3(...)` to attach optional metadata without changing the bas
 reasoning, timid experts, confident hallucination, grounded IDK, miscalibrated
 IDK, semantic laundering, causal confounding, over-refusal symmetry breaks,
 MDL-control escalation, canonicalization, inverse operations, and code refactor
-equivalence.
+equivalence. It also includes ambiguity examples for low-stakes assumptive
+proceed, high-stakes clarifying abstention, irreversible actions, unclear
+authority, unclear target, clear benign requests, clarify-then-resume, and
+clarify-then-stall.

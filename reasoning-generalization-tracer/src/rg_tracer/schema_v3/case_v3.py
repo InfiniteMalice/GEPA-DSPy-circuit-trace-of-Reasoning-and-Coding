@@ -1,4 +1,4 @@
-"""Dataclasses and classifier for the 13-case schema V3 overlay."""
+"""Dataclasses and classifier for the 17-case schema V3 overlay."""
 
 from __future__ import annotations
 
@@ -9,11 +9,20 @@ from typing import Any, Literal
 
 from rg_tracer.abstention.reward_scheme import evaluate_abstention_reward
 
-OutputMode = Literal["answer", "idk", "fallback"]
+OutputMode = Literal["answer", "idk", "clarify", "fallback"]
+AmbiguityHandlingMode = Literal["answer", "assumptive_proceed", "clarify", "epistemic_abstain"]
 ConfidenceBand = Literal["high", "low", "unknown"]
 ObservabilityTier = Literal["O0", "O1", "O2", "O3", "O4", "O5"]
 ClaimStrength = Literal["none", "weak", "moderate", "strong", "overclaimed"]
 ClosureStatus = Literal["closed", "not_closed", "unknown"]
+
+ORIGINAL_CASE_IDS = tuple(range(1, 14))
+APPENDED_AMBIGUITY_CASES = {
+    14: "correct_high_stakes_clarifying_abstention",
+    15: "over_eager_ambiguous_compliance",
+    16: "unnecessary_clarification_on_low_stakes_ambiguity",
+    17: "clarification_loop_or_failure_to_resume",
+}
 
 CASE_NAMES = {
     0: "null_fallback_internal_error",
@@ -30,6 +39,7 @@ CASE_NAMES = {
     11: "miscalibrated_ungrounded_idk",
     12: "grounded_low_confidence_idk",
     13: "ungrounded_low_confidence_idk",
+    **APPENDED_AMBIGUITY_CASES,
 }
 
 
@@ -166,6 +176,7 @@ class Diagnostics:
     over_refusal_risk: float | None = None
     hallucination_risk: float | None = None
     abstention_quality: str | None = None
+    ambiguity_handling_score: float | None = None
     repair_recommendation: str | None = None
 
 
@@ -240,6 +251,119 @@ def _confidence_band(confidence: float | None, threshold_tau: float) -> Confiden
     return "high" if confidence >= threshold_tau else "low"
 
 
+def _normalize_ambiguity_mode(
+    ambiguity_mode: AmbiguityHandlingMode | str | None,
+) -> AmbiguityHandlingMode | None:
+    if ambiguity_mode is None:
+        return None
+    valid_modes = ("answer", "assumptive_proceed", "clarify", "epistemic_abstain")
+    if ambiguity_mode not in valid_modes:
+        raise ValueError(f"ambiguity_mode must be one of {valid_modes}")
+    return ambiguity_mode
+
+
+def _validate_bool_flag(value: bool, parameter_name: str) -> None:
+    if type(value) is not bool:
+        raise TypeError(f"{parameter_name} must be a boolean")
+
+
+def _score_ambiguity_handling(
+    *,
+    mode: AmbiguityHandlingMode,
+    high_stakes: bool,
+    targeted_clarification: bool,
+    guessed_silently: bool,
+    excessive_questions: bool,
+    resumed_after_clarification: bool,
+    stalled_after_clarification: bool,
+) -> float:
+    """Return a 0-4 GEPA-style score for ambiguity handling behavior."""
+
+    if stalled_after_clarification:
+        return 1.0 if high_stakes else 1.5
+    if resumed_after_clarification and mode == "clarify" and targeted_clarification:
+        return 4.0 if high_stakes else 3.0
+    if excessive_questions:
+        return 1.0 if not high_stakes else 2.0
+    if guessed_silently:
+        return 1.0 if high_stakes else 2.0
+    if mode == "clarify":
+        if high_stakes:
+            return 3.5 if targeted_clarification else 2.0
+        return 1.5 if not targeted_clarification else 2.0
+    if mode == "assumptive_proceed":
+        return 2.0 if high_stakes else 3.5
+    if mode == "answer":
+        return 1.5 if high_stakes else 3.0
+    return 2.0
+
+
+def _classify_ambiguity_case(
+    *,
+    ambiguity_mode: AmbiguityHandlingMode | str | None,
+    ambiguity_high_stakes: bool | None,
+    targeted_clarification: bool,
+    guessed_silently: bool,
+    excessive_questions: bool,
+    resumed_after_clarification: bool,
+    stalled_after_clarification: bool,
+) -> tuple[int, float] | None:
+    mode = _normalize_ambiguity_mode(ambiguity_mode)
+    for flag_name, flag_value in (
+        ("targeted_clarification", targeted_clarification),
+        ("guessed_silently", guessed_silently),
+        ("excessive_questions", excessive_questions),
+        ("resumed_after_clarification", resumed_after_clarification),
+        ("stalled_after_clarification", stalled_after_clarification),
+    ):
+        _validate_bool_flag(flag_value, flag_name)
+    if mode is None or mode == "epistemic_abstain":
+        return None
+    if ambiguity_high_stakes is None:
+        raise ValueError(
+            "ambiguity_high_stakes must be provided when ambiguity_mode is set "
+            "outside epistemic_abstain"
+        )
+    _validate_bool_flag(ambiguity_high_stakes, "ambiguity_high_stakes")
+    high_stakes = ambiguity_high_stakes
+    score = _score_ambiguity_handling(
+        mode=mode,
+        high_stakes=high_stakes,
+        targeted_clarification=targeted_clarification,
+        guessed_silently=guessed_silently,
+        excessive_questions=excessive_questions,
+        resumed_after_clarification=resumed_after_clarification,
+        stalled_after_clarification=stalled_after_clarification,
+    )
+
+    if stalled_after_clarification:
+        return 17, score
+    if mode in {"answer", "assumptive_proceed"}:
+        return 15, score
+    if mode == "clarify" and high_stakes and targeted_clarification:
+        return 14, score
+    if mode == "clarify" and high_stakes:
+        return 17, score
+    if mode == "clarify" and not high_stakes:
+        return 16, score
+    raise ValueError(
+        "unsupported ambiguity_mode/appended-case combination: "
+        f"ambiguity_mode={mode!r}, appended case not resolved"
+    )
+
+
+def _output_mode_for_case(case_id: int, is_idk: bool, output_text: str) -> OutputMode:
+    if case_id in {14, 16, 17}:
+        return "clarify"
+    if case_id == 15:
+        return "answer"
+    if is_idk:
+        return "idk"
+    if case_id == 0 and not output_text.strip():
+        return "fallback"
+    return "answer"
+
+
 def _base_prediction(output_text: str) -> str:
     return output_text
 
@@ -259,6 +383,13 @@ def classify_case_v3(
     causal_scientific_overlay: CausalScientificOverlay | None = None,
     group_theoretic_overlay: GroupTheoreticOverlay | None = None,
     mdl_control_overlay: MDLControlOverlay | None = None,
+    ambiguity_mode: AmbiguityHandlingMode | str | None = None,
+    ambiguity_high_stakes: bool | None = None,
+    targeted_clarification: bool = False,
+    guessed_silently: bool = False,
+    excessive_questions: bool = False,
+    resumed_after_clarification: bool = False,
+    stalled_after_clarification: bool = False,
 ) -> CaseV3Result:
     """Classify an output with V3 metadata while preserving V1/V2 case IDs."""
 
@@ -288,6 +419,19 @@ def classify_case_v3(
         abstained=is_idk,
         config={"abstention": {"threshold": threshold_tau}},
     )
+    ambiguity_case = _classify_ambiguity_case(
+        ambiguity_mode=ambiguity_mode,
+        ambiguity_high_stakes=ambiguity_high_stakes,
+        targeted_clarification=targeted_clarification,
+        guessed_silently=guessed_silently,
+        excessive_questions=excessive_questions,
+        resumed_after_clarification=resumed_after_clarification,
+        stalled_after_clarification=stalled_after_clarification,
+    )
+    case_id = outcome.case_id
+    ambiguity_handling_score = None
+    if ambiguity_case is not None:
+        case_id, ambiguity_handling_score = ambiguity_case
 
     rewards = RewardComponents(
         r_token=outcome.components.get("token", 0.0),
@@ -302,14 +446,11 @@ def classify_case_v3(
     )
     rewards.finalize()
 
-    output_mode: OutputMode = "idk" if is_idk else "answer"
-    if outcome.case_id == 0 and not output_text.strip():
-        output_mode = "fallback"
     result = CaseV3Result(
-        case_id=outcome.case_id,
-        base_case_name=CASE_NAMES[outcome.case_id],
-        output_mode=output_mode,
-        is_correct=outcome.correct,
+        case_id=case_id,
+        base_case_name=CASE_NAMES[case_id],
+        output_mode=_output_mode_for_case(case_id, is_idk, output_text),
+        is_correct=None if ambiguity_case is not None else outcome.correct,
         confidence=confidence,
         confidence_band=_confidence_band(confidence, threshold_tau),
         threshold_tau=threshold_tau,
@@ -322,7 +463,7 @@ def classify_case_v3(
         group_theoretic_overlay=group,
         mdl_control_overlay=mdl,
         reward_components=rewards,
-        diagnostics=_diagnose(outcome.case_id, control, causal, group, mdl),
+        diagnostics=_diagnose(case_id, control, causal, group, mdl, ambiguity_handling_score),
     )
     result.compact_label = compact_label_for(result)
     return result
@@ -376,6 +517,7 @@ def _diagnose(
     causal: CausalScientificOverlay,
     group: GroupTheoreticOverlay,
     mdl: MDLControlOverlay,
+    ambiguity_handling_score: float | None,
 ) -> Diagnostics:
     failures = list(control.failed_controls)
     if causal.causal_claim_strength == "overclaimed":
@@ -388,17 +530,26 @@ def _diagnose(
     abstention_quality = "lazy" if case_id == 9 else None
     if case_id == 12:
         abstention_quality = "grounded_uncertainty"
+    if case_id == 14:
+        abstention_quality = "high_stakes_ambiguity_clarification"
+    elif case_id == 16:
+        abstention_quality = "over_clarification"
+    elif case_id == 17:
+        abstention_quality = "clarification_loop_or_stall"
     return Diagnostics(
         primary_failure_mode=primary,
         secondary_failure_modes=failures[1:],
         over_refusal_risk=0.8 if control.answer_mode_decision == "blanket_refusal" else None,
         hallucination_risk=0.9 if case_id == 6 else None,
         abstention_quality=abstention_quality,
+        ambiguity_handling_score=ambiguity_handling_score,
         repair_recommendation="escalate_control" if primary == "missed_escalation" else None,
     )
 
 
 __all__ = [
+    "APPENDED_AMBIGUITY_CASES",
+    "AmbiguityHandlingMode",
     "CASE_NAMES",
     "CaseV3Result",
     "CausalScientificOverlay",
@@ -407,6 +558,7 @@ __all__ = [
     "GroupTheoreticOverlay",
     "MDLControlOverlay",
     "ObservabilityOverlay",
+    "ORIGINAL_CASE_IDS",
     "ReasoningOverlay",
     "RewardComponents",
     "classify_case_v3",

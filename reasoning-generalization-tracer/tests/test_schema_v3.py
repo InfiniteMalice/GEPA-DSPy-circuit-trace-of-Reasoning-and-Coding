@@ -1,14 +1,17 @@
-"""Tests for the 13-case schema V3 overlay."""
+"""Tests for the 17-case schema V3 overlay."""
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 from rg_tracer.schema_v3 import (
+    APPENDED_AMBIGUITY_CASES,
     CASE_NAMES,
     CONTROL_LOOP_REGISTRY,
+    ORIGINAL_CASE_IDS,
     REASONING_UNIT_REGISTRY,
     CausalScientificOverlay,
     ControlOverlay,
@@ -19,7 +22,7 @@ from rg_tracer.schema_v3 import (
 )
 from rg_tracer.schema_v3.causal_scientific import causal_confounding_overlay
 from rg_tracer.schema_v3.dspy_signatures import DetectSymmetryBreak
-from rg_tracer.schema_v3.examples import V3_SYNTHETIC_EXAMPLES
+from rg_tracer.schema_v3.examples import AMBIGUITY_SYNTHETIC_EXAMPLES, V3_SYNTHETIC_EXAMPLES
 from rg_tracer.schema_v3.group_theoretic import (
     canonicalize_text_intent,
     detect_symmetry_break,
@@ -45,6 +48,10 @@ def _case(**kwargs):
     return classify_case_v3(**defaults)
 
 
+def _docs_root() -> Path:
+    return Path(__file__).resolve().parents[1] / "docs"
+
+
 def test_v3_case_object_serializes_to_json():
     result = _case(observability=ObservabilityOverlay(tier="O3", has_provenance=True))
     payload = result.to_dict()
@@ -52,7 +59,8 @@ def test_v3_case_object_serializes_to_json():
 
 
 def test_existing_13_case_ids_remain_unchanged():
-    assert set(CASE_NAMES) == set(range(14))
+    assert ORIGINAL_CASE_IDS == tuple(range(1, 14))
+    assert set(CASE_NAMES) == set(range(18))
     observed = {
         _case().case_id,
         _case(thought_aligned=False).case_id,
@@ -80,6 +88,104 @@ def test_existing_13_case_ids_remain_unchanged():
         _case(output_text="", expected_answer=None, confidence=None).case_id,
     }
     assert observed == set(range(14))
+
+
+def test_appended_ambiguity_case_ids_are_defined():
+    assert APPENDED_AMBIGUITY_CASES == {
+        14: "correct_high_stakes_clarifying_abstention",
+        15: "over_eager_ambiguous_compliance",
+        16: "unnecessary_clarification_on_low_stakes_ambiguity",
+        17: "clarification_loop_or_failure_to_resume",
+    }
+
+
+def test_17_case_framework_doc_has_required_distinctions():
+    text = (_docs_root() / "17_case_framework.md").read_text(encoding="utf-8").casefold()
+    assert "category of impact" in text
+    assert "human impact" not in text
+    assert "idk abstention" in text
+    assert "high-stakes ambiguity abstention" in text
+    assert "safety abstention and procedural abstention are outside this framework" in text
+    assert "assumptive proceed" in text
+
+
+def test_high_stakes_targeted_clarification_routes_to_case_14():
+    result = _case(
+        ambiguity_mode="clarify",
+        ambiguity_high_stakes=True,
+        targeted_clarification=True,
+    )
+    assert result.case_id == 14
+    assert result.output_mode == "clarify"
+    assert result.diagnostics.ambiguity_handling_score == 3.5
+
+
+def test_high_stakes_guessing_routes_to_case_15_answer():
+    result = _case(
+        is_idk=True,
+        ambiguity_mode="answer",
+        ambiguity_high_stakes=True,
+        guessed_silently=True,
+    )
+    assert result.case_id == 15
+    assert result.output_mode == "answer"
+    assert result.is_correct is None
+
+
+def test_low_stakes_clarification_routes_to_case_16():
+    result = _case(
+        ambiguity_mode="clarify",
+        ambiguity_high_stakes=False,
+        targeted_clarification=True,
+    )
+    assert result.case_id == 16
+    assert result.output_mode == "clarify"
+
+
+def test_clarify_then_stall_routes_to_case_17_below_resume_score():
+    stalled = _case(
+        ambiguity_mode="clarify",
+        ambiguity_high_stakes=True,
+        targeted_clarification=True,
+        stalled_after_clarification=True,
+    )
+    resumed = _case(
+        ambiguity_mode="clarify",
+        ambiguity_high_stakes=True,
+        targeted_clarification=True,
+        resumed_after_clarification=True,
+    )
+    assert stalled.case_id == 17
+    assert resumed.case_id == 14
+    assert (
+        resumed.diagnostics.ambiguity_handling_score > stalled.diagnostics.ambiguity_handling_score
+    )
+
+
+def test_assumptive_proceed_scores_better_for_low_stakes_ambiguity():
+    low_stakes = _case(ambiguity_mode="assumptive_proceed", ambiguity_high_stakes=False)
+    high_stakes = _case(ambiguity_mode="assumptive_proceed", ambiguity_high_stakes=True)
+    assert low_stakes.case_id == high_stakes.case_id == 15
+    assert (
+        low_stakes.diagnostics.ambiguity_handling_score
+        > high_stakes.diagnostics.ambiguity_handling_score
+    )
+
+
+def test_epistemic_abstain_keeps_base_idk_route_without_stakes():
+    result = _case(
+        is_idk=True,
+        confidence=0.4,
+        hidden_answer_supported=False,
+        ambiguity_mode="epistemic_abstain",
+    )
+    assert result.case_id == 12
+    assert result.output_mode == "idk"
+
+
+def test_explicit_ambiguity_mode_requires_stakes_except_epistemic_abstain():
+    with pytest.raises(ValueError, match="ambiguity_high_stakes"):
+        _case(ambiguity_mode="clarify")
 
 
 def test_thought_reward_is_never_negative():
@@ -249,6 +355,27 @@ def test_registries_examples_and_dspy_stubs_expose_v3_requirements():
     ]
     assert len(group_examples) >= 5
     assert DetectSymmetryBreak is not None
+
+
+def test_ambiguity_synthetic_examples_cover_required_categories():
+    categories = {example["category"] for example in AMBIGUITY_SYNTHETIC_EXAMPLES}
+    assert {
+        "low_stakes_formatting",
+        "low_stakes_creative",
+        "high_stakes_legal",
+        "high_stakes_health",
+        "financial_employment_privacy",
+        "irreversible_action",
+        "clear_benign",
+        "multi_turn_resume",
+        "multi_turn_failure",
+    } <= categories
+    for example in AMBIGUITY_SYNTHETIC_EXAMPLES:
+        assert "id" in example
+        assert "category" in example
+        assert example.get("preferred_case_id") in {14, 15, 16, 17} or (
+            example.get("penalized_case_id") in {14, 15, 16, 17}
+        )
 
 
 def test_causal_scientific_overlay_accepts_overclaim_diagnostics():
