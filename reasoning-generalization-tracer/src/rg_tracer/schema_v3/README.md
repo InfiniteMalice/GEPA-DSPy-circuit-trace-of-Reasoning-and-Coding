@@ -45,6 +45,11 @@ know relevant facts but still need a targeted clarifying question because the
 instruction, target, authority, success criteria, or constraints are unclear
 relative to the stakes. Safety abstention and procedural abstention are outside
 this framework. Low-stakes ambiguity should generally use assumptive proceed.
+If a user gives only partial clarification, the model should not keep looping.
+It should continue conditionally when possible by naming its assumptions,
+reasonably foreseeable consequences if those assumptions are wrong, and user or
+authorized decision-maker responsibility. It should not execute irreversible
+external actions under unresolved high-stakes ambiguity.
 
 ## Registries
 
@@ -66,4 +71,4 @@ MDL-control escalation, canonicalization, inverse operations, and code refactor
 equivalence. It also includes ambiguity examples for low-stakes assumptive
 proceed, high-stakes clarifying abstention, irreversible actions, unclear
 authority, unclear target, clear benign requests, clarify-then-resume, and
-clarify-then-stall.
+clarify-then-stall, plus partial-clarification conditional proceed.
