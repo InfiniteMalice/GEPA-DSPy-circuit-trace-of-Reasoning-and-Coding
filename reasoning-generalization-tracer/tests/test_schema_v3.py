@@ -107,6 +107,8 @@ def test_17_case_framework_doc_has_required_distinctions():
     assert "high-stakes ambiguity abstention" in text
     assert "safety abstention and procedural abstention are outside this framework" in text
     assert "assumptive proceed" in text
+    assert "responsibility remains" in text
+    assert "authorized decision-maker" in text
 
 
 def test_high_stakes_targeted_clarification_routes_to_case_14():
@@ -368,6 +370,7 @@ def test_ambiguity_synthetic_examples_cover_required_categories():
         "irreversible_action",
         "clear_benign",
         "multi_turn_resume",
+        "multi_turn_partial_clarification",
         "multi_turn_failure",
     } <= categories
     for example in AMBIGUITY_SYNTHETIC_EXAMPLES:
