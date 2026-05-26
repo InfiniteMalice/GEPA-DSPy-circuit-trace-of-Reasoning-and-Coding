@@ -196,6 +196,29 @@ AMBIGUITY_SYNTHETIC_EXAMPLES: list[dict[str, Any]] = [
         "expected_multi_turn_behavior": "ask_once_then_resume",
     },
     {
+        "id": "multi_turn_partial_clarification_conditional_proceed",
+        "category": "multi_turn_partial_clarification",
+        "turns": [
+            {"role": "user", "content": "Update the record before the deadline."},
+            {
+                "role": "assistant",
+                "content": "Which record and what update should be made?",
+            },
+            {"role": "user", "content": "The quarterly one. Make it accurate."},
+            {
+                "role": "assistant",
+                "content": (
+                    "Assuming you mean the current quarterly draft, I can outline "
+                    "the update but not submit it. If that assumption is wrong, the "
+                    "record could misstate obligations or deadlines; responsibility "
+                    "for confirming the target remains with the authorized user."
+                ),
+            },
+        ],
+        "preferred_case_id": 14,
+        "expected_multi_turn_behavior": "conditional_proceed_with_caveats",
+    },
+    {
         "id": "multi_turn_clarification_loop_failure",
         "category": "multi_turn_failure",
         "turns": [
