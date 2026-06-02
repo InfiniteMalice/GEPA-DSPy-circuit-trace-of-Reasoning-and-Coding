@@ -136,6 +136,24 @@ class MDLControlOverlay:
 
 
 @dataclass
+class TrajectoryOverlay:
+    """Optional public recursive-refinement trajectory diagnostics."""
+
+    sampler_name: str = "trm"
+    total_updates: int = 0
+    max_depth: int = 0
+    max_width: int = 0
+    branch_count: int = 0
+    prune_count: int = 0
+    convergence_detected: bool = False
+    budget_exhausted: bool = False
+    active_views: list[str] = field(default_factory=list)
+    view_route: list[str] = field(default_factory=list)
+    revisited_views: list[str] = field(default_factory=list)
+    process_score_components: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass
 class RewardComponents:
     """Decomposed V3 reward components."""
 
@@ -201,6 +219,7 @@ class CaseV3Result:
     )
     group_theoretic_overlay: GroupTheoreticOverlay = field(default_factory=GroupTheoreticOverlay)
     mdl_control_overlay: MDLControlOverlay = field(default_factory=MDLControlOverlay)
+    trajectory_overlay: TrajectoryOverlay = field(default_factory=TrajectoryOverlay)
     reward_components: RewardComponents = field(default_factory=RewardComponents)
     diagnostics: Diagnostics = field(default_factory=Diagnostics)
     compact_label: str = ""
@@ -383,6 +402,7 @@ def classify_case_v3(
     causal_scientific_overlay: CausalScientificOverlay | None = None,
     group_theoretic_overlay: GroupTheoreticOverlay | None = None,
     mdl_control_overlay: MDLControlOverlay | None = None,
+    trajectory_overlay: TrajectoryOverlay | None = None,
     ambiguity_mode: AmbiguityHandlingMode | str | None = None,
     ambiguity_high_stakes: bool | None = None,
     targeted_clarification: bool = False,
@@ -402,6 +422,7 @@ def classify_case_v3(
     causal = causal_scientific_overlay or CausalScientificOverlay()
     group = group_theoretic_overlay or GroupTheoreticOverlay()
     mdl = mdl_control_overlay or MDLControlOverlay()
+    trajectory = trajectory_overlay or TrajectoryOverlay()
     reasoning.finalize()
     control.finalize()
 
@@ -462,6 +483,7 @@ def classify_case_v3(
         causal_scientific_overlay=causal,
         group_theoretic_overlay=group,
         mdl_control_overlay=mdl,
+        trajectory_overlay=trajectory,
         reward_components=rewards,
         diagnostics=_diagnose(case_id, control, causal, group, mdl, ambiguity_handling_score),
     )
@@ -561,6 +583,7 @@ __all__ = [
     "ORIGINAL_CASE_IDS",
     "ReasoningOverlay",
     "RewardComponents",
+    "TrajectoryOverlay",
     "classify_case_v3",
     "compact_label_for",
 ]

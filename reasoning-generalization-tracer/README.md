@@ -255,6 +255,34 @@ while `trm_eval.py` reports accuracy, per-axis means, semantic scores, and
 stored traces for inspection. The TRM also drives the default self-play sampler
 for toy tasks.
 
+## Experimental Recursive Refinement Sampler
+
+`sampler="gram_mdt"` adds an optional research scaffold for adaptive recursive
+refinement with seeded stochastic widening and MDT-inspired routing through
+public view operators. The implementation is intentionally CPU-friendly and
+heuristic. It does not replace TRM, does not claim to reproduce GRAM, HRM-Text,
+or mathematical MDTs, and does not add negative reward to hidden thought traces.
+
+Example:
+
+```bash
+rg-tracer self-play \
+  --profile proof_math \
+  --problem datasets/toy_math/addition_small.jsonl \
+  --concept parity \
+  --sampler gram_mdt \
+  --k 4 \
+  --max-depth 6 \
+  --max-width 4 \
+  --max-total-updates 48 \
+  --seed 7
+```
+
+Runs emit the usual self-play artifacts plus `trajectories.jsonl`,
+`view_routes.jsonl`, and `budget_metrics.json`. See
+[`docs/recursive_refinement.md`](docs/recursive_refinement.md) for the design,
+artifact schema, limitations, and reproducibility notes.
+
 ## Installation
 
 ```bash
@@ -313,6 +341,12 @@ Each self-play run emits:
 * `semantics.jsonl` – semantic report with contradiction rates, humanities metrics, repairs.
 * `summary.md` – table covering composite, concept reward, abstentions.
 * `best.json` – best-performing candidate under the chosen profile.
+* `trajectories.jsonl` - recursive-refinement trajectory states, only for
+  `sampler=gram_mdt`.
+* `view_routes.jsonl` - public view route diagnostics, only for
+  `sampler=gram_mdt`.
+* `budget_metrics.json` - depth, width, convergence, pruning, and budget
+  metadata, only for `sampler=gram_mdt`.
 * `attr/` – attribution graphs for top candidates (one JSON per probe).
 * `attr_metrics.jsonl` – attribution metric records stored alongside `attr/` in the
   run directory root (not inside the folder). Each JSON line exposes
@@ -353,6 +387,11 @@ Each self-play run emits:
         repeatability_gain: 0.01
         sparsity_drop: 0.005
   ```
+* **Recursive Refinement:** use `--sampler gram_mdt` with `--max-depth`,
+  `--max-width`, `--max-total-updates`, `--branch-factor`, `--seed`,
+  `--process-reward-weight`, and disable flags for adaptive halting,
+  progressive widening, or view routing. The default `--sampler trm` path is
+  unchanged.
 
 ## DAPO Hybrid Training
 

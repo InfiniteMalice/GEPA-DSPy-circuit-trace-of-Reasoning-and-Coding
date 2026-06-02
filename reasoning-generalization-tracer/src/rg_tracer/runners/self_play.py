@@ -15,6 +15,7 @@ from ..abstention import apply_abstention, evaluate_abstention_reward
 from ..attribution import graphs as attr_graphs
 from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
+from ..recursive_refinement import GRAMMDTSampler, RecursiveRefinementConfig
 from ..thought_alignment import classify_thought_alignment
 from .overwatch import OverwatchAgent, OverwatchConfig
 from ..scoring import aggregator, axes
@@ -63,6 +64,7 @@ class Candidate:
     semantics_map: Dict[str, List[str]] = field(default_factory=dict)
     attr_metrics: Dict[str, float] | None = None
     attr_bonus: float = 0.0
+    process_bonus: float = 0.0
     value_decomp: ValueDecompResult | None = None
     overwatch_interventions: List[Dict[str, object]] = field(default_factory=list)
     grn_flags: Dict[str, bool] = field(default_factory=dict)
@@ -72,6 +74,17 @@ class Candidate:
     reward: float = 0.0
     reward_case: int | None = None
     reward_components: Dict[str, float] | None = None
+    refinement_run: Dict[str, object] | None = None
+    trajectory_id: str | None = None
+    trajectory_metadata: Dict[str, object] | None = None
+    process_score: float | None = None
+    process_score_components: Dict[str, object] | None = None
+    view_route: List[str] = field(default_factory=list)
+    total_updates: int | None = None
+    max_depth: int | None = None
+    max_width: int | None = None
+    converged: bool | None = None
+    budget_exhausted: bool | None = None
 
 
 class TRMSampler:
@@ -173,6 +186,9 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
         "problem_id": candidate.problem_id,
         "attr_bonus": candidate.attr_bonus,
         "attr_metrics": candidate.attr_metrics,
+        "process_bonus": candidate.process_bonus,
+        "process_score": candidate.process_score,
+        "process_score_components": candidate.process_score_components,
         "grn_flags": candidate.grn_flags,
         "overwatch_enabled": overwatch_enabled,
         "overwatch_interventions": candidate.overwatch_interventions,
@@ -182,6 +198,15 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
         "reward": candidate.reward,
         "reward_case": candidate.reward_case,
         "reward_components": candidate.reward_components,
+        "refinement_run": candidate.refinement_run,
+        "trajectory_id": candidate.trajectory_id,
+        "trajectory_metadata": candidate.trajectory_metadata,
+        "view_route": candidate.view_route,
+        "total_updates": candidate.total_updates,
+        "max_depth": candidate.max_depth,
+        "max_width": candidate.max_width,
+        "converged": candidate.converged,
+        "budget_exhausted": candidate.budget_exhausted,
     }
     if candidate.value_decomp is not None:
         record.update(
@@ -198,10 +223,98 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
 
 
 def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
     base = Path(base_dir or Path.cwd() / "runs") / timestamp
     base.mkdir(parents=True, exist_ok=True)
     return base
+
+
+def _process_metadata_for_overwatch(raw: Mapping[str, object]) -> Mapping[str, object] | None:
+    metadata = raw.get("trajectory_metadata")
+    if not isinstance(metadata, MappingABC):
+        return None
+    return {
+        "trajectory_id": metadata.get("trajectory_id"),
+        "depth": metadata.get("depth"),
+        "width": raw.get("max_width"),
+        "active_views": metadata.get("active_views", []),
+        "confidence": metadata.get("confidence"),
+        "uncertainty": metadata.get("uncertainty"),
+        "constraint_check_status": metadata.get("constraint_check_status"),
+        "verification_status": metadata.get("verification_status"),
+        "convergence_status": raw.get("converged"),
+        "budget_status": "exhausted" if raw.get("budget_exhausted") else "within_budget",
+    }
+
+
+def _write_recursive_refinement_artifacts(
+    run_dir: Path,
+    candidates: Sequence[Candidate],
+) -> None:
+    run_payload = next(
+        (candidate.refinement_run for candidate in candidates if candidate.refinement_run),
+        None,
+    )
+    if not run_payload:
+        return
+    trajectories = run_payload.get("trajectories", [])
+    if not isinstance(trajectories, list):
+        trajectories = []
+    trajectories_path = run_dir / "trajectories.jsonl"
+    with trajectories_path.open("w", encoding="utf8") as handle:
+        for trajectory in trajectories:
+            if isinstance(trajectory, MappingABC):
+                handle.write(json.dumps(trajectory) + "\n")
+    routes_path = run_dir / "view_routes.jsonl"
+    with routes_path.open("w", encoding="utf8") as handle:
+        for trajectory in trajectories:
+            if not isinstance(trajectory, MappingABC):
+                continue
+            states = trajectory.get("states", [])
+            final_state = states[-1] if isinstance(states, list) and states else {}
+            operations = (
+                final_state.get("operations", []) if isinstance(final_state, MappingABC) else []
+            )
+            route = []
+            if isinstance(operations, list):
+                route = [
+                    str(operation.get("view_name"))
+                    for operation in operations
+                    if isinstance(operation, MappingABC)
+                ]
+            handle.write(
+                json.dumps(
+                    {
+                        "trajectory_id": trajectory.get("trajectory_id"),
+                        "view_route": route,
+                        "operations": operations,
+                        "total_updates": trajectory.get("total_updates"),
+                        "converged": trajectory.get("converged"),
+                        "pruned": trajectory.get("pruned"),
+                    }
+                )
+                + "\n"
+            )
+    budget_path = run_dir / "budget_metrics.json"
+    with budget_path.open("w", encoding="utf8") as handle:
+        json.dump(
+            {
+                "selected_trajectory_id": run_payload.get("selected_trajectory_id"),
+                "total_updates": run_payload.get("total_updates"),
+                "max_observed_depth": run_payload.get("max_observed_depth"),
+                "max_observed_width": run_payload.get("max_observed_width"),
+                "convergence_detected": run_payload.get("convergence_detected"),
+                "budget_exhausted": run_payload.get("budget_exhausted"),
+                "branch_count": len(trajectories),
+                "prune_count": sum(
+                    1
+                    for trajectory in trajectories
+                    if isinstance(trajectory, MappingABC) and trajectory.get("pruned")
+                ),
+            },
+            handle,
+            indent=2,
+        )
 
 
 def _build_probe_inputs(
@@ -317,7 +430,7 @@ def _compute_and_apply_attr_metrics(
         bonus += bonuses.get("sparsity_drop", 0.0)
     candidate.attr_metrics = metrics
     candidate.attr_bonus = bonus
-    candidate.composite = candidate.base_composite + candidate.attr_bonus
+    candidate.composite = candidate.base_composite + candidate.process_bonus + candidate.attr_bonus
     return {**metrics, "bonus": bonus}
 
 
@@ -526,6 +639,8 @@ def run_self_play(
     use_grn_for_scoring: bool | None = None,
     use_grn_for_abstention: bool | None = None,
     use_grn_for_probes: bool | None = None,
+    refinement_config: RecursiveRefinementConfig | None = None,
+    process_reward_weight: float | None = None,
 ) -> Dict[str, object]:
     """Run TRM self-play with optional GRN, value decomposition, and overwatch controls.
 
@@ -533,7 +648,7 @@ def run_self_play(
         problem_path: Path to a JSONL dataset of problems.
         profile: Name of the scoring profile to load from profiles.yaml.
         k: Number of samples to generate.
-        sampler: Backend sampler identifier (only "trm" is supported currently).
+        sampler: Backend sampler identifier ("trm" or experimental "gram_mdt").
         concept: Optional concept specification for concept reward integration.
         output_dir: Directory for run outputs; created if missing.
         overwatch_config: Controls overwatch LLM monitoring/interventions when enabled.
@@ -544,12 +659,25 @@ def run_self_play(
             profile config when None.
         use_grn_for_abstention: Override GRN usage for abstention thresholds.
         use_grn_for_probes: Override GRN usage for probe/concept reward normalization.
+        refinement_config: Optional configuration for the experimental gram_mdt sampler.
+        process_reward_weight: Optional process-score bonus weight for candidate ranking.
     """
     problem = _load_problem(problem_path)
-    if sampler != "trm":
+    if sampler not in {"trm", "gram_mdt"}:
         raise ValueError(f"Unsupported sampler: {sampler}")
-    sampler_impl = TRMSampler()
+    if sampler == "gram_mdt":
+        if refinement_config is not None and process_reward_weight is not None:
+            refinement_config.process_reward_weight = float(process_reward_weight)
+        sampler_impl = GRAMMDTSampler(refinement_config)
+    else:
+        sampler_impl = TRMSampler()
     raw_candidates = sampler_impl.generate(problem, k)
+    process_weight = 0.0
+    if sampler == "gram_mdt":
+        if process_reward_weight is not None:
+            process_weight = float(process_reward_weight)
+        elif refinement_config is not None:
+            process_weight = float(refinement_config.process_reward_weight)
 
     profiles = aggregator.load_profiles()
     profile_config = aggregator.get_last_config()
@@ -615,6 +743,9 @@ def run_self_play(
         gates_pass = bool(eval_result["passes_gates"])
         initial_text = raw.get("text", "")
         trajectory: List[Mapping[str, object]] = [{"prompt": prompt_text}]
+        process_metadata = _process_metadata_for_overwatch(raw)
+        if process_metadata is not None:
+            trajectory.append({"process_metadata": process_metadata})
         interventions: List[Dict[str, object]] = []
         abort_requested = False
         value_stub = {
@@ -751,14 +882,30 @@ def run_self_play(
         semantic_dict["reward_case"] = reward_outcome.case_id
         semantics_logs.append(semantic_dict)
 
-        composite_value = float(eval_result["composite"])
+        base_composite = float(eval_result["composite"])
+        raw_process_score = raw.get("process_score")
+        process_score_value = (
+            float(raw_process_score)
+            if isinstance(raw_process_score, (int, float))
+            and not isinstance(raw_process_score, bool)
+            else None
+        )
+        process_bonus = 0.0
+        if (
+            process_score_value is not None
+            and process_weight > 0.0
+            and gates_pass
+            and not abstention.abstained
+        ):
+            process_bonus = process_weight * process_score_value
+        composite_value = base_composite + process_bonus
         candidate = Candidate(
             text=abstention.text,
             confidence=raw.get("confidence", 0.0),
             metrics=raw.get("metrics", {}),
             axis_scores=axis_scores,
             composite=composite_value,
-            base_composite=composite_value,
+            base_composite=base_composite,
             passes_gates=gates_pass,
             failed_gates=dict(eval_result["failed_gates"]),
             concept_reward=0.0,
@@ -767,6 +914,7 @@ def run_self_play(
             problem_id=problem_id,
             semantic_report=semantic_dict,
             semantics_map=semantics_map,
+            process_bonus=process_bonus,
             value_decomp=value_decomp_result,
             overwatch_interventions=interventions,
             grn_flags=dict(grn_flags),
@@ -776,6 +924,37 @@ def run_self_play(
             reward=reward_outcome.reward,
             reward_case=reward_outcome.case_id,
             reward_components=reward_outcome.components,
+            refinement_run=(
+                raw.get("refinement_run") if isinstance(raw.get("refinement_run"), dict) else None
+            ),
+            trajectory_id=(
+                str(raw.get("trajectory_id")) if raw.get("trajectory_id") is not None else None
+            ),
+            trajectory_metadata=(
+                raw.get("trajectory_metadata")
+                if isinstance(raw.get("trajectory_metadata"), dict)
+                else None
+            ),
+            process_score=process_score_value,
+            process_score_components=(
+                raw.get("process_score_components")
+                if isinstance(raw.get("process_score_components"), dict)
+                else None
+            ),
+            view_route=(
+                list(raw.get("view_route", [])) if isinstance(raw.get("view_route"), list) else []
+            ),
+            total_updates=(
+                raw.get("total_updates") if isinstance(raw.get("total_updates"), int) else None
+            ),
+            max_depth=raw.get("max_depth") if isinstance(raw.get("max_depth"), int) else None,
+            max_width=raw.get("max_width") if isinstance(raw.get("max_width"), int) else None,
+            converged=raw.get("converged") if isinstance(raw.get("converged"), bool) else None,
+            budget_exhausted=(
+                raw.get("budget_exhausted")
+                if isinstance(raw.get("budget_exhausted"), bool)
+                else None
+            ),
         )
         results.append(candidate)
 
@@ -810,11 +989,16 @@ def run_self_play(
                 grn_eps=aggregator.DEFAULT_EPSILON,
             )
             candidate.composite = (
-                candidate.base_composite + candidate.attr_bonus + candidate.concept_reward
+                candidate.base_composite
+                + candidate.process_bonus
+                + candidate.attr_bonus
+                + candidate.concept_reward
             )
     else:
         for candidate in results:
-            candidate.composite = candidate.base_composite + candidate.attr_bonus
+            candidate.composite = (
+                candidate.base_composite + candidate.process_bonus + candidate.attr_bonus
+            )
 
     frontier = pareto_frontier(results)
     best = max(results, key=lambda c: c.composite)
@@ -829,6 +1013,9 @@ def run_self_play(
     with semantics_path.open("w", encoding="utf8") as handle:
         for entry in semantics_logs:
             handle.write(json.dumps(entry) + "\n")
+
+    if sampler == "gram_mdt":
+        _write_recursive_refinement_artifacts(run_dir, results)
 
     summary_path = run_dir / "summary.md"
     with summary_path.open("w", encoding="utf8") as handle:
@@ -866,6 +1053,20 @@ def run_self_play(
                     sparsity=metrics.get("delta_sparsity", 0.0),
                 )
                 handle.write(attr_line)
+        refinement_candidates = [candidate for candidate in results if candidate.refinement_run]
+        if refinement_candidates:
+            run_payload = refinement_candidates[0].refinement_run or {}
+            handle.write("\n### Recursive Refinement Metrics\n")
+            handle.write(
+                "- total_updates={updates}, max_depth={depth}, max_width={width}, "
+                "converged={converged}, budget_exhausted={budget}\n".format(
+                    updates=run_payload.get("total_updates", 0),
+                    depth=run_payload.get("max_observed_depth", 0),
+                    width=run_payload.get("max_observed_width", 0),
+                    converged=run_payload.get("convergence_detected", False),
+                    budget=run_payload.get("budget_exhausted", False),
+                )
+            )
 
     best_path = run_dir / "best.json"
     with best_path.open("w", encoding="utf8") as handle:

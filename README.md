@@ -18,6 +18,8 @@ Inside the package you will find the following important components:
 - `src/rg_tracer/scoring/` – eleven-axis reasoning rubric, profiles, and
   aggregators.
 - `src/rg_tracer/runners/` – self-play and evaluation orchestration.
+- `src/rg_tracer/recursive_refinement/` - experimental GRAM-inspired,
+  CPU-friendly recursive widening with MDT-inspired public view routing.
 - `src/rg_tracer/concepts/` – circuit tracer adapters and concept reward logic.
 - `src/rg_tracer/abstention/` – calibration helpers and the abstention policy
   enforcing the 0.75 confidence threshold.
@@ -39,6 +41,16 @@ group-theoretic symmetry/invariance diagnostics. See
 [`reasoning-generalization-tracer/docs/schema_v3.md`](reasoning-generalization-tracer/docs/schema_v3.md)
 and
 [`reasoning-generalization-tracer/docs/17_case_framework.md`](reasoning-generalization-tracer/docs/17_case_framework.md).
+
+## Experimental Recursive Refinement
+
+Self-play keeps `sampler="trm"` as the default. An additive experimental
+sampler, `sampler="gram_mdt"`, is available for toy RG-Tracer studies of
+recursive state refinement, seeded stochastic widening, and MDT-inspired routing
+through public view operators such as arithmetic, parity, constraint checking,
+counterexample probing, verification, and compression. It is a heuristic
+scaffold, not a full GRAM reproduction or mathematical MDT implementation. See
+[`reasoning-generalization-tracer/docs/recursive_refinement.md`](reasoning-generalization-tracer/docs/recursive_refinement.md).
 
 For detailed documentation, installation steps, and usage examples please refer
 to [`reasoning-generalization-tracer/README.md`](reasoning-generalization-tracer/README.md).
