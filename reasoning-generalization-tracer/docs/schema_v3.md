@@ -60,6 +60,10 @@ The implementation lives in `src/rg_tracer/schema_v3/` and uses stdlib
   structure.
 - `MDLControlOverlay` records default and controlled answers, conflict signals,
   escalation decisions, compression candidates, and guardrails.
+- `TrajectoryOverlay` optionally records public recursive-refinement metadata:
+  sampler name, total updates, maximum depth and width, branch and prune counts,
+  convergence and budget flags, active views, view routes, revisited views, and
+  decomposed process-score components.
 
 `classify_case_v3(...)` accepts the existing case-classification inputs plus
 optional V3 overlays and returns a JSON-serializable result with decomposed

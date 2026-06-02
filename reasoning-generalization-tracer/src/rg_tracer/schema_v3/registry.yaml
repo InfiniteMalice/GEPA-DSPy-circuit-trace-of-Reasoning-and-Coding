@@ -4,6 +4,11 @@ default_threshold_tau: 0.75
 reward_invariants:
   r_thought: positive_only
   hidden_thought_penalty: forbidden
+optional_overlays:
+  trajectory_overlay:
+    sampler_name: trm
+    additive_only: true
+    public_process_metadata_only: true
 reasoning_families:
   - recursive
   - functional_composition

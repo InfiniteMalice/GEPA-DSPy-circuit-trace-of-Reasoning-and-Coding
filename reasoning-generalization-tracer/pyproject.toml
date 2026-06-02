@@ -41,6 +41,7 @@ packages = [
     "rg_tracer.abstention",
     "rg_tracer.semantics",
     "rg_tracer.trm_baseline",
+    "rg_tracer.recursive_refinement",
     "rg_tracer.humanities",
     "rg_tracer.fallback",
     "rg_tracer.dapo",

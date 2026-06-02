@@ -1,1 +1,11 @@
 {"id":"bd-1","title":"A note","type":"chore","priority":2,"status":"closed","deps":[],"reason":"Completed"}
+{"id":"bd-2","title":"Add GRAM-inspired recursive widening and MDT-style view routing scaffold","type":"epic","priority":1,"status":"closed","deps":[],"reason":"Completed"}
+{"id":"bd-2.1","title":"Recursive-refinement data model and configuration","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.2","title":"MDT-inspired view registry","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.3","title":"Adaptive controller and process scoring","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.4","title":"GRAMMDTSampler","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.5","title":"Self-play and CLI integration","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.6","title":"Schema V3 trajectory overlay","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.7","title":"Overwatch and attribution metadata","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.8","title":"Tests","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-2.9","title":"Documentation","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}

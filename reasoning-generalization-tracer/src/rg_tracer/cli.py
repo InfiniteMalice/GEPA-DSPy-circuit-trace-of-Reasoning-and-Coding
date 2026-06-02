@@ -8,6 +8,11 @@ from pathlib import Path
 
 from .concepts import ConceptSpec, compute_concept_reward, trace_model
 from .fallback import run_academic_pipeline
+from .recursive_refinement import (
+    RecursiveRefinementConfig,
+    RefinementBudget,
+    ViewRoutingConfig,
+)
 from .runners.eval_suite import evaluate_dataset
 from .runners.self_play import run_self_play
 
@@ -25,12 +30,29 @@ def _make_concept(name: str | None) -> ConceptSpec | None:
 
 def _cmd_self_play(args: argparse.Namespace) -> None:
     concept = _make_concept(args.concept)
+    refinement_config = None
+    if args.sampler == "gram_mdt":
+        refinement_config = RecursiveRefinementConfig(
+            budget=RefinementBudget(
+                max_depth=args.max_depth,
+                max_width=args.max_width,
+                max_total_updates=args.max_total_updates,
+                branch_factor=args.branch_factor,
+                seed=args.seed,
+            ),
+            routing=ViewRoutingConfig(enabled=not args.disable_view_routing),
+            adaptive_halting=not args.disable_adaptive_halting,
+            progressive_widening=not args.disable_progressive_widening,
+            process_reward_weight=args.process_reward_weight,
+        )
     result = run_self_play(
         args.problem,
         profile=args.profile,
         k=args.k,
         sampler=args.sampler,
         concept=concept,
+        refinement_config=refinement_config,
+        process_reward_weight=args.process_reward_weight,
     )
     print(
         json.dumps(
@@ -100,7 +122,16 @@ def main(argv: list[str] | None = None) -> None:
     sp.add_argument("--k", type=int, default=4)
     sp.add_argument("--problem", required=True)
     sp.add_argument("--concept")
-    sp.add_argument("--sampler", default="trm")
+    sp.add_argument("--sampler", choices=["trm", "gram_mdt"], default="trm")
+    sp.add_argument("--max-depth", type=int, default=8)
+    sp.add_argument("--max-width", type=int, default=4)
+    sp.add_argument("--max-total-updates", type=int, default=64)
+    sp.add_argument("--branch-factor", type=int, default=2)
+    sp.add_argument("--seed", type=int, default=0)
+    sp.add_argument("--process-reward-weight", type=float, default=0.0)
+    sp.add_argument("--disable-adaptive-halting", action="store_true")
+    sp.add_argument("--disable-progressive-widening", action="store_true")
+    sp.add_argument("--disable-view-routing", action="store_true")
     sp.set_defaults(func=_cmd_self_play)
 
     ev = sub.add_parser("eval", help="Evaluate datasets")

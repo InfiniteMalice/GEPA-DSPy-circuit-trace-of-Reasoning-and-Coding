@@ -14,6 +14,7 @@ from .case_v3 import (
     ORIGINAL_CASE_IDS,
     ReasoningOverlay,
     RewardComponents,
+    TrajectoryOverlay,
     classify_case_v3,
     compact_label_for,
 )
@@ -38,6 +39,7 @@ __all__ = [
     "ReasoningOverlay",
     "ReasoningUnitEntry",
     "RewardComponents",
+    "TrajectoryOverlay",
     "classify_case_v3",
     "compact_label_for",
 ]
