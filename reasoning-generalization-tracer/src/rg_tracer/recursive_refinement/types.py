@@ -69,6 +69,7 @@ class TrajectoryResult:
     total_updates: int
     converged: bool
     pruned: bool
+    process_score_components: dict[str, object] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         return _json_safe(asdict(self))

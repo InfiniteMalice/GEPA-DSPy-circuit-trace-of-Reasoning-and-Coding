@@ -52,8 +52,8 @@ def _copy_with_operation(
     )
 
 
-def _numbers(context: Mapping[str, object]) -> list[int]:
-    raw = context.get("numbers", [])
+def _extract_ints_from_context(context: Mapping[str, object], key: str) -> list[int]:
+    raw = context.get(key, [])
     if not isinstance(raw, (list, tuple)):
         return []
     values = []
@@ -63,19 +63,14 @@ def _numbers(context: Mapping[str, object]) -> list[int]:
         if isinstance(item, int):
             values.append(item)
     return values
+
+
+def _numbers(context: Mapping[str, object]) -> list[int]:
+    return _extract_ints_from_context(context, "numbers")
 
 
 def _sequence(context: Mapping[str, object]) -> list[int]:
-    raw = context.get("sequence", [])
-    if not isinstance(raw, (list, tuple)):
-        return []
-    values = []
-    for item in raw:
-        if isinstance(item, bool):
-            continue
-        if isinstance(item, int):
-            values.append(item)
-    return values
+    return _extract_ints_from_context(context, "sequence")
 
 
 def _expected_prediction(context: Mapping[str, object]) -> object | None:

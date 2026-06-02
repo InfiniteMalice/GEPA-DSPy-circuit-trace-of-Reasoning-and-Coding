@@ -15,9 +15,10 @@ def summarize_trajectory(trajectory: TrajectoryResult) -> dict[str, Any]:
     route = []
     if final_state is not None:
         route = [operation.view_name for operation in final_state.operations]
+    depth = final_state.depth if final_state is not None else max(0, len(trajectory.states) - 1)
     return {
         "trajectory_id": trajectory.trajectory_id,
-        "depth": len(trajectory.states) - 1,
+        "depth": depth,
         "active_views": list(final_state.active_views if final_state else []),
         "confidence": trajectory.confidence,
         "uncertainty": final_state.uncertainty if final_state else None,

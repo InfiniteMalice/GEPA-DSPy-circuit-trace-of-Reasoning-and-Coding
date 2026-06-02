@@ -50,12 +50,9 @@ class GRAMMDTSampler:
     ) -> dict[str, object]:
         final_state = trajectory.states[-1]
         route = [operation.view_name for operation in final_state.operations]
-        score = score_trajectory(
-            trajectory.states,
-            total_updates=trajectory.total_updates,
-            max_total_updates=self.config.budget.max_total_updates,
-            converged=trajectory.converged,
-            budget_exhausted=run.budget_exhausted,
+        process_score, process_score_components = self._process_score_payload(
+            trajectory,
+            run,
         )
         trace = trace_model(
             "gram_mdt",
@@ -79,8 +76,8 @@ class GRAMMDTSampler:
             "refinement_run": run.as_dict(),
             "trajectory_id": trajectory.trajectory_id,
             "trajectory_metadata": summarize_trajectory(trajectory),
-            "process_score": score.total,
-            "process_score_components": score.as_dict(),
+            "process_score": process_score,
+            "process_score_components": process_score_components,
             "view_route": route,
             "total_updates": trajectory.total_updates,
             "max_depth": run.max_observed_depth,
@@ -89,6 +86,24 @@ class GRAMMDTSampler:
             "budget_exhausted": run.budget_exhausted,
             "refinement_summary": summarize_run(run),
         }
+
+    def _process_score_payload(
+        self,
+        trajectory: TrajectoryResult,
+        run: RefinementRun,
+    ) -> tuple[float, dict[str, object]]:
+        if trajectory.process_score_components:
+            return trajectory.process_score, dict(trajectory.process_score_components)
+        if len(trajectory.states) > 1:
+            score = score_trajectory(
+                trajectory.states,
+                total_updates=trajectory.total_updates,
+                max_total_updates=self.config.budget.max_total_updates,
+                converged=trajectory.converged,
+                budget_exhausted=run.budget_exhausted,
+            )
+            return score.total, score.as_dict()
+        return trajectory.process_score, {"total": trajectory.process_score}
 
     def _candidate_text(self, trajectory: TrajectoryResult) -> str:
         final_state = trajectory.states[-1]

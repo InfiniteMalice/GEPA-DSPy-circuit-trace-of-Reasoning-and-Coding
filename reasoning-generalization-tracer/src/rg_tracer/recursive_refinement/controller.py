@@ -30,7 +30,7 @@ class RecursiveRefinementController:
         self.config = config or RecursiveRefinementConfig()
         self.model = model or TinyRecursionModel()
         self.views = dict(views or build_default_view_registry())
-        self.rng = random.Random(self.config.budget.seed)
+        self.rng = random.Random(self.config.budget.seed)  # noqa: S311
 
     def run(
         self,
@@ -363,6 +363,7 @@ class RecursiveRefinementController:
                     total_updates=updates,
                     converged=convergence_detected,
                     pruned=final.pruned,
+                    process_score_components=process_score.as_dict(),
                 )
             )
         return sorted(results, key=lambda item: item.trajectory_id)

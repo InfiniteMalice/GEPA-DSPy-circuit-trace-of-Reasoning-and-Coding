@@ -76,6 +76,9 @@ def test_process_bonus_does_not_override_hard_gates_or_abstention(tmp_path):
         refinement_config=config,
         process_reward_weight=1.0,
     )
+    assert any(
+        not candidate.passes_gates or candidate.abstained for candidate in result["candidates"]
+    )
     for candidate in result["candidates"]:
         if not candidate.passes_gates or candidate.abstained:
             assert candidate.process_bonus == 0.0
