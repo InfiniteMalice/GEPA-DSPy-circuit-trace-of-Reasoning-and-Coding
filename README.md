@@ -52,6 +52,11 @@ counterexample probing, verification, and compression. It is a heuristic
 scaffold, not a full GRAM reproduction or mathematical MDT implementation. See
 [`reasoning-generalization-tracer/docs/recursive_refinement.md`](reasoning-generalization-tracer/docs/recursive_refinement.md).
 
+The recursive reasoning ladder extends this additively with `ptrm`, `lattice_trm`, and
+`lattice_ptrm` samplers while preserving `trm` as the default and `gram_mdt` as a separate
+comparison branch. See
+[`reasoning-generalization-tracer/docs/recursive_reasoning_ladder.md`](reasoning-generalization-tracer/docs/recursive_reasoning_ladder.md).
+
 For detailed documentation, installation steps, and usage examples please refer
 to [`reasoning-generalization-tracer/README.md`](reasoning-generalization-tracer/README.md).
 

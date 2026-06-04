@@ -9,6 +9,17 @@ verifiable reward signals, RG-Tracer falls back to an academic three-step
 pipeline culminating in a Bayesian position. All components are lightweight,
 CPU-friendly, and designed for reproducible experimentation.
 
+## Recursive Reasoning Ladder
+
+Self-play keeps `sampler="trm"` as the default and adds a bounded experiment ladder:
+`ptrm`, `lattice_trm`, `lattice_ptrm`, and the existing `gram_mdt` scaffold. `ptrm` is
+PTRM-inspired bounded Gaussian test-time exploration; `lattice_trm` is explicit task-local
+LDT-inspired projection; `lattice_ptrm` combines the two for toy finite-domain tasks. Recovered
+embedding lattices are shadow-only and cannot gate outputs.
+
+See `docs/recursive_reasoning_ladder.md` and `docs/lattice_deduction.md` for CLI examples,
+artifacts, limitations, and the CPU-friendly experiment matrix.
+
 ## Abstention, Hallucination Control, and Thought-Trace Rewards
 
 All training modes in this repo (GEPA-from-scratch, GRPO with GEPA scoring,

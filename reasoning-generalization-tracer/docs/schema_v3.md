@@ -262,3 +262,12 @@ verification and repair, factuality certification, attribution graphs,
 circuit-trace diagnostics, control-loop training, abstention calibration,
 compositional reasoning curricula, semantic laundering detection, over-refusal
 prevention, and transformation-stability testing.
+
+## Lattice Deduction Overlay
+
+`LatticeDeductionOverlay` records public explicit-lattice diagnostics: mode, adapter name,
+abstraction source, candidate counts, meet/join/projection/canonicalization counts, merged branches,
+contradiction/resolution/unresolved flags, and abstention recommendations. It is an overlay only. It
+does not change case IDs `0` through `17`, `tau = 0.75`, positive-only `R_thought`, decomposed
+rewards, ambiguity handling, factuality certification compatibility, `TrajectoryOverlay`, group
+theoretic overlay, or MDL-control overlay.

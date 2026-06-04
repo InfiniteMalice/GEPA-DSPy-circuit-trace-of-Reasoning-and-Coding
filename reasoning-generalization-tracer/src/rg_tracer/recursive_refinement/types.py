@@ -37,6 +37,51 @@ class ViewOperation:
 
 
 @dataclass
+class PerturbationRecord:
+    """Public metadata for one bounded Gaussian perturbation."""
+
+    trajectory_id: str
+    parent_id: str | None
+    depth: int
+    sampled_noise: float
+    bounded_noise: float
+    state_value_before: float
+    state_value_after: float
+    confidence_before: float
+    confidence_after: float
+    uncertainty_before: float
+    uncertainty_after: float
+
+    def as_dict(self) -> dict[str, Any]:
+        return _json_safe(asdict(self))
+
+
+@dataclass
+class LatticeDiagnostics:
+    """Public LDT-inspired projection diagnostics."""
+
+    mode: str = "off"
+    adapter_name: str | None = None
+    initial_candidate_count: int = 0
+    remaining_candidate_count: int = 0
+    meet_count: int = 0
+    join_count: int = 0
+    projection_count: int = 0
+    canonicalization_count: int = 0
+    pruned_branch_count: int = 0
+    merged_branch_count: int = 0
+    contradiction_detected: bool = False
+    resolved: bool = False
+    unresolved: bool = False
+    abstain_recommended: bool = False
+    abstain_reason: str | None = None
+    projection_steps: list[dict[str, object]] = field(default_factory=list)
+
+    def as_dict(self) -> dict[str, Any]:
+        return _json_safe(asdict(self))
+
+
+@dataclass
 class RefinementState:
     """A public state snapshot for one trajectory."""
 
@@ -52,6 +97,8 @@ class RefinementState:
     halted: bool = False
     pruned: bool = False
     halt_reason: str | None = None
+    perturbation: PerturbationRecord | None = None
+    lattice: LatticeDiagnostics | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return _json_safe(asdict(self))
@@ -70,6 +117,8 @@ class TrajectoryResult:
     converged: bool
     pruned: bool
     process_score_components: dict[str, object] = field(default_factory=dict)
+    perturbations: list[PerturbationRecord] = field(default_factory=list)
+    lattice: LatticeDiagnostics | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return _json_safe(asdict(self))
@@ -86,6 +135,8 @@ class RefinementRun:
     max_observed_width: int
     convergence_detected: bool
     budget_exhausted: bool
+    perturbations: list[PerturbationRecord] = field(default_factory=list)
+    lattice: LatticeDiagnostics | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return _json_safe(asdict(self))
