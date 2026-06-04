@@ -26,12 +26,28 @@ def test_ptrm_sampler_is_seed_deterministic_and_bounded_width():
     assert all(item["perturbations"] for item in first)
 
 
+def test_ptrm_sampler_does_not_mutate_disabled_perturbation_config():
+    config = RecursiveRefinementConfig(
+        budget=RefinementBudget(max_depth=2, max_width=2, seed=3),
+        perturbation=PerturbationConfig(enabled=False, trajectories=2, seed=11),
+    )
+    problem = {"id": "p", "task": "addition", "numbers": [2, 3], "answer": 5}
+    PTRMSampler(config).generate(problem, k=2)
+    assert config.perturbation.enabled is False
+
+
 def test_lattice_trm_gated_resolves_singleton_candidate():
     config = RecursiveRefinementConfig(lattice=LatticeConfig(mode="gated"))
     problem = {"id": "p", "task": "addition", "numbers": [2, 3], "answer": 5}
     candidate = LatticeTRMSampler(config).generate(problem, k=1)[0]
     assert candidate["prediction"] == 5
     assert candidate["lattice_diagnostics"]["resolved"]
+
+
+def test_lattice_trm_respects_zero_k():
+    config = RecursiveRefinementConfig(lattice=LatticeConfig(mode="gated"))
+    problem = {"id": "p", "task": "addition", "numbers": [2, 3], "answer": 5}
+    assert LatticeTRMSampler(config).generate(problem, k=0) == []
 
 
 def test_lattice_ptrm_gated_attaches_projection_metadata():

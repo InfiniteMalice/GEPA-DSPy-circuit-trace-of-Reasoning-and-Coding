@@ -42,6 +42,24 @@ def _rows_from_scores(run_dir: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
+def _candidate_lattice_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    lattice_rows = []
+    for row in rows:
+        lattice = row.get("lattice_diagnostics")
+        if not isinstance(lattice, dict):
+            continue
+        if lattice.get("is_summary", False) or row.get("trajectory_id") is None:
+            continue
+        lattice_rows.append(lattice)
+    return lattice_rows
+
+
+def _ground_truth(row: dict[str, object]) -> object:
+    if "ground_truth" in row:
+        return row.get("ground_truth")
+    return row.get("answer")
+
+
 def _summarize(
     *,
     sampler: str,
@@ -51,14 +69,12 @@ def _summarize(
     wall_clock_seconds: float,
 ) -> dict[str, object]:
     rows = _rows_from_scores(run_dir)
-    lattice_rows = [
-        row.get("lattice_diagnostics")
-        for row in rows
-        if isinstance(row.get("lattice_diagnostics"), dict)
-    ]
+    lattice_rows = _candidate_lattice_rows(rows)
     perturbation_count = sum(len(row.get("perturbations") or []) for row in rows)
     correct = sum(
-        1 for row in rows if row.get("predicted_answer") is not None and not row.get("abstained")
+        1
+        for row in rows
+        if row.get("predicted_answer") == _ground_truth(row) and not row.get("abstained")
     )
     abstained = sum(1 for row in rows if row.get("abstained"))
     total = max(1, len(rows))
@@ -82,8 +98,14 @@ def _summarize(
         "mean_width": mean(widths) if widths else 0.0,
         "max_width": max(widths) if widths else 0,
         "mean_projection_steps": mean(projection_steps) if projection_steps else 0.0,
-        "pruned_branch_count": sum(int(row.get("pruned_branch_count", 0)) for row in lattice_rows),
-        "merged_branch_count": sum(int(row.get("merged_branch_count", 0)) for row in lattice_rows),
+        "pruned_branch_count": max(
+            (int(row.get("pruned_branch_count", 0)) for row in lattice_rows),
+            default=0,
+        ),
+        "merged_branch_count": max(
+            (int(row.get("merged_branch_count", 0)) for row in lattice_rows),
+            default=0,
+        ),
         "trajectory_diversity": perturbation_count,
         "convergence_rate": sum(1 for row in rows if row.get("converged")) / total,
         "wall_clock_seconds": wall_clock_seconds,

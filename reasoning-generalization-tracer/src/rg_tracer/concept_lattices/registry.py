@@ -14,6 +14,8 @@ class ConceptLatticeRegistry:
     def register(self, spec: ConceptLatticeSpec) -> None:
         if not spec.shadow_only:
             raise ValueError("concept lattice specs are shadow-only in this scaffold")
+        if spec.name in self._items:
+            raise ValueError(f"duplicate concept lattice name: {spec.name}")
         self._items[spec.name] = spec
 
     def get(self, name: str) -> ConceptLatticeSpec | None:

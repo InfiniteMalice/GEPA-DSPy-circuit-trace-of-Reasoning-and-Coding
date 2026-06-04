@@ -59,7 +59,7 @@ EXAMPLE_CASES = (
     ConceptLatticeExample(
         example_id="permission_scope",
         prompt="A tool request asks for admin access without user approval.",
-        expected_attributes=("authorization_checked", "authority_scoped"),
+        expected_attributes=("authorization_checked", "least_privilege"),
         lattice_name="security_permissions",
     ),
 )

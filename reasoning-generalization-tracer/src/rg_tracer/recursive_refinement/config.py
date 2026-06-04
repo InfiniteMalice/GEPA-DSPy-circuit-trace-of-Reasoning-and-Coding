@@ -12,6 +12,7 @@ MAX_TOTAL_UPDATES_LIMIT = 1024
 VALID_ROUTE_STRATEGIES = {"adaptive", "round_robin", "fixed"}
 VALID_LATTICE_MODES = {"off", "shadow", "advisory", "gated"}
 VALID_LATTICE_ADAPTERS = {"auto", "addition", "parity", "finite_domain_constraint"}
+VALID_ABSTRACTION_SOURCES = {"explicit", "recovered_lattice"}
 
 
 def _validate_positive_int(name: str, value: int, maximum: int) -> None:
@@ -106,6 +107,10 @@ class LatticeConfig:
             raise ValueError(f"mode must be one of {sorted(VALID_LATTICE_MODES)}")
         if self.adapter not in VALID_LATTICE_ADAPTERS:
             raise ValueError(f"adapter must be one of {sorted(VALID_LATTICE_ADAPTERS)}")
+        if self.abstraction_source not in VALID_ABSTRACTION_SOURCES:
+            raise ValueError(
+                f"abstraction_source must be one of {sorted(VALID_ABSTRACTION_SOURCES)}"
+            )
         _validate_positive_int("max_projection_steps", self.max_projection_steps, 1024)
         for name in (
             "abstain_on_contradiction",

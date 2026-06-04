@@ -24,3 +24,15 @@ def test_finite_domain_adapter_reads_explicit_constraints():
     assert adapter is not None
     assert adapter.initial_candidates(problem) == [1, 2, 3, 4]
     assert adapter.constraints(problem)[0].constraint_id == "even"
+
+
+def test_finite_domain_adapter_drops_unhashable_candidates():
+    problem = {
+        "task": "finite_domain_constraint",
+        "domain": [1, ["bad"], 2],
+        "constraints": [{"id": "mixed", "allowed": [1, {"bad": 2}, 2]}],
+    }
+    adapter = select_lattice_adapter(problem)
+    assert adapter is not None
+    assert adapter.initial_candidates(problem) == [1, 2]
+    assert adapter.constraints(problem)[0].allowed_candidates == frozenset({1, 2})

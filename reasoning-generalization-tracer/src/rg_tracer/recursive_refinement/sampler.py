@@ -96,6 +96,7 @@ def _diagnostics_from_projection(result: object) -> LatticeDiagnostics:
         join_count=int(payload.get("join_count", 0)),
         projection_count=len(steps),
         canonicalization_count=int(payload.get("canonicalization_count", 0)),
+        pruned_branch_count=int(payload.get("pruned_branch_count", 0)),
         merged_branch_count=int(payload.get("merged_branch_count", 0)),
         contradiction_detected=bool(payload.get("contradiction_detected", False)),
         resolved=bool(payload.get("resolved", False)),
@@ -200,10 +201,9 @@ class PTRMSampler(ToyTRMSampler):
     def generate(self, problem: Mapping[str, object], k: int) -> list[dict[str, object]]:
         from .perturbation import GaussianTrajectoryPerturber
 
-        config = self.config.perturbation
-        config.enabled = True
-        width = max(1, min(k, config.trajectories))
-        perturber = GaussianTrajectoryPerturber(config)
+        perturb_cfg = replace(self.config.perturbation, enabled=True)
+        width = max(1, min(k, perturb_cfg.trajectories))
+        perturber = GaussianTrajectoryPerturber(perturb_cfg)
         results: list[TrajectoryResult] = []
         all_records = []
         for index in range(width):
@@ -347,7 +347,7 @@ class LatticeTRMSampler(ToyTRMSampler):
             text=text,
             lattice=lattice,
         )
-        return [candidate for _ in range(max(1, k))]
+        return [candidate for _ in range(max(0, k))]
 
 
 class LatticePTRMSampler(PTRMSampler):

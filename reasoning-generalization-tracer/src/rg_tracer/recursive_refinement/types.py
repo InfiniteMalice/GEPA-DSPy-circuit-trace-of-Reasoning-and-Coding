@@ -68,6 +68,7 @@ class LatticeDiagnostics:
     join_count: int = 0
     projection_count: int = 0
     canonicalization_count: int = 0
+    pruned_branch_count: int = 0
     merged_branch_count: int = 0
     contradiction_detected: bool = False
     resolved: bool = False

@@ -93,6 +93,7 @@ class Candidate:
     budget_exhausted: bool | None = None
     lattice_diagnostics: Dict[str, object] | None = None
     perturbations: List[Dict[str, object]] = field(default_factory=list)
+    ground_truth: object | None = None
 
 
 class TRMSampler:
@@ -217,6 +218,8 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
         "budget_exhausted": candidate.budget_exhausted,
         "lattice_diagnostics": candidate.lattice_diagnostics,
         "perturbations": candidate.perturbations,
+        "ground_truth": candidate.ground_truth,
+        "answer": candidate.ground_truth,
     }
     if candidate.value_decomp is not None:
         record.update(
@@ -363,11 +366,13 @@ def _write_ladder_artifacts(run_dir: Path, candidates: Sequence[Candidate]) -> N
                         if lattice_rows
                         else 0.0
                     ),
-                    "merged_branch_count": sum(
-                        int(row.get("merged_branch_count", 0)) for row in lattice_rows
+                    "merged_branch_count": max(
+                        (int(row.get("merged_branch_count", 0)) for row in lattice_rows),
+                        default=0,
                     ),
-                    "pruned_branch_count": sum(
-                        int(row.get("pruned_branch_count", 0)) for row in lattice_rows
+                    "pruned_branch_count": max(
+                        (int(row.get("pruned_branch_count", 0)) for row in lattice_rows),
+                        default=0,
                     ),
                 },
                 handle,
@@ -1038,6 +1043,7 @@ def run_self_play(
                 if isinstance(raw.get("perturbations"), list)
                 else []
             ),
+            ground_truth=problem.get("answer"),
         )
         results.append(candidate)
 

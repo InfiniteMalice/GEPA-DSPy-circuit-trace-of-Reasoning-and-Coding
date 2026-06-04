@@ -8,6 +8,19 @@ from typing import Protocol
 from .lattice import DeductionConstraint
 
 
+def _hashable_items(values: object) -> list[object]:
+    if not isinstance(values, list):
+        return []
+    items = []
+    for item in values:
+        try:
+            hash(item)
+        except TypeError:
+            continue
+        items.append(item)
+    return items
+
+
 class LatticeAdapter(Protocol):
     """Adapter from a public toy problem to candidates and explicit constraints."""
 
@@ -79,7 +92,7 @@ class FiniteDomainConstraintAdapter:
 
     def initial_candidates(self, problem: Mapping[str, object]) -> list[object]:
         domain = problem.get("domain")
-        return list(domain) if isinstance(domain, list) else []
+        return _hashable_items(domain)
 
     def constraints(self, problem: Mapping[str, object]) -> list[DeductionConstraint]:
         constraints = problem.get("constraints", [])
@@ -92,12 +105,13 @@ class FiniteDomainConstraintAdapter:
             allowed = raw.get("allowed")
             if not isinstance(allowed, list):
                 continue
+            allowed_candidates = _hashable_items(allowed)
             constraint_id = str(raw.get("id") or f"constraint_{index}")
             parsed.append(
                 DeductionConstraint(
                     constraint_id=constraint_id,
                     description=str(raw.get("description") or constraint_id),
-                    allowed_candidates=frozenset(allowed),
+                    allowed_candidates=frozenset(allowed_candidates),
                     source=str(raw.get("source") or "explicit"),
                 )
             )

@@ -31,3 +31,4 @@
 {"id":"bd-3.19","title":"Adaptive MDT route learner","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.17"]}
 {"id":"bd-3.20","title":"Category-theoretic cross-view mappings","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.17"]}
 {"id":"bd-3.21","title":"LLM-scale recurrent-reasoning backend","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.18","depends-on:bd-3.19","depends-on:bd-3.20"]}
+{"id":"bd-3.22","title":"Address recursive ladder review findings","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.10"],"reason":"Completed"}

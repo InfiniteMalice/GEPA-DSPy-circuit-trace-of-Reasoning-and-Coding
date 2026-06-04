@@ -7,6 +7,7 @@ import json
 import pytest
 
 from rg_tracer.recursive_refinement import (
+    LatticeConfig,
     RecursiveRefinementConfig,
     RefinementBudget,
     ViewRoutingConfig,
@@ -34,6 +35,11 @@ def test_refinement_budget_rejects_invalid_values():
 def test_view_routing_rejects_unknown_strategy():
     with pytest.raises(ValueError, match="route_strategy"):
         ViewRoutingConfig(route_strategy="diffusion_geometry")
+
+
+def test_lattice_config_rejects_unknown_abstraction_source():
+    with pytest.raises(ValueError, match="abstraction_source"):
+        LatticeConfig(abstraction_source="typo")
 
 
 def test_process_score_decomposition_is_json_serializable():
