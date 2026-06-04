@@ -111,3 +111,18 @@ rg-tracer self-play \
 4. It is not a full MDT diffusion-geometry implementation.
 5. It does not yet scale to LLM inference.
 6. The interfaces are designed so learned backends can be added later.
+
+## Recursive Reasoning Ladder
+
+The package now exposes an additive ladder for controlled ablations:
+
+- `trm`: unchanged deterministic default.
+- `ptrm`: PTRM-inspired seeded bounded Gaussian widening.
+- `lattice_trm`: deterministic TRM plus explicit task-local LDT-inspired projection.
+- `lattice_ptrm`: widened trajectories constrained by explicit lattice projection.
+- `gram_mdt`: existing GRAM-inspired widening and MDT-inspired routing branch.
+
+The ladder does not retrofit gated lattice projection into `gram_mdt`. Process-score influence still
+defaults to `0.0`, and hard gates plus semantic verification remain authoritative. See
+`docs/recursive_reasoning_ladder.md` and `docs/lattice_deduction.md` for sampler modes, artifacts,
+and limitations.

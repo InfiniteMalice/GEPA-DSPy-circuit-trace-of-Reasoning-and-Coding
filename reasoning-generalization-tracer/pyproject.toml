@@ -47,6 +47,7 @@ packages = [
     "rg_tracer.dapo",
     "rg_tracer.testing",
     "rg_tracer.schema_v3",
+    "rg_tracer.concept_lattices",
     "circuit_tracer",
     "factuality_certification",
 ]

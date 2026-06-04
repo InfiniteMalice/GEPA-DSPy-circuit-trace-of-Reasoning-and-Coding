@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .perturbation import PerturbationConfig
+
 MAX_DEPTH_LIMIT = 64
 MAX_WIDTH_LIMIT = 32
 MAX_TOTAL_UPDATES_LIMIT = 1024
 VALID_ROUTE_STRATEGIES = {"adaptive", "round_robin", "fixed"}
+VALID_LATTICE_MODES = {"off", "shadow", "advisory", "gated"}
+VALID_LATTICE_ADAPTERS = {"auto", "addition", "parity", "finite_domain_constraint"}
 
 
 def _validate_positive_int(name: str, value: int, maximum: int) -> None:
@@ -84,11 +88,50 @@ class ViewRoutingConfig:
 
 
 @dataclass
+class LatticeConfig:
+    """Controls explicit task-local LDT-inspired projection."""
+
+    mode: str = "off"
+    adapter: str = "auto"
+    max_projection_steps: int = 16
+    abstain_on_contradiction: bool = True
+    abstain_on_unresolved: bool = True
+    canonicalize_equivalent_states: bool = True
+    merge_equivalent_branches: bool = True
+    recovered_lattices_shadow_only: bool = True
+    abstraction_source: str = "explicit"
+
+    def __post_init__(self) -> None:
+        if self.mode not in VALID_LATTICE_MODES:
+            raise ValueError(f"mode must be one of {sorted(VALID_LATTICE_MODES)}")
+        if self.adapter not in VALID_LATTICE_ADAPTERS:
+            raise ValueError(f"adapter must be one of {sorted(VALID_LATTICE_ADAPTERS)}")
+        _validate_positive_int("max_projection_steps", self.max_projection_steps, 1024)
+        for name in (
+            "abstain_on_contradiction",
+            "abstain_on_unresolved",
+            "canonicalize_equivalent_states",
+            "merge_equivalent_branches",
+            "recovered_lattices_shadow_only",
+        ):
+            if type(getattr(self, name)) is not bool:
+                raise TypeError(f"{name} must be a boolean")
+        if (
+            self.abstraction_source == "recovered_lattice"
+            and self.mode == "gated"
+            and self.recovered_lattices_shadow_only
+        ):
+            raise ValueError("recovered_lattice cannot be used with gated mode in this PR")
+
+
+@dataclass
 class RecursiveRefinementConfig:
     """Top-level configuration for the experimental GRAM/MDT-inspired scaffold."""
 
     budget: RefinementBudget = field(default_factory=RefinementBudget)
     routing: ViewRoutingConfig = field(default_factory=ViewRoutingConfig)
+    lattice: LatticeConfig = field(default_factory=LatticeConfig)
+    perturbation: PerturbationConfig = field(default_factory=PerturbationConfig)
     adaptive_halting: bool = True
     progressive_widening: bool = True
     shared_prefix: bool = True

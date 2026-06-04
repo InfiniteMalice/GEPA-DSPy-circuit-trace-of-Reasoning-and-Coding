@@ -154,6 +154,27 @@ class TrajectoryOverlay:
 
 
 @dataclass
+class LatticeDeductionOverlay:
+    """Optional public explicit-lattice deduction diagnostics."""
+
+    mode: str = "off"
+    adapter_name: str | None = None
+    abstraction_source: str = "explicit"
+    initial_candidate_count: int = 0
+    remaining_candidate_count: int = 0
+    meet_count: int = 0
+    join_count: int = 0
+    projection_count: int = 0
+    canonicalization_count: int = 0
+    merged_branch_count: int = 0
+    contradiction_detected: bool = False
+    resolved: bool = False
+    unresolved: bool = False
+    abstain_recommended: bool = False
+    abstain_reason: str | None = None
+
+
+@dataclass
 class RewardComponents:
     """Decomposed V3 reward components."""
 
@@ -220,6 +241,9 @@ class CaseV3Result:
     group_theoretic_overlay: GroupTheoreticOverlay = field(default_factory=GroupTheoreticOverlay)
     mdl_control_overlay: MDLControlOverlay = field(default_factory=MDLControlOverlay)
     trajectory_overlay: TrajectoryOverlay = field(default_factory=TrajectoryOverlay)
+    lattice_deduction_overlay: LatticeDeductionOverlay = field(
+        default_factory=LatticeDeductionOverlay
+    )
     reward_components: RewardComponents = field(default_factory=RewardComponents)
     diagnostics: Diagnostics = field(default_factory=Diagnostics)
     compact_label: str = ""
@@ -403,6 +427,7 @@ def classify_case_v3(
     group_theoretic_overlay: GroupTheoreticOverlay | None = None,
     mdl_control_overlay: MDLControlOverlay | None = None,
     trajectory_overlay: TrajectoryOverlay | None = None,
+    lattice_deduction_overlay: LatticeDeductionOverlay | None = None,
     ambiguity_mode: AmbiguityHandlingMode | str | None = None,
     ambiguity_high_stakes: bool | None = None,
     targeted_clarification: bool = False,
@@ -423,6 +448,7 @@ def classify_case_v3(
     group = group_theoretic_overlay or GroupTheoreticOverlay()
     mdl = mdl_control_overlay or MDLControlOverlay()
     trajectory = trajectory_overlay or TrajectoryOverlay()
+    lattice = lattice_deduction_overlay or LatticeDeductionOverlay()
     reasoning.finalize()
     control.finalize()
 
@@ -484,6 +510,7 @@ def classify_case_v3(
         group_theoretic_overlay=group,
         mdl_control_overlay=mdl,
         trajectory_overlay=trajectory,
+        lattice_deduction_overlay=lattice,
         reward_components=rewards,
         diagnostics=_diagnose(case_id, control, causal, group, mdl, ambiguity_handling_score),
     )
@@ -578,6 +605,7 @@ __all__ = [
     "ControlOverlay",
     "Diagnostics",
     "GroupTheoreticOverlay",
+    "LatticeDeductionOverlay",
     "MDLControlOverlay",
     "ObservabilityOverlay",
     "ORIGINAL_CASE_IDS",

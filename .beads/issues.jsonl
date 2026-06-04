@@ -9,3 +9,25 @@
 {"id":"bd-2.7","title":"Overwatch and attribution metadata","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
 {"id":"bd-2.8","title":"Tests","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
 {"id":"bd-2.9","title":"Documentation","type":"task","priority":1,"status":"closed","parent":"bd-2","deps":[],"reason":"Completed"}
+{"id":"bd-3","title":"Implement recursive reasoning experiment ladder","type":"epic","priority":1,"status":"in_progress","deps":[]}
+{"id":"bd-3.1","title":"Finite lattice core","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":[],"reason":"Completed"}
+{"id":"bd-3.2","title":"Task-local lattice adapters","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.1"],"reason":"Completed"}
+{"id":"bd-3.3","title":"LDT-inspired projector","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.2"],"reason":"Completed"}
+{"id":"bd-3.4","title":"PTRM-inspired Gaussian perturbation","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":[],"reason":"Completed"}
+{"id":"bd-3.5","title":"Sampler ladder","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.3","depends-on:bd-3.4"],"reason":"Completed"}
+{"id":"bd-3.6","title":"Self-play integration","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.5"],"reason":"Completed"}
+{"id":"bd-3.7","title":"Schema V3 lattice overlay","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.3"],"reason":"Completed"}
+{"id":"bd-3.8","title":"CLI flags","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.5"],"reason":"Completed"}
+{"id":"bd-3.9","title":"Experiment matrix","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.6"],"reason":"Completed"}
+{"id":"bd-3.10","title":"Recursive ladder tests","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.9"],"reason":"Completed"}
+{"id":"bd-3.11","title":"Recursive ladder documentation","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.10"],"reason":"Completed"}
+{"id":"bd-3.12","title":"Structured conceptual-lattice types","type":"task","priority":2,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.11"],"reason":"Completed"}
+{"id":"bd-3.13","title":"Synthetic conceptual-lattice examples","type":"task","priority":2,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.12"],"reason":"Completed"}
+{"id":"bd-3.14","title":"Phase 2 documentation","type":"task","priority":2,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.13"],"reason":"Completed"}
+{"id":"bd-3.15","title":"Shadow-mode representation-lattice probes","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.14"]}
+{"id":"bd-3.16","title":"Recovered-lattice validation experiments","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.15"]}
+{"id":"bd-3.17","title":"Mechanistic-interpretability comparison","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.16"]}
+{"id":"bd-3.18","title":"Learned GRAM prior","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.17"]}
+{"id":"bd-3.19","title":"Adaptive MDT route learner","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.17"]}
+{"id":"bd-3.20","title":"Category-theoretic cross-view mappings","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.17"]}
+{"id":"bd-3.21","title":"LLM-scale recurrent-reasoning backend","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.18","depends-on:bd-3.19","depends-on:bd-3.20"]}

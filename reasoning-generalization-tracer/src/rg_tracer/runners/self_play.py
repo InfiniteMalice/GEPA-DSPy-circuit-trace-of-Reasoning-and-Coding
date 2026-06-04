@@ -15,7 +15,13 @@ from ..abstention import apply_abstention, evaluate_abstention_reward
 from ..attribution import graphs as attr_graphs
 from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
-from ..recursive_refinement import GRAMMDTSampler, RecursiveRefinementConfig
+from ..recursive_refinement import (
+    GRAMMDTSampler,
+    LatticePTRMSampler,
+    LatticeTRMSampler,
+    PTRMSampler,
+    RecursiveRefinementConfig,
+)
 from ..thought_alignment import classify_thought_alignment
 from .overwatch import OverwatchAgent, OverwatchConfig
 from ..scoring import aggregator, axes
@@ -85,6 +91,8 @@ class Candidate:
     max_width: int | None = None
     converged: bool | None = None
     budget_exhausted: bool | None = None
+    lattice_diagnostics: Dict[str, object] | None = None
+    perturbations: List[Dict[str, object]] = field(default_factory=list)
 
 
 class TRMSampler:
@@ -207,6 +215,8 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
         "max_width": candidate.max_width,
         "converged": candidate.converged,
         "budget_exhausted": candidate.budget_exhausted,
+        "lattice_diagnostics": candidate.lattice_diagnostics,
+        "perturbations": candidate.perturbations,
     }
     if candidate.value_decomp is not None:
         record.update(
@@ -315,6 +325,54 @@ def _write_recursive_refinement_artifacts(
             handle,
             indent=2,
         )
+
+
+def _write_ladder_artifacts(run_dir: Path, candidates: Sequence[Candidate]) -> None:
+    lattice_rows = [
+        candidate.lattice_diagnostics
+        for candidate in candidates
+        if isinstance(candidate.lattice_diagnostics, MappingABC)
+    ]
+    if lattice_rows:
+        with (run_dir / "lattice_diagnostics.jsonl").open("w", encoding="utf8") as handle:
+            for row in lattice_rows:
+                handle.write(json.dumps(row) + "\n")
+    perturbation_rows = []
+    for candidate in candidates:
+        perturbation_rows.extend(candidate.perturbations)
+    if perturbation_rows:
+        with (run_dir / "perturbations.jsonl").open("w", encoding="utf8") as handle:
+            for row in perturbation_rows:
+                handle.write(json.dumps(row) + "\n")
+    if lattice_rows or perturbation_rows:
+        resolved = sum(1 for row in lattice_rows if row.get("resolved"))
+        contradictions = sum(1 for row in lattice_rows if row.get("contradiction_detected"))
+        unresolved = sum(1 for row in lattice_rows if row.get("unresolved"))
+        with (run_dir / "ladder_metrics.json").open("w", encoding="utf8") as handle:
+            json.dump(
+                {
+                    "candidate_count": len(candidates),
+                    "lattice_candidate_count": len(lattice_rows),
+                    "perturbation_count": len(perturbation_rows),
+                    "resolved_count": resolved,
+                    "contradiction_count": contradictions,
+                    "unresolved_count": unresolved,
+                    "mean_projection_steps": (
+                        sum(int(row.get("projection_count", 0)) for row in lattice_rows)
+                        / len(lattice_rows)
+                        if lattice_rows
+                        else 0.0
+                    ),
+                    "merged_branch_count": sum(
+                        int(row.get("merged_branch_count", 0)) for row in lattice_rows
+                    ),
+                    "pruned_branch_count": sum(
+                        int(row.get("pruned_branch_count", 0)) for row in lattice_rows
+                    ),
+                },
+                handle,
+                indent=2,
+            )
 
 
 def _build_probe_inputs(
@@ -648,7 +706,7 @@ def run_self_play(
         problem_path: Path to a JSONL dataset of problems.
         profile: Name of the scoring profile to load from profiles.yaml.
         k: Number of samples to generate.
-        sampler: Backend sampler identifier ("trm" or experimental "gram_mdt").
+        sampler: Backend sampler identifier for the recursive reasoning ladder.
         concept: Optional concept specification for concept reward integration.
         output_dir: Directory for run outputs; created if missing.
         overwatch_config: Controls overwatch LLM monitoring/interventions when enabled.
@@ -659,21 +717,29 @@ def run_self_play(
             profile config when None.
         use_grn_for_abstention: Override GRN usage for abstention thresholds.
         use_grn_for_probes: Override GRN usage for probe/concept reward normalization.
-        refinement_config: Optional configuration for the experimental gram_mdt sampler.
+        refinement_config: Optional configuration for recursive-refinement samplers.
         process_reward_weight: Optional process-score bonus weight for candidate ranking.
     """
     problem = _load_problem(problem_path)
-    if sampler not in {"trm", "gram_mdt"}:
+    if sampler not in {"trm", "ptrm", "lattice_trm", "lattice_ptrm", "gram_mdt"}:
         raise ValueError(f"Unsupported sampler: {sampler}")
+    if refinement_config is None and sampler in {"ptrm", "lattice_trm", "lattice_ptrm"}:
+        refinement_config = RecursiveRefinementConfig()
     if sampler == "gram_mdt":
         if refinement_config is not None and process_reward_weight is not None:
             refinement_config.process_reward_weight = float(process_reward_weight)
         sampler_impl = GRAMMDTSampler(refinement_config)
+    elif sampler == "ptrm":
+        sampler_impl = PTRMSampler(refinement_config)
+    elif sampler == "lattice_trm":
+        sampler_impl = LatticeTRMSampler(refinement_config)
+    elif sampler == "lattice_ptrm":
+        sampler_impl = LatticePTRMSampler(refinement_config)
     else:
         sampler_impl = TRMSampler()
     raw_candidates = sampler_impl.generate(problem, k)
     process_weight = 0.0
-    if sampler == "gram_mdt":
+    if sampler in {"ptrm", "lattice_trm", "lattice_ptrm", "gram_mdt"}:
         if process_reward_weight is not None:
             process_weight = float(process_reward_weight)
         elif refinement_config is not None:
@@ -846,6 +912,17 @@ def run_self_play(
                 abort_requested = True
         if abort_requested:
             gates_pass = False
+        lattice_payload = (
+            raw.get("lattice_diagnostics")
+            if isinstance(raw.get("lattice_diagnostics"), dict)
+            else None
+        )
+        if (
+            lattice_payload
+            and lattice_payload.get("mode") == "gated"
+            and lattice_payload.get("abstain_recommended")
+        ):
+            gates_pass = False
         abstention = apply_abstention(
             text_after_repair,
             raw.get("confidence", 0.0),
@@ -955,6 +1032,12 @@ def run_self_play(
                 if isinstance(raw.get("budget_exhausted"), bool)
                 else None
             ),
+            lattice_diagnostics=lattice_payload,
+            perturbations=(
+                list(raw.get("perturbations", []))
+                if isinstance(raw.get("perturbations"), list)
+                else []
+            ),
         )
         results.append(candidate)
 
@@ -1016,6 +1099,8 @@ def run_self_play(
 
     if sampler == "gram_mdt":
         _write_recursive_refinement_artifacts(run_dir, results)
+    if sampler in {"ptrm", "lattice_trm", "lattice_ptrm", "gram_mdt"}:
+        _write_ladder_artifacts(run_dir, results)
 
     summary_path = run_dir / "summary.md"
     with summary_path.open("w", encoding="utf8") as handle:
@@ -1065,6 +1150,19 @@ def run_self_play(
                     width=run_payload.get("max_observed_width", 0),
                     converged=run_payload.get("convergence_detected", False),
                     budget=run_payload.get("budget_exhausted", False),
+                )
+            )
+        ladder_candidates = [
+            candidate
+            for candidate in results
+            if candidate.lattice_diagnostics or candidate.perturbations
+        ]
+        if ladder_candidates:
+            handle.write("\n### Recursive Ladder Metrics\n")
+            handle.write(
+                "- lattice_records={lattice}, perturbation_records={perturbations}\n".format(
+                    lattice=sum(1 for candidate in results if candidate.lattice_diagnostics),
+                    perturbations=sum(len(candidate.perturbations) for candidate in results),
                 )
             )
 
