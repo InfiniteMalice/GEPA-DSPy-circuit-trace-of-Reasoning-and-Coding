@@ -85,6 +85,9 @@ RG-Tracer combines several complementary approaches:
   hallucination, and irresponsible guessing under ambiguity.
 - **Atomic thought decomposition**: break reasoning into inspectable functional
   units that can be scored, recombined, and tested for reuse.
+- **Bayesian fallback reasoning**: produce transparent, uncertainty-calibrated
+  positions for domains where claims cannot be cleanly verified by a single
+  deterministic test.
 - **Circuit traces and attribution graphs**: measure whether concepts appear in
   sparse, repeatable, and transferable internal pathways.
 - **Experimental recursive refinement**: compare deterministic recursion,
@@ -274,6 +277,59 @@ This layer is inspired in part by
 while adapting the certification idea conservatively to answer-level evidence
 and observability metadata.
 
+## Bayesian Reasoning for Non-Verifiable Domains
+
+Some domains do not provide a clean unit test, formal proof, or single
+experiment that can settle the question. Historical interpretation, policy
+analysis, ethics, social science, and other humanities problems often require a
+position that is evidence-weighted rather than mechanically verified. RG-Tracer
+uses a separate **academic-to-Bayesian fallback pipeline** for these cases.
+
+The fallback does not treat a posterior probability as objective truth. It is a
+structured way to expose assumptions, compare evidence, calibrate uncertainty,
+and identify where a conclusion remains fragile.
+
+The pipeline proceeds in three stages:
+
+1. **Academic rigor evaluation.** The claim is checked against humanities-focused
+   criteria such as source handling, interpretive fidelity, historiography,
+   causal discipline, triangulation, normative-versus-positive separation,
+   uncertainty calibration, intellectual charity, rhetorical hygiene,
+   reproducibility, synthesis, and epistemic neutrality.
+2. **Semantic verification and abstention.** The verifier flags contradictions,
+   unsupported claims, misquotes, context errors, over-claimed causality, and
+   is-ought slips. Hard gates remain authoritative. If the analysis fails the
+   humanities gates or confidence remains below the calibrated threshold, the
+   pipeline abstains instead of forcing a position.
+3. **Bayesian position synthesis.** For a claim that passes the gates, the system
+   combines an explicit prior with evidence-specific likelihoods and reports the
+   posterior, dominant evidence, sensitivity summary, and decision policy.
+
+The current decision policy is deliberately conservative:
+
+| Posterior | Default policy |
+| --- | --- |
+| `>= 0.75` | Support with caveats |
+| `> 0.25` and `< 0.75` | Gather more evidence |
+| `<= 0.25` | Recommend caution |
+
+The output is intended to be auditable. Evidence records include the source,
+year, method, finding, and limitations. Priors and likelihoods remain explicit
+so researchers can inspect whether the conclusion depends too heavily on a
+contestable assumption or a single dominant source.
+
+Run the fallback pipeline with:
+
+```bash
+rg-tracer fallback \
+  --problem reasoning-generalization-tracer/datasets/humanities/sample_claims.jsonl
+```
+
+The implementation lives in
+[`reasoning-generalization-tracer/src/rg_tracer/fallback/`](reasoning-generalization-tracer/src/rg_tracer/fallback/).
+Humanities scoring is documented in the package README:
+[`reasoning-generalization-tracer/README.md`](reasoning-generalization-tracer/README.md).
+
 ## Experimental Recursive Refinement
 
 The default self-play sampler remains `sampler="trm"`. Recursive refinement is
@@ -376,6 +432,8 @@ Important components include:
 - `src/rg_tracer/concepts/` - concept specifications and circuit-reward logic;
 - `src/rg_tracer/abstention/` - confidence calibration and abstention policy;
 - `src/rg_tracer/schema_v3/` - 17-case V3 overlay and structured diagnostics;
+- `src/rg_tracer/fallback/` - academic-to-Bayesian fallback for non-verifiable
+  domains;
 - `src/rg_tracer/recursive_refinement/` - bounded GRAM-inspired and MDT-inspired
   refinement scaffold;
 - `src/rg_tracer/trm_baseline/` - Tiny Recursion Model baseline;
@@ -391,6 +449,8 @@ RG-Tracer is an experimental research scaffold. Current limitations include:
   is not installed;
 - semantic verification uses lightweight heuristics rather than a full learned
   natural-language-inference model;
+- Bayesian posteriors for non-verifiable domains are only as good as the stated
+  priors, likelihood estimates, evidence quality, and humanities-rigor checks;
 - the default TRM experiments are small toy tasks;
 - `gram_mdt` is a heuristic CPU-friendly scaffold, not a learned GRAM-style
   trajectory prior;
