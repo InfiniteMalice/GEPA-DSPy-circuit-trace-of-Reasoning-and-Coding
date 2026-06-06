@@ -66,3 +66,12 @@ This increment does not implement a learned GRAM-style trajectory prior, mathema
 geometry, category-theoretic mappings, attribution-verified concept transitions, recovered
 embedding lattices for gating, or LLM-scale recurrent reasoning. It also does not add negative
 hidden-thought penalties or collapse decomposed rewards into one opaque lattice reward.
+## Roadmap Boundary
+
+Current implementation: deterministic TRM -> PTRM-inspired bounded widening ->
+LDT-inspired explicit finite candidate lattices -> lattice-constrained PTRM ->
+GRAM/MDT-inspired public multi-view refinement. This PR adds optional real LRD
+toy grokking ablations and bounded semantic constraint compilation into
+explicit toy lattices. Future shadow-mode work may study recovered
+embedding-space concept lattices, but those recovered lattices cannot gate
+outputs.

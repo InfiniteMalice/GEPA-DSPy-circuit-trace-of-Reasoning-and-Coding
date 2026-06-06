@@ -271,3 +271,11 @@ contradiction/resolution/unresolved flags, and abstention recommendations. It is
 does not change case IDs `0` through `17`, `tau = 0.75`, positive-only `R_thought`, decomposed
 rewards, ambiguity handling, factuality certification compatibility, `TrajectoryOverlay`, group
 theoretic overlay, or MDL-control overlay.
+## Semantic Constraint Overlay
+
+`SemanticConstraintOverlay` is an optional V3 overlay for bounded semantic
+constraint compilation. It records mode, compiler name, compiled and verified
+constraint counts, unsupported fragments, ambiguity, contradiction status,
+provenance completeness, and shadow/gated safety flags. It preserves all
+existing behavioral case IDs, keeps `tau = 0.75`, and does not change
+positive-only thought rewards.

@@ -126,3 +126,11 @@ The ladder does not retrofit gated lattice projection into `gram_mdt`. Process-s
 defaults to `0.0`, and hard gates plus semantic verification remain authoritative. See
 `docs/recursive_reasoning_ladder.md` and `docs/lattice_deduction.md` for sampler modes, artifacts,
 and limitations.
+## Additive LRD and Semantic-Constraint Boundary
+
+The recursive-reasoning ladder remains intact: `trm`, `ptrm`, `lattice_trm`,
+`lattice_ptrm`, and `gram_mdt` keep their existing roles. The LRD grokking path
+is separate optional toy-transformer training, not a replacement sampler. The
+semantic-constraint compiler can feed verified synthetic finite-domain
+constraints into explicit task-local lattices, but open-ended language and
+recovered representation lattices remain ungated.

@@ -19,6 +19,13 @@ from rg_tracer.recursive_refinement import (
 from rg_tracer.runners.self_play import run_self_play
 
 SAMPLERS = ("trm", "ptrm", "lattice_trm", "lattice_ptrm", "gram_mdt")
+RUN_DIR_LABELS = {
+    "trm": "trm",
+    "ptrm": "ptrm",
+    "lattice_trm": "ltrm",
+    "lattice_ptrm": "lptrm",
+    "gram_mdt": "gmdt",
+}
 
 
 def _config_for(sampler: str, seed: int) -> RecursiveRefinementConfig | None:
@@ -134,7 +141,7 @@ def main(argv: list[str] | None = None) -> None:
                 args.dataset,
                 sampler=sampler,
                 refinement_config=_config_for(sampler, seed),
-                output_dir=output_dir / f"{sampler}_seed_{seed}",
+                output_dir=output_dir / f"{RUN_DIR_LABELS[sampler]}_s{seed}",
                 k=4,
             )
             elapsed = time.perf_counter() - start
@@ -160,11 +167,10 @@ def main(argv: list[str] | None = None) -> None:
         handle.write("| sampler | seed | accuracy | abstention_rate | run_dir |\n")
         handle.write("| - | - | - | - | - |\n")
         for row in rows:
-            handle.write(
-                "| {sampler} | {seed} | {accuracy:.3f} | {abstention_rate:.3f} | {run_dir} |\n".format(
-                    **row
-                )
+            row_template = (
+                "| {sampler} | {seed} | {accuracy:.3f} | " "{abstention_rate:.3f} | {run_dir} |\n"
             )
+            handle.write(row_template.format(**row))
     print(json.dumps({"output_dir": str(output_dir), "rows": len(rows)}))
 
 

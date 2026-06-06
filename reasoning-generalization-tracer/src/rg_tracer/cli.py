@@ -17,6 +17,7 @@ from .recursive_refinement import (
 )
 from .runners.eval_suite import evaluate_dataset
 from .runners.self_play import run_self_play
+from .semantic_constraints.adapters import compile_verified_constraints_to_lattice
 
 
 def _make_concept(name: str | None) -> ConceptSpec | None:
@@ -135,6 +136,23 @@ def _cmd_fallback(args: argparse.Namespace) -> None:
     print(json.dumps(output, indent=2))
 
 
+def _cmd_compile_constraints(args: argparse.Namespace) -> None:
+    domain = [int(item) for item in args.domain]
+    projection = compile_verified_constraints_to_lattice(
+        args.text,
+        domain,
+        mode=args.mode,
+        task_type="semantic_constraint_toy",
+    )
+    payload = projection.as_dict()
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("w", encoding="utf8") as handle:
+            json.dump(payload, handle, indent=2)
+    print(json.dumps(payload, indent=2))
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="rg-tracer")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -192,6 +210,17 @@ def main(argv: list[str] | None = None) -> None:
     fb.add_argument("--problem", required=True)
     fb.add_argument("--profile", default="humanities")
     fb.set_defaults(func=_cmd_fallback)
+
+    cc = sub.add_parser("compile-constraints", help="Compile bounded toy constraints")
+    cc.add_argument("--text", required=True)
+    cc.add_argument("--domain", nargs="+", required=True)
+    cc.add_argument(
+        "--mode",
+        choices=["off", "shadow", "advisory", "gated_toy_only"],
+        default="shadow",
+    )
+    cc.add_argument("--output")
+    cc.set_defaults(func=_cmd_compile_constraints)
 
     args = parser.parse_args(argv)
     args.func(args)

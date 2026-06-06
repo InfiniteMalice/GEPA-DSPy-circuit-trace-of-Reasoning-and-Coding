@@ -358,6 +358,12 @@ Each self-play run emits:
   `sampler=gram_mdt`.
 * `budget_metrics.json` - depth, width, convergence, pruning, and budget
   metadata, only for `sampler=gram_mdt`.
+* `lattice_diagnostics.jsonl` - explicit finite-lattice projection diagnostics
+  for `lattice_trm`, `lattice_ptrm`, and lattice-enabled recursive runs.
+* `perturbations.jsonl` - PTRM-inspired perturbation records for `ptrm` and
+  `lattice_ptrm` when stochastic widening is active.
+* `semantic_constraints.jsonl` and `semantic_constraint_summary.json` - bounded
+  compiler logs for synthetic semantic-constraint datasets.
 * `attr/` – attribution graphs for top candidates (one JSON per probe).
 * `attr_metrics.jsonl` – attribution metric records stored alongside `attr/` in the
   run directory root (not inside the folder). Each JSON line exposes
@@ -403,6 +409,15 @@ Each self-play run emits:
   `--process-reward-weight`, and disable flags for adaptive halting,
   progressive widening, or view routing. The default `--sampler trm` path is
   unchanged.
+* **Sampler Ladder:** `trm` remains the deterministic default. `ptrm`,
+  `lattice_trm`, `lattice_ptrm`, and `gram_mdt` are additive experimental
+  samplers with separate artifacts and bounded toy-domain assumptions.
+* **Optional LRD Grokking:** install `pip install -e .[grokking]` from this
+  package directory to enable Torch-backed toy-transformer runs. The default
+  install remains lightweight.
+* **Semantic Constraints:** use `rg-tracer compile-constraints --mode shadow`
+  for bounded synthetic examples. `gated_toy_only` is restricted to verified
+  finite-domain toy tasks.
 
 ## DAPO Hybrid Training
 
@@ -421,17 +436,30 @@ integration, reward mixer configuration, and JSONL logging details.
 
 * Circuit tracing uses a local stub when the external dependency is missing.
 * Semantic checks rely on lightweight heuristics rather than full NLI models.
+* Semantic constraint compilation is a bounded synthetic scaffold, not general
+  natural-language understanding or autonomous control.
 * The humanities module encourages citations but does not fetch external
   sources automatically.
 * The TRM sampler is tuned for small parity/carry tasks and will not scale to
   complex domains without additional training.
+* LRD grokking runs train a tiny CPU transformer and measure actual matrix
+  spectra, but they do not prove frontier-model performance.
 
 ## Roadmap
 
-1. Integrate large-language-model samplers with calibration hooks.
-2. Expand semantic verifier with learned contradiction detectors.
-3. Add richer datasets covering physics and program synthesis tasks.
-4. Expose a web dashboard for inspecting run artifacts.
+**CURRENT IMPLEMENTATION:** deterministic TRM -> PTRM-inspired bounded widening
+-> LDT-inspired explicit finite candidate lattices -> lattice-constrained PTRM
+-> GRAM/MDT-inspired public multi-view refinement.
+
+**THIS PR:** optional real LRD grokking ablations and bounded semantic
+constraint compilation into explicit toy lattices.
+
+**FUTURE SHADOW MODE:** recovered embedding-space concept lattices,
+representation-lattice validation, and mechanistic-interpretability comparison.
+
+**FUTURE RESEARCH:** learned GRAM-style trajectory priors, adaptive MDT route
+learning, category-theoretic mappings across typed lattices, LLM-scale recurrent
+reasoning, richer datasets, and dashboard inspection.
 
 ## Grokking Matrix Experiments
 
@@ -454,6 +482,44 @@ deltas. Look for stabilising trends across interventions—for example, compare
 repeatability before accuracy improves, and toggle weight decay to confirm the
 shift from spiky memorisers to broader rule circuits.
 
+For actual spectral metrics, use the separate optional toy-training path:
+
+```bash
+pip install -e ".[grokking]"
+python scripts/run_lrd_grokking_matrix.py --modulus 7 --epochs 50 --limit 4
+```
+
+`run_lrd_grokking_matrix.py` trains a small modular-addition transformer and
+logs singular-value summaries from real Q/K matrices. Saved metrics and future
+checkpoints are inputs for real attribution backends, not mechanistic proof by
+themselves. See `docs/low_rank_decay_grokking.md`.
+
+## Semantic Constraint Synthesis
+
+The bounded flow is:
+
+```text
+synthetic natural-language requirement
+  -> rule-based compiler
+  -> provenance-tracked candidate constraints
+  -> verifier
+  -> explicit finite-domain lattice
+  -> shadow, advisory, or toy-only gated projection
+```
+
+Example:
+
+```bash
+rg-tracer compile-constraints \
+  --text "The answer must be even and greater than 2." \
+  --domain 1 2 3 4 \
+  --mode shadow
+```
+
+Arbitrary open-ended language remains ungated, external actions are out of
+scope, generated code execution is out of scope, and semantic compilation is a
+bridge into explicit lattice deduction rather than a general autonomous-control
+system. See `docs/semantic_constraint_synthesis.md`.
 
 ## GeoCert-Inspired Factuality Certification, Observability, and Over-Refusal Guard
 
@@ -481,3 +547,16 @@ print(result.hallucination_risk)
 ```
 
 Preset configs are available in `configs/factuality_certification/{off,shadow,advisory,gated,training}.yaml`.
+
+## Selected References
+
+- [DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines](https://arxiv.org/abs/2310.03714)
+- [GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning](https://arxiv.org/abs/2507.19457)
+- [Less is More: Recursive Reasoning with Tiny Networks](https://arxiv.org/abs/2510.04871)
+- [Probabilistic Tiny Recursive Model](https://arxiv.org/abs/2605.19943)
+- [Lattice Deduction Transformers](https://arxiv.org/abs/2605.08605)
+- [The Lattice Representation Hypothesis of Large Language Models](https://arxiv.org/abs/2603.01227)
+- [Low-Rank Decay for Grokking in Scale-Invariant Transformers](https://arxiv.org/abs/2606.04405)
+- [Semantic Constraint Synthesis for Adaptive Trajectory Optimization via Large Language Models](https://arxiv.org/abs/2606.04123)
+- [Generative Recursive Reasoning](https://arxiv.org/abs/2605.19376)
+- [Multi-view diffusion geometry using intertwined diffusion trajectories](https://arxiv.org/abs/2512.01484)

@@ -32,3 +32,28 @@
 {"id":"bd-3.20","title":"Category-theoretic cross-view mappings","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.17"]}
 {"id":"bd-3.21","title":"LLM-scale recurrent-reasoning backend","type":"task","priority":4,"status":"open","parent":"bd-3","deps":["depends-on:bd-3.18","depends-on:bd-3.19","depends-on:bd-3.20"]}
 {"id":"bd-3.22","title":"Address recursive ladder review findings","type":"task","priority":1,"status":"closed","parent":"bd-3","deps":["depends-on:bd-3.10"],"reason":"Completed"}
+{"id":"bd-4","title":"Add LRD grokking experiments and semantic constraint synthesis scaffold","type":"epic","priority":1,"status":"closed","deps":[],"reason":"Completed"}
+{"id":"bd-4.1","title":"Optional grokking dependency extra","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":[],"reason":"Completed"}
+{"id":"bd-4.2","title":"Toy transformer","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.1"],"reason":"Completed"}
+{"id":"bd-4.3","title":"Spectral metrics","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.1"],"reason":"Completed"}
+{"id":"bd-4.4","title":"Exact and Newton-Schulz polar factor","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.3"],"reason":"Completed"}
+{"id":"bd-4.5","title":"LRD update logic","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.4"],"reason":"Completed"}
+{"id":"bd-4.6","title":"Grokking trainer","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.2","depends-on:bd-4.5"],"reason":"Completed"}
+{"id":"bd-4.7","title":"LRD experiment script","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.6"],"reason":"Completed"}
+{"id":"bd-4.8","title":"LRD tests","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.7"],"reason":"Completed"}
+{"id":"bd-4.9","title":"LRD documentation","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.8"],"reason":"Completed"}
+{"id":"bd-4.10","title":"Semantic constraint structured types","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":[],"reason":"Completed"}
+{"id":"bd-4.11","title":"Rule-based semantic toy compiler","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.10"],"reason":"Completed"}
+{"id":"bd-4.12","title":"Semantic constraint verifier","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.11"],"reason":"Completed"}
+{"id":"bd-4.13","title":"Semantic constraint lattice adapter","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.12"],"reason":"Completed"}
+{"id":"bd-4.14","title":"Schema V3 semantic overlay","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.13"],"reason":"Completed"}
+{"id":"bd-4.15","title":"Semantic constraint CLI","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.13"],"reason":"Completed"}
+{"id":"bd-4.16","title":"Semantic constraint synthetic datasets","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.11"],"reason":"Completed"}
+{"id":"bd-4.17","title":"Semantic constraint structured logs","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.12"],"reason":"Completed"}
+{"id":"bd-4.18","title":"Semantic constraint tests","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.17"],"reason":"Completed"}
+{"id":"bd-4.19","title":"Semantic constraint documentation","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.18"],"reason":"Completed"}
+{"id":"bd-4.20","title":"Root README update","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.8","depends-on:bd-4.18"],"reason":"Completed"}
+{"id":"bd-4.21","title":"Package README reconciliation","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.20"],"reason":"Completed"}
+{"id":"bd-4.22","title":"Recursive and lattice documentation updates","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.21"],"reason":"Completed"}
+{"id":"bd-4.23","title":"Selected-reference update","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.22"],"reason":"Completed"}
+{"id":"bd-4.24","title":"Roadmap boundary review","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.23"],"reason":"Completed"}
