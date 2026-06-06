@@ -91,7 +91,8 @@ def verify_compilation_result(
         verification_errors.append("duplicate_constraint")
     if contradiction:
         verification_errors.append("contradiction")
-    safe_for_shadow = bool(verified_constraints) and not result.ambiguity_detected
+    verified_count = sum(1 for constraint in verified_constraints if constraint.verified)
+    safe_for_shadow = verified_count > 0 and not result.ambiguity_detected
     safe_for_gated = (
         safe_for_shadow
         and not contradiction
@@ -100,9 +101,8 @@ def verify_compilation_result(
         and result.task_type == "semantic_constraint_toy"
     )
     status = "verified" if safe_for_gated else "requires_review"
-    if not verified_constraints:
+    if verified_count == 0:
         status = "unverified"
-    verified_count = sum(1 for constraint in verified_constraints if constraint.verified)
     result.constraints = verified_constraints
     result.contradiction_detected = contradiction
     result.verification_status = status

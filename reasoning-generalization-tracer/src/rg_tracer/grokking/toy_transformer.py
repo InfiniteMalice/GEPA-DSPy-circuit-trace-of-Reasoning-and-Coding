@@ -5,15 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .config import ToyGrokkingConfig
-from .spectral_metrics import require_torch
-
 try:  # pragma: no cover - import guard is validated by tests without torch.
     import torch
     from torch import nn
 except ImportError:  # pragma: no cover
     torch = None  # type: ignore[assignment]
     nn = None  # type: ignore[assignment]
+
+from .config import ToyGrokkingConfig
+from .spectral_metrics import require_torch
 
 
 @dataclass(frozen=True)

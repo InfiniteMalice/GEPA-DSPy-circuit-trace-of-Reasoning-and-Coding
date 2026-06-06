@@ -699,6 +699,8 @@ def _semantic_constraint_mode(
     if problem.get("task") != "semantic_constraint_toy":
         return "off"
     lattice_mode = refinement_config.lattice.mode if refinement_config is not None else "off"
+    if lattice_mode == "off":
+        return "off"
     if lattice_mode == "gated":
         return "gated_toy_only"
     if lattice_mode == "advisory":

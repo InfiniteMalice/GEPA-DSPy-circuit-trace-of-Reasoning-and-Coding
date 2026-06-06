@@ -15,7 +15,7 @@ def require_torch() -> Any:
 
     if torch is None:
         raise ImportError(
-            "rg_tracer.grokking requires the optional extra: pip install -e .[grokking]"
+            'rg_tracer.grokking requires the optional extra: pip install -e ".[grokking]"'
         )
     return torch
 
@@ -28,11 +28,15 @@ def _singular_values(weight: Any) -> Any:
     return torch_mod.clamp(values, min=0.0)
 
 
-def spectral_entropy(weight: Any, eps: float = 1e-12) -> float:
+def _metric_values(weight: Any, values: Any | None) -> Any:
+    return _singular_values(weight) if values is None else values
+
+
+def spectral_entropy(weight: Any, eps: float = 1e-12, values: Any | None = None) -> float:
     """Return entropy of normalized singular values."""
 
     torch_mod = require_torch()
-    values = _singular_values(weight)
+    values = _metric_values(weight, values)
     total = values.sum()
     if float(total) <= eps:
         return 0.0
@@ -41,20 +45,21 @@ def spectral_entropy(weight: Any, eps: float = 1e-12) -> float:
     return float(entropy.item())
 
 
-def effective_rank(weight: Any, eps: float = 1e-12) -> float:
+def effective_rank(weight: Any, eps: float = 1e-12, values: Any | None = None) -> float:
     """Return exp(spectral entropy), with zero matrices mapped to 0."""
 
-    values = _singular_values(weight)
+    values = _metric_values(weight, values)
     if float(values.sum()) <= eps:
         return 0.0
     torch_mod = require_torch()
-    return float(torch_mod.exp(torch_mod.tensor(spectral_entropy(weight, eps))).item())
+    entropy = spectral_entropy(weight, eps, values=values)
+    return float(torch_mod.exp(torch_mod.tensor(entropy)).item())
 
 
-def stable_rank(weight: Any, eps: float = 1e-12) -> float:
+def stable_rank(weight: Any, eps: float = 1e-12, values: Any | None = None) -> float:
     """Return squared Frobenius norm divided by squared spectral norm."""
 
-    values = _singular_values(weight)
+    values = _metric_values(weight, values)
     if values.numel() == 0:
         return 0.0
     spectral = values.max()
@@ -70,9 +75,9 @@ def singular_value_summary(weight: Any, top_k: int = 8) -> dict[str, object]:
         raise ValueError("top_k must be positive")
     values = _singular_values(weight)
     return {
-        "effective_rank": effective_rank(weight),
-        "stable_rank": stable_rank(weight),
-        "spectral_entropy": spectral_entropy(weight),
+        "effective_rank": effective_rank(weight, values=values),
+        "stable_rank": stable_rank(weight, values=values),
+        "spectral_entropy": spectral_entropy(weight, values=values),
         "spectral_norm": float(values.max().item()) if values.numel() else 0.0,
         "nuclear_norm": float(values.sum().item()),
         "frobenius_norm": float(values.pow(2).sum().sqrt().item()),

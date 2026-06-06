@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from .types import ConstraintProvenance, SemanticCompilationResult, SemanticConstraint
 
 _INT_RE = r"-?\d+"
-_AMBIGUITY_PATTERN = re.compile(r"\b(maybe|perhaps|around|approximately|roughly|preferably|or)\b")
+_AMBIGUITY_PATTERN = re.compile(r"\b(maybe|perhaps|around|approximately|roughly|preferably)\b")
 
 
 def _hashable_domain(domain: Sequence[object]) -> list[object]:

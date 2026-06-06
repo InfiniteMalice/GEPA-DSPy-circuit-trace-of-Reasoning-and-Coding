@@ -57,3 +57,4 @@
 {"id":"bd-4.22","title":"Recursive and lattice documentation updates","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.21"],"reason":"Completed"}
 {"id":"bd-4.23","title":"Selected-reference update","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.22"],"reason":"Completed"}
 {"id":"bd-4.24","title":"Roadmap boundary review","type":"task","priority":1,"status":"closed","parent":"bd-4","deps":["depends-on:bd-4.23"],"reason":"Completed"}
+{"id":"bd-5","title":"Address CodeRabbit review feedback for LRD and semantic constraints","type":"task","priority":1,"status":"closed","deps":["discovered-from:bd-4"],"reason":"Completed"}

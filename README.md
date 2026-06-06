@@ -404,7 +404,7 @@ Detailed recursive-refinement documentation:
 matrix for smoke tests and attribution-shape checks. The separate optional
 `scripts/run_lrd_grokking_matrix.py` path trains a small CPU toy transformer and
 measures spectra from actual Q/K matrices. Install
-`pip install -e reasoning-generalization-tracer[grokking]` to enable Torch.
+`pip install -e "reasoning-generalization-tracer[grokking]"` to enable Torch.
 
 The semantic-constraint scaffold compiles bounded synthetic requirements such
 as "the answer must be even and greater than 2" into provenance-tracked finite

@@ -40,7 +40,7 @@ class ToyGrokkingConfig:
         if not isinstance(self.train_fraction, (int, float)) or not 0.0 < self.train_fraction < 1.0:
             raise ValueError("train_fraction must be strictly between 0 and 1")
         for name in ("epochs", "eval_interval", "batch_size", "d_model", "n_heads", "n_layers"):
-            _validate_positive_int(name, int(getattr(self, name)))
+            _validate_positive_int(name, getattr(self, name))
         _validate_nonnegative_float("learning_rate", self.learning_rate)
         if self.learning_rate == 0.0:
             raise ValueError("learning_rate must be positive")

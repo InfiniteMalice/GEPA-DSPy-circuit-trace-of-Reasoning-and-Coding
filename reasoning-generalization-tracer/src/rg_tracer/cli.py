@@ -137,10 +137,9 @@ def _cmd_fallback(args: argparse.Namespace) -> None:
 
 
 def _cmd_compile_constraints(args: argparse.Namespace) -> None:
-    domain = [int(item) for item in args.domain]
     projection = compile_verified_constraints_to_lattice(
         args.text,
-        domain,
+        args.domain,
         mode=args.mode,
         task_type="semantic_constraint_toy",
     )
@@ -213,7 +212,7 @@ def main(argv: list[str] | None = None) -> None:
 
     cc = sub.add_parser("compile-constraints", help="Compile bounded toy constraints")
     cc.add_argument("--text", required=True)
-    cc.add_argument("--domain", nargs="+", required=True)
+    cc.add_argument("--domain", nargs="+", type=int, required=True)
     cc.add_argument(
         "--mode",
         choices=["off", "shadow", "advisory", "gated_toy_only"],

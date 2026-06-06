@@ -24,10 +24,19 @@ def test_lrd_mode_requires_positive_weight():
         SpectralRegularizationConfig(mode="lrd", lrd_weight=0.0)
 
 
-def test_torch_module_fails_clearly_when_absent():
-    from rg_tracer.grokking.spectral_metrics import require_torch
+def test_toy_grokking_config_rejects_float_integer_fields():
+    with pytest.raises(ValueError, match="epochs"):
+        ToyGrokkingConfig(epochs=1.5)
 
+
+def test_torch_module_fails_clearly_when_absent(monkeypatch):
+    from rg_tracer.grokking import spectral_metrics
+
+    prior_torch = spectral_metrics.torch
+    monkeypatch.setattr(spectral_metrics, "torch", None)
     try:
-        require_torch()
-    except ImportError as exc:
-        assert "grokking" in str(exc)
+        with pytest.raises(ImportError) as exc:
+            spectral_metrics.require_torch()
+        assert "grokking" in str(exc.value)
+    finally:
+        monkeypatch.setattr(spectral_metrics, "torch", prior_torch)

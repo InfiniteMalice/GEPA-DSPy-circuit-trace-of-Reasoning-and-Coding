@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from .artifacts import append_jsonl, write_json, write_jsonl
+from .artifacts import append_jsonl, write_json
 from .config import SpectralRegularizationConfig, ToyGrokkingConfig
 from .regularizers import apply_low_rank_decay_
 from .spectral_metrics import rank_collapse_ratio, require_torch, singular_value_summary
@@ -166,7 +166,6 @@ def train_toy_grokking(
             output_dir / "config.json",
             {"toy": asdict(toy_config), "regularization": asdict(regularization)},
         )
-        write_jsonl(output_dir / "spectra.jsonl", spectra_rows)
     return GrokkingRunResult(metrics=metrics, spectra=spectra_rows, summary=summary)
 
 

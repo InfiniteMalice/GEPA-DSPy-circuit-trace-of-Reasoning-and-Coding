@@ -44,4 +44,6 @@ def test_lattice_adapter_compiles_verified_constraints():
     adapter = select_lattice_adapter(problem)
     assert adapter is not None
     constraints = adapter.constraints(problem)
-    assert constraints[-1].allowed_candidates == frozenset({3, 4})
+    allowed_sets = [set(constraint.allowed_candidates) for constraint in constraints]
+    combined_allowed = frozenset(set.intersection(*allowed_sets))
+    assert combined_allowed == frozenset({4})

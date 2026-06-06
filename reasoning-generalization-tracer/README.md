@@ -412,7 +412,7 @@ Each self-play run emits:
 * **Sampler Ladder:** `trm` remains the deterministic default. `ptrm`,
   `lattice_trm`, `lattice_ptrm`, and `gram_mdt` are additive experimental
   samplers with separate artifacts and bounded toy-domain assumptions.
-* **Optional LRD Grokking:** install `pip install -e .[grokking]` from this
+* **Optional LRD Grokking:** install `pip install -e ".[grokking]"` from this
   package directory to enable Torch-backed toy-transformer runs. The default
   install remains lightweight.
 * **Semantic Constraints:** use `rg-tracer compile-constraints --mode shadow`

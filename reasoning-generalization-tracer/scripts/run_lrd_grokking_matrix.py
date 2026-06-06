@@ -75,7 +75,10 @@ def _regularization_configs(args: argparse.Namespace) -> list[SpectralRegulariza
 
 
 def main(argv: list[str] | None = None) -> None:
-    args = _make_parser().parse_args(argv)
+    parser = _make_parser()
+    args = parser.parse_args(argv)
+    if args.limit is not None and args.limit < 0:
+        parser.error("--limit must be non-negative")
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     output_root = Path(args.output_root) / timestamp
     output_root.mkdir(parents=True, exist_ok=True)

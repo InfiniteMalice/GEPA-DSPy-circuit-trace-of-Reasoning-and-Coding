@@ -6,7 +6,7 @@ RG-Tracer keeps two grokking-related paths separate:
   attribution matrix. It emits deterministic graph-shape artifacts for smoke
   tests and does not claim real spectral collapse or grokking onset.
 - `scripts/run_lrd_grokking_matrix.py` is an optional real CPU toy-transformer
-  training experiment. It requires `pip install -e .[grokking]` and logs
+  training experiment. It requires `pip install -e ".[grokking]"` and logs
   singular-value metrics from actual Q/K projection matrices.
 
 The implementation is LRD-inspired: it applies a bounded decoupled update using
