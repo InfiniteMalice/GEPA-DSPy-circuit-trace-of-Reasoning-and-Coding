@@ -31,3 +31,12 @@ budget exhaustion.
 
 Recovered embedding-space lattices remain shadow-only. The repository includes protocol interfaces
 for future representation probes, but no fake embedding recovery and no recovered-lattice gating.
+## Semantic Constraint Bridge
+
+`rg_tracer.semantic_constraints` adds a bounded rule-based bridge from
+synthetic finite-domain requirements into explicit `DeductionConstraint`
+records. The bridge verifies supported grammar, provenance, confidence,
+duplicates, contradictions, and candidate non-emptiness before constraints can
+enter a task-local lattice. `shadow` and `advisory` modes report metadata;
+`gated_toy_only` is restricted to verified synthetic finite-domain tasks.
+Recovered or inferred representation lattices remain shadow-only.

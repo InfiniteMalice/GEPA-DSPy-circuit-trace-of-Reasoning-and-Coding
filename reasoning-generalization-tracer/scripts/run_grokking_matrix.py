@@ -27,6 +27,11 @@ def _combo_name(combo: Mapping[str, str]) -> str:
     return "_".join(f"{key}={value}" for key, value in sorted(combo.items()))
 
 
+def _cell_dir_name(index: int, name: str) -> str:
+    digest = hashlib.sha256(name.encode("utf8")).hexdigest()[:10]
+    return f"cell_{index:04d}_{digest}"
+
+
 def _build_combo_grid() -> Iterable[Mapping[str, str]]:
     keys = ["regularisation", "stability", "gradient", "reasoning"]
     values = [REGULARISATION, STABILITY, GRADIENT, REASONING]
@@ -161,8 +166,8 @@ def run_matrix(
         metrics = _summarise_metrics(graphs)
         # ``seed`` is recorded for bookkeeping; phase seeds incorporate the
         # combo digest directly inside ``_extract_phase_graphs``.
-        metrics_with_seed = {**metrics, "seed": seed}
-        cell_dir = root / name
+        metrics_with_seed = {**metrics, "seed": seed, "setting": name}
+        cell_dir = root / _cell_dir_name(idx, name)
         _write_cell_artifacts(cell_dir, graphs, metrics_with_seed)
         rows.append((name, metrics_with_seed))
     _write_summary(root / "summary.md", rows)

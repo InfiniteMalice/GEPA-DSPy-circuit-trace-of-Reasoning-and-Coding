@@ -1,0 +1,10 @@
+{"id":"semantic_even_gt2","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must be even and greater than 2.","answer":4}
+{"id":"semantic_multiple_remaining","task":"semantic_constraint_toy","domain":[1,2,3,4,5,6],"requirement":"The answer must be even.","answer":2}
+{"id":"semantic_contradiction","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must be even and odd.","answer":null}
+{"id":"semantic_duplicate","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must be even and even.","answer":2}
+{"id":"semantic_irrelevant","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must be blue.","answer":null}
+{"id":"semantic_unsupported","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must be prime.","answer":null}
+{"id":"semantic_ambiguous","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must maybe be even.","answer":null}
+{"id":"semantic_mixed_supported_unsupported","task":"semantic_constraint_toy","domain":[1,2,3,4,5],"requirement":"The answer must be greater than 2 and be shiny.","answer":3}
+{"id":"semantic_provenance_preservation","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must not be 3.","answer":1}
+{"id":"semantic_clarification_required","task":"semantic_constraint_toy","domain":[1,2,3,4],"requirement":"The answer must be around 3.","answer":null}

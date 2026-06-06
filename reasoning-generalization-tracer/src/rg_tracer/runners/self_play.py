@@ -22,6 +22,8 @@ from ..recursive_refinement import (
     PTRMSampler,
     RecursiveRefinementConfig,
 )
+from ..semantic_constraints.adapters import compile_verified_constraints_to_lattice
+from ..semantic_constraints.logging import write_semantic_constraint_logs
 from ..thought_alignment import classify_thought_alignment
 from .overwatch import OverwatchAgent, OverwatchConfig
 from ..scoring import aggregator, axes
@@ -94,6 +96,7 @@ class Candidate:
     lattice_diagnostics: Dict[str, object] | None = None
     perturbations: List[Dict[str, object]] = field(default_factory=list)
     ground_truth: object | None = None
+    semantic_constraint_overlay: Dict[str, object] | None = None
 
 
 class TRMSampler:
@@ -220,6 +223,7 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
         "perturbations": candidate.perturbations,
         "ground_truth": candidate.ground_truth,
         "answer": candidate.ground_truth,
+        "semantic_constraint_overlay": candidate.semantic_constraint_overlay,
     }
     if candidate.value_decomp is not None:
         record.update(
@@ -688,6 +692,50 @@ def _resolve_grn_flag(
     return bool((profile_config or {}).get(config_key, False))
 
 
+def _semantic_constraint_mode(
+    problem: Mapping[str, object],
+    refinement_config: RecursiveRefinementConfig | None,
+) -> str:
+    if problem.get("task") != "semantic_constraint_toy":
+        return "off"
+    lattice_mode = refinement_config.lattice.mode if refinement_config is not None else "off"
+    if lattice_mode == "off":
+        return "off"
+    if lattice_mode == "gated":
+        return "gated_toy_only"
+    if lattice_mode == "advisory":
+        return "advisory"
+    return "shadow"
+
+
+def _semantic_constraint_overlay(payload: Mapping[str, object]) -> Dict[str, object]:
+    compilation = payload.get("compilation")
+    if not isinstance(compilation, MappingABC):
+        return {"mode": payload.get("mode", "off")}
+    constraints = compilation.get("constraints", [])
+    verified_count = 0
+    provenance_complete = True
+    if isinstance(constraints, list):
+        for constraint in constraints:
+            if not isinstance(constraint, MappingABC):
+                continue
+            verified_count += int(bool(constraint.get("verified")))
+            provenance = constraint.get("provenance")
+            provenance_complete = provenance_complete and isinstance(provenance, MappingABC)
+    return {
+        "mode": payload.get("mode", "off"),
+        "compiler_name": compilation.get("diagnostics", {}).get("compiler"),
+        "compiled_constraint_count": len(constraints) if isinstance(constraints, list) else 0,
+        "verified_constraint_count": verified_count,
+        "unsupported_fragments": compilation.get("unsupported_fragments", []),
+        "ambiguity_detected": bool(compilation.get("ambiguity_detected", False)),
+        "contradiction_detected": bool(compilation.get("contradiction_detected", False)),
+        "provenance_complete": provenance_complete,
+        "safe_for_shadow_projection": bool(compilation.get("safe_for_shadow_projection", False)),
+        "safe_for_gated_projection": bool(compilation.get("safe_for_gated_projection", False)),
+    }
+
+
 def run_self_play(
     problem_path: str | Path,
     *,
@@ -792,6 +840,17 @@ def run_self_play(
     overwatch_settings = overwatch_config or OverwatchConfig()
     overwatch_agent = OverwatchAgent(overwatch_settings) if overwatch_settings.enabled else None
     run_dir = _prepare_output_dir(output_dir)
+    semantic_overlay: Dict[str, object] | None = None
+    semantic_mode = _semantic_constraint_mode(problem, refinement_config)
+    if semantic_mode != "off" and isinstance(problem.get("domain"), list):
+        projection = compile_verified_constraints_to_lattice(
+            str(problem.get("requirement", "")),
+            list(problem.get("domain", [])),
+            mode=semantic_mode,
+            task_type=str(problem.get("task", "")),
+        )
+        write_semantic_constraint_logs(run_dir, projection)
+        semantic_overlay = _semantic_constraint_overlay(projection.as_dict())
 
     results: List[Candidate] = []
     semantics_logs: List[Dict[str, object]] = []
@@ -1044,6 +1103,7 @@ def run_self_play(
                 else []
             ),
             ground_truth=problem.get("answer"),
+            semantic_constraint_overlay=semantic_overlay,
         )
         results.append(candidate)
 

@@ -24,6 +24,9 @@ llm = [
 semantics = [
     "regex>=2024.11,<2026",
 ]
+grokking = [
+    "torch>=2.1",
+]
 
 [project.urls]
 Homepage = "https://github.com/openai/rg-tracer"
@@ -48,6 +51,8 @@ packages = [
     "rg_tracer.testing",
     "rg_tracer.schema_v3",
     "rg_tracer.concept_lattices",
+    "rg_tracer.grokking",
+    "rg_tracer.semantic_constraints",
     "circuit_tracer",
     "factuality_certification",
 ]

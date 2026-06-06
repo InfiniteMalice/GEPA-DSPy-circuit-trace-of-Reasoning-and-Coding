@@ -398,6 +398,25 @@ Detailed recursive-refinement documentation:
 - [`reasoning-generalization-tracer/docs/recursive_reasoning_ladder.md`](reasoning-generalization-tracer/docs/recursive_reasoning_ladder.md)
 - [`reasoning-generalization-tracer/docs/lattice_deduction.md`](reasoning-generalization-tracer/docs/lattice_deduction.md)
 
+### Additive LRD and Semantic-Constraint Experiments
+
+`scripts/run_grokking_matrix.py` remains a lightweight null-backend attribution
+matrix for smoke tests and attribution-shape checks. The separate optional
+`scripts/run_lrd_grokking_matrix.py` path trains a small CPU toy transformer and
+measures spectra from actual Q/K matrices. Install
+`pip install -e "reasoning-generalization-tracer[grokking]"` to enable Torch.
+
+The semantic-constraint scaffold compiles bounded synthetic requirements such
+as "the answer must be even and greater than 2" into provenance-tracked finite
+candidate constraints. Open-ended language remains ungated, generated code and
+real external actions are out of scope, and recovered embedding lattices remain
+shadow-only.
+
+See:
+
+- [`reasoning-generalization-tracer/docs/low_rank_decay_grokking.md`](reasoning-generalization-tracer/docs/low_rank_decay_grokking.md)
+- [`reasoning-generalization-tracer/docs/semantic_constraint_synthesis.md`](reasoning-generalization-tracer/docs/semantic_constraint_synthesis.md)
+
 ## Circuit Traces, Concept Rewards, and Attribution Graphs
 
 Concepts are defined through `ConceptSpec` entries with definitions, tests, and
@@ -436,6 +455,9 @@ Important components include:
   domains;
 - `src/rg_tracer/recursive_refinement/` - bounded GRAM-inspired and MDT-inspired
   refinement scaffold;
+- `src/rg_tracer/grokking/` - optional Torch-backed toy LRD grokking ablations;
+- `src/rg_tracer/semantic_constraints/` - bounded rule-based semantic compiler
+  for synthetic finite-domain tasks;
 - `src/rg_tracer/trm_baseline/` - Tiny Recursion Model baseline;
 - `src/rg_tracer/dapo/` - adapters for hybrid training with `gepa-dapo-grn`;
 - `tests/` - unit tests for scoring, aggregation, abstention, concept rewards,
@@ -459,6 +481,26 @@ RG-Tracer is an experimental research scaffold. Current limitations include:
   faithful reproductions of every source architecture;
 - recursive-refinement interfaces are designed for future learned backends, but
   the current code does not claim LLM-scale recurrent reasoning.
+- LRD experiments are LRD-inspired toy runs over small matrices, not faithful
+  reproduction claims unless future work matches the reference setup closely.
+- semantic compilation is bounded and synthetic; arbitrary natural language
+  cannot gate outputs or control external systems.
+
+## Roadmap Boundaries
+
+**CURRENT IMPLEMENTATION:** deterministic TRM -> PTRM-inspired bounded widening
+-> LDT-inspired explicit finite candidate lattices -> lattice-constrained PTRM
+-> GRAM/MDT-inspired public multi-view refinement.
+
+**THIS PR:** real optional LRD grokking ablations and bounded semantic
+constraint compilation into explicit toy lattices.
+
+**FUTURE SHADOW MODE:** recovered embedding-space concept lattices,
+representation-lattice validation, and mechanistic-interpretability comparison.
+
+**FUTURE RESEARCH:** learned GRAM-style trajectory priors, adaptive MDT route
+learning, category-theoretic mappings across typed lattices, and LLM-scale
+recurrent reasoning.
 
 ## Selected References
 
@@ -468,6 +510,10 @@ RG-Tracer is an experimental research scaffold. Current limitations include:
 - [Atom-Searcher: Enhancing Agentic Deep Research via Fine-Grained Atomic Thought Reward](https://arxiv.org/abs/2508.12800)
 - [Less is More: Recursive Reasoning with Tiny Networks](https://arxiv.org/abs/2510.04871)
 - [Probabilistic Tiny Recursive Model](https://arxiv.org/abs/2605.19943)
+- [Lattice Deduction Transformers](https://arxiv.org/abs/2605.08605)
+- [The Lattice Representation Hypothesis of Large Language Models](https://arxiv.org/abs/2603.01227)
+- [Low-Rank Decay for Grokking in Scale-Invariant Transformers](https://arxiv.org/abs/2606.04405)
+- [Semantic Constraint Synthesis for Adaptive Trajectory Optimization via Large Language Models](https://arxiv.org/abs/2606.04123)
 - [Generative Recursive Reasoning](https://arxiv.org/abs/2605.19376)
 - [Multi-view diffusion geometry using intertwined diffusion trajectories](https://arxiv.org/abs/2512.01484)
 - [GeoCert: Certified Geometric AI for Reliable Forecasting](https://arxiv.org/abs/2604.23474)

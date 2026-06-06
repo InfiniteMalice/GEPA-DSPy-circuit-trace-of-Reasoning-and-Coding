@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Protocol
 
+from rg_tracer.semantic_constraints.adapters import compile_verified_constraints_to_lattice
+
 from .lattice import DeductionConstraint
 
 
@@ -118,11 +120,53 @@ class FiniteDomainConstraintAdapter:
         return parsed
 
 
+class SemanticConstraintToyAdapter:
+    name = "semantic_constraint_toy"
+
+    def applicable(self, problem: Mapping[str, object]) -> bool:
+        return (
+            problem.get("task") == "semantic_constraint_toy"
+            and isinstance(problem.get("domain"), list)
+            and isinstance(problem.get("requirement"), str)
+        )
+
+    def initial_candidates(self, problem: Mapping[str, object]) -> list[object]:
+        domain = problem.get("domain")
+        return _hashable_items(domain)
+
+    def constraints(self, problem: Mapping[str, object]) -> list[DeductionConstraint]:
+        domain = self.initial_candidates(problem)
+        requirement = str(problem.get("requirement", ""))
+        projection = compile_verified_constraints_to_lattice(
+            requirement,
+            domain,
+            mode="gated_toy_only",
+            task_type="semantic_constraint_toy",
+        )
+        if not projection.compilation.safe_for_gated_projection:
+            return []
+        parsed = []
+        for raw in projection.lattice_constraints:
+            allowed = raw.get("allowed_candidates")
+            if not isinstance(allowed, list):
+                continue
+            parsed.append(
+                DeductionConstraint(
+                    constraint_id=str(raw.get("constraint_id")),
+                    description=str(raw.get("description")),
+                    allowed_candidates=frozenset(_hashable_items(allowed)),
+                    source="semantic_constraint_synthesis",
+                )
+            )
+        return parsed
+
+
 def available_lattice_adapters() -> dict[str, LatticeAdapter]:
     adapters: list[LatticeAdapter] = [
         AdditionLatticeAdapter(),
         ParityLatticeAdapter(),
         FiniteDomainConstraintAdapter(),
+        SemanticConstraintToyAdapter(),
     ]
     return {adapter.name: adapter for adapter in adapters}
 
@@ -148,6 +192,7 @@ __all__ = [
     "FiniteDomainConstraintAdapter",
     "LatticeAdapter",
     "ParityLatticeAdapter",
+    "SemanticConstraintToyAdapter",
     "available_lattice_adapters",
     "select_lattice_adapter",
 ]

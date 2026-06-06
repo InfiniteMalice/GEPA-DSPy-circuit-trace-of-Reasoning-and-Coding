@@ -175,6 +175,22 @@ class LatticeDeductionOverlay:
 
 
 @dataclass
+class SemanticConstraintOverlay:
+    """Optional bounded semantic-constraint compiler diagnostics."""
+
+    mode: str = "off"
+    compiler_name: str | None = None
+    compiled_constraint_count: int = 0
+    verified_constraint_count: int = 0
+    unsupported_fragments: list[str] = field(default_factory=list)
+    ambiguity_detected: bool = False
+    contradiction_detected: bool = False
+    provenance_complete: bool = False
+    safe_for_shadow_projection: bool = False
+    safe_for_gated_projection: bool = False
+
+
+@dataclass
 class RewardComponents:
     """Decomposed V3 reward components."""
 
@@ -243,6 +259,9 @@ class CaseV3Result:
     trajectory_overlay: TrajectoryOverlay = field(default_factory=TrajectoryOverlay)
     lattice_deduction_overlay: LatticeDeductionOverlay = field(
         default_factory=LatticeDeductionOverlay
+    )
+    semantic_constraint_overlay: SemanticConstraintOverlay = field(
+        default_factory=SemanticConstraintOverlay
     )
     reward_components: RewardComponents = field(default_factory=RewardComponents)
     diagnostics: Diagnostics = field(default_factory=Diagnostics)
@@ -428,6 +447,7 @@ def classify_case_v3(
     mdl_control_overlay: MDLControlOverlay | None = None,
     trajectory_overlay: TrajectoryOverlay | None = None,
     lattice_deduction_overlay: LatticeDeductionOverlay | None = None,
+    semantic_constraint_overlay: SemanticConstraintOverlay | None = None,
     ambiguity_mode: AmbiguityHandlingMode | str | None = None,
     ambiguity_high_stakes: bool | None = None,
     targeted_clarification: bool = False,
@@ -449,6 +469,7 @@ def classify_case_v3(
     mdl = mdl_control_overlay or MDLControlOverlay()
     trajectory = trajectory_overlay or TrajectoryOverlay()
     lattice = lattice_deduction_overlay or LatticeDeductionOverlay()
+    semantic_constraints = semantic_constraint_overlay or SemanticConstraintOverlay()
     reasoning.finalize()
     control.finalize()
 
@@ -511,6 +532,7 @@ def classify_case_v3(
         mdl_control_overlay=mdl,
         trajectory_overlay=trajectory,
         lattice_deduction_overlay=lattice,
+        semantic_constraint_overlay=semantic_constraints,
         reward_components=rewards,
         diagnostics=_diagnose(case_id, control, causal, group, mdl, ambiguity_handling_score),
     )
@@ -611,6 +633,7 @@ __all__ = [
     "ORIGINAL_CASE_IDS",
     "ReasoningOverlay",
     "RewardComponents",
+    "SemanticConstraintOverlay",
     "TrajectoryOverlay",
     "classify_case_v3",
     "compact_label_for",
