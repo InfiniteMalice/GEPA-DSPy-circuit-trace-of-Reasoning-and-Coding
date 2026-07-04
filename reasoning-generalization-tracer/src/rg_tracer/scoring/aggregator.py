@@ -390,14 +390,14 @@ def rank_candidates(
 
 
 __all__ = [
-    "Profile",
-    "load_profiles",
-    "get_last_config",
-    "apply_hard_gates",
-    "weighted_geometric_mean",
-    "evaluate_profile",
-    "rank_candidates",
-    "DEFAULT_GATES",
-    "DEFAULT_EPSILON",
     "DEFAULT_CONFIG",
+    "DEFAULT_EPSILON",
+    "DEFAULT_GATES",
+    "Profile",
+    "apply_hard_gates",
+    "evaluate_profile",
+    "get_last_config",
+    "load_profiles",
+    "rank_candidates",
+    "weighted_geometric_mean",
 ]

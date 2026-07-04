@@ -29,10 +29,10 @@ These rules apply to the entire repository. All code changes must follow them.
 - Prefer aliases and shorter names over exceeding the line limit.
 
 ## Pre-Commit Checklist
-- [ ] Python lines ≤ 100 characters.
-- [ ] DSPy imports aliased and organized.
-- [ ] No unused signatures or modules.
-- [ ] Black formatted.
+- Python lines ≤ 100 characters.
+- DSPy imports aliased and organized.
+- No unused signatures or modules.
+- Black formatted.
 
 ## Common Mistakes
 - Missing `super().__init__()` in `dspy.Module` subclasses.

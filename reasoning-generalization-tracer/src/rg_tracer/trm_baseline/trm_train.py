@@ -47,6 +47,8 @@ def train(
     model: TinyRecursionModel,
     data: Iterable[Tuple[Sequence[int], int]],
     epochs: int = 3,
+    *,
+    task: str = "parity",
 ) -> TrainingResult:
     losses: List[float] = []
     dataset = list(data)
@@ -59,7 +61,7 @@ def train(
         for seq, target in dataset:
             loss = model.train_step(seq, float(target))
             losses.append(loss)
-    if dataset:
+    if task == "parity" and dataset:
         post_accuracy = evaluate(model, dataset).accuracy
         if post_accuracy < baseline_accuracy:
             # Heuristic fallback tuned for parity-like recursions. During grokking
@@ -84,17 +86,17 @@ def quickstart_trainer(
         data = generate_carry_data(samples, length=length)
     else:
         raise ValueError(f"Unknown task: {task}")
-    return train(model, data, epochs=5)
+    return train(model, data, epochs=5, task=task)
 
 
 __all__ = [
+    "FALLBACK_BIAS",
     "FALLBACK_HIDDEN_SCALE",
     "FALLBACK_RECURSE_SCALE",
-    "FALLBACK_BIAS",
     "PARITY_REASON",
     "TrainingResult",
-    "generate_parity_data",
     "generate_carry_data",
-    "train",
+    "generate_parity_data",
     "quickstart_trainer",
+    "train",
 ]

@@ -106,3 +106,17 @@ def test_weak_branches_are_pruned_and_shared_prefix_is_accounted_once():
     run = RecursiveRefinementController(config).run(_problem(), target_width=4)
     assert any(trajectory.pruned for trajectory in run.trajectories)
     assert sum(len(trajectory.states) for trajectory in run.trajectories) > run.total_updates
+
+
+def test_initial_confidence_excludes_bool_sequence_items():
+    class SpyModel:
+        seen = None
+
+        def predict(self, values):
+            self.seen = values
+            return 0.5
+
+    model = SpyModel()
+    controller = RecursiveRefinementController(RecursiveRefinementConfig(), model=model)
+    controller._initial_confidence({"sequence": [True, 2, False, 3]}, prediction=None)
+    assert model.seen == [2, 3]

@@ -120,7 +120,7 @@ class BackendNull(AttributionBackend):
                 )
             )
         if len(graphs) == 1:
-            return graphs[0].to_dict()
+            return _strip_sample_index(graphs[0].to_dict())
         serialised = [_strip_sample_index(graph.to_dict()) for graph in graphs]
         merged = merge_graphs(serialised)
         return merged.to_dict()

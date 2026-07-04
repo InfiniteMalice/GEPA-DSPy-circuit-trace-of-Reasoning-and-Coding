@@ -24,6 +24,16 @@ def test_lrd_mode_requires_positive_weight():
         SpectralRegularizationConfig(mode="lrd", lrd_weight=0.0)
 
 
+def test_regularization_rejects_non_finite_float():
+    with pytest.raises(ValueError, match="l2_weight"):
+        SpectralRegularizationConfig(l2_weight=float("inf"))
+
+
+def test_regularization_rejects_string_target_matrices():
+    with pytest.raises(ValueError, match="target_matrices"):
+        SpectralRegularizationConfig(target_matrices="q_proj")
+
+
 def test_toy_grokking_config_rejects_float_integer_fields():
     with pytest.raises(ValueError, match="epochs"):
         ToyGrokkingConfig(epochs=1.5)

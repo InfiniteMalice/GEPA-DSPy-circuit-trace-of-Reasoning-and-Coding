@@ -29,7 +29,7 @@ def _build_unit_pattern(unit_text: str) -> re.Pattern[str] | None:
     leading_alnum = trimmed[0].isalnum()
     trailing_alnum = trimmed[-1].isalnum()
     if leading_alnum and trailing_alnum:
-        return re.compile(rf"(?<![A-Za-z]){escaped}(?![A-Za-z])")
+        return re.compile(rf"(?<!\w){escaped}(?!\w)")
     return re.compile(escaped)
 
 

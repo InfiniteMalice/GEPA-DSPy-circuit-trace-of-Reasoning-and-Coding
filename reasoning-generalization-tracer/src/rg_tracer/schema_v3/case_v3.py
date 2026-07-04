@@ -620,8 +620,9 @@ def _diagnose(
 
 __all__ = [
     "APPENDED_AMBIGUITY_CASES",
-    "AmbiguityHandlingMode",
     "CASE_NAMES",
+    "ORIGINAL_CASE_IDS",
+    "AmbiguityHandlingMode",
     "CaseV3Result",
     "CausalScientificOverlay",
     "ControlOverlay",
@@ -630,7 +631,6 @@ __all__ = [
     "LatticeDeductionOverlay",
     "MDLControlOverlay",
     "ObservabilityOverlay",
-    "ORIGINAL_CASE_IDS",
     "ReasoningOverlay",
     "RewardComponents",
     "SemanticConstraintOverlay",

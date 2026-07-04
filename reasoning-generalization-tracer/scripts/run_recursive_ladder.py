@@ -76,6 +76,11 @@ def _summarize(
     wall_clock_seconds: float,
 ) -> dict[str, object]:
     rows = _rows_from_scores(run_dir)
+    if not rows:
+        raise RuntimeError(
+            f"run_self_play produced no score rows for sampler={sampler!r}, "
+            f"seed={seed}, dataset={dataset!r}"
+        )
     lattice_rows = _candidate_lattice_rows(rows)
     perturbation_count = sum(len(row.get("perturbations") or []) for row in rows)
     correct = sum(

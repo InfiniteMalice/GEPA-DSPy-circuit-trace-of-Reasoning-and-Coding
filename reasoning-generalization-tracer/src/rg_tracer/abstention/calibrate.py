@@ -50,7 +50,10 @@ def isotonic_calibration(
     labels_list = [int(label_value) for label_value in labels]
     if len(confidences_list) != len(labels_list):
         raise ValueError("confidences and labels must have the same length")
-    pairs = sorted(zip(confidences_list, labels_list, strict=True))
+    pairs = sorted(
+        zip(confidences_list, labels_list, strict=True),
+        key=lambda item: item[0],
+    )
     if not pairs:
         return lambda conf: conf
 
@@ -69,29 +72,26 @@ def isotonic_calibration(
             new_mean = new_sum / new_weight
             blocks = blocks[:-2] + [(new_weight, new_sum, new_mean)]
 
-    thresholds: List[float] = []
+    spans: List[Tuple[float, float]] = []
     values: List[float] = []
     start = 0
     for weight, total, mean in blocks:
         end = start + int(round(weight))
-        thresholds.extend([pairs[start][0], pairs[end - 1][0]])
+        spans.append((pairs[start][0], pairs[end - 1][0]))
         values.append(mean)
         start = end
+    cutoffs = [(spans[idx][1] + spans[idx + 1][0]) / 2.0 for idx in range(len(spans) - 1)]
 
     def calibrate(conf: float) -> float:
         conf = float(conf)
-        if conf <= thresholds[0]:
+        if not cutoffs:
             return values[0]
-        if conf >= thresholds[-1]:
-            return values[-1]
-        for idx in range(len(values)):
-            lower = thresholds[2 * idx]
-            upper = thresholds[2 * idx + 1]
-            if lower <= conf <= upper:
+        for idx, cutoff in enumerate(cutoffs):
+            if conf <= cutoff:
                 return values[idx]
         return values[-1]
 
     return calibrate
 
 
-__all__ = ["temperature_scale", "isotonic_calibration"]
+__all__ = ["isotonic_calibration", "temperature_scale"]

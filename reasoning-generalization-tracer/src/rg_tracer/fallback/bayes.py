@@ -117,8 +117,8 @@ def compute_posterior(prior: Prior, likelihoods: Iterable[Likelihood]) -> Bayesi
 
 
 __all__ = [
-    "Prior",
-    "Likelihood",
     "BayesianPosition",
+    "Likelihood",
+    "Prior",
     "compute_posterior",
 ]

@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 try:  # pragma: no cover - dependency optional in tests
     from circuit_tracer import trace as ct_trace
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     ct_trace = None
 
 
@@ -92,4 +92,4 @@ def trace_model(
     return _normalise_trace(raw)
 
 
-__all__ = ["CircuitTrace", "CircuitFeature", "CircuitEdge", "trace_model"]
+__all__ = ["CircuitEdge", "CircuitFeature", "CircuitTrace", "trace_model"]

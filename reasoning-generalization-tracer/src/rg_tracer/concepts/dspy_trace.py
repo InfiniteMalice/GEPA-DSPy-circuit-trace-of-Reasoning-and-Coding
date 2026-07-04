@@ -98,4 +98,4 @@ class TraceRunner:
         )
 
 
-__all__ = ["TraceSig", "TraceModule", "TraceRunner"]
+__all__ = ["TraceModule", "TraceRunner", "TraceSig"]

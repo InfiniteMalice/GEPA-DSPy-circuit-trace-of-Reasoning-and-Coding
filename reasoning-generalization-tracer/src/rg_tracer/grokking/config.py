@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 VALID_REGULARIZATION_MODES = frozenset({"none", "l2", "lrd", "l2_plus_lrd"})
@@ -13,7 +14,12 @@ def _validate_positive_int(name: str, value: int) -> None:
 
 
 def _validate_nonnegative_float(name: str, value: float) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0.0
+    ):
         raise ValueError(f"{name} must be a non-negative float")
 
 
@@ -72,7 +78,7 @@ class SpectralRegularizationConfig:
         _validate_nonnegative_float("eps", self.eps)
         if self.eps == 0.0:
             raise ValueError("eps must be positive")
-        if not self.target_matrices:
+        if isinstance(self.target_matrices, (str, bytes)) or not self.target_matrices:
             raise ValueError("target_matrices must not be empty")
         if any(not isinstance(name, str) or not name for name in self.target_matrices):
             raise ValueError("target_matrices must contain non-empty strings")
@@ -83,7 +89,7 @@ class SpectralRegularizationConfig:
 
 
 __all__ = [
+    "VALID_REGULARIZATION_MODES",
     "SpectralRegularizationConfig",
     "ToyGrokkingConfig",
-    "VALID_REGULARIZATION_MODES",
 ]

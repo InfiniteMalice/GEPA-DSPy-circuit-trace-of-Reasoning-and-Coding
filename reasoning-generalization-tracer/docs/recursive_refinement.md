@@ -124,7 +124,7 @@ The package now exposes an additive ladder for controlled ablations:
 
 The ladder does not retrofit gated lattice projection into `gram_mdt`. Process-score influence still
 defaults to `0.0`, and hard gates plus semantic verification remain authoritative. See
-`docs/recursive_reasoning_ladder.md` and `docs/lattice_deduction.md` for sampler modes, artifacts,
+`recursive_reasoning_ladder.md` and `lattice_deduction.md` for sampler modes, artifacts,
 and limitations.
 ## Additive LRD and Semantic-Constraint Boundary
 

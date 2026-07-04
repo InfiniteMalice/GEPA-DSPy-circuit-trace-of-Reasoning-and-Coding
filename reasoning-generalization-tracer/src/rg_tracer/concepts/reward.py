@@ -148,7 +148,7 @@ def _compute_parsimony(
 def _compute_transfer(task_metrics: Mapping[str, Any]) -> float:
     reuse = _safe_float(task_metrics.get("concept_reuse", 0.0) or 0.0)
     support = _safe_float(
-        task_metrics.get("supporting_tasks", 1.0) or 1.0,
+        task_metrics.get("supporting_tasks", 1.0),
         default=1.0,
     )
     if support <= 0:
@@ -257,4 +257,4 @@ def compute_concept_reward(
     return float(max(0.0, reward))
 
 
-__all__ = ["compute_concept_reward", "DEFAULT_WEIGHTS"]
+__all__ = ["DEFAULT_WEIGHTS", "compute_concept_reward"]

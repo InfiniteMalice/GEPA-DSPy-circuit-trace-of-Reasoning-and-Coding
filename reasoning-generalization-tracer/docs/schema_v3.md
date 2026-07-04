@@ -5,7 +5,7 @@ reward schema with four appended ambiguity-handling cases plus public
 control-loop and compositional-reasoning diagnostics.
 It is an overlay, not a replacement: cases 0–13 keep their original meanings,
 cases 14-17 add clarifying abstention and assumptive proceed behavior, and
-`docs/epistemic_alignment.md` remains the V1/V2 reward foundation.
+`epistemic_alignment.md` remains the V1/V2 reward foundation.
 
 ## V1 / V2 / V3 Relationship
 
@@ -38,7 +38,7 @@ guessing irresponsible.
 
 ## Data Model
 
-The implementation lives in `src/rg_tracer/schema_v3/` and uses stdlib
+The implementation lives in `../src/rg_tracer/schema_v3/` and uses stdlib
 `dataclasses`:
 
 - `CaseV3Result` preserves `case_id`, `base_case_name`, output mode, correctness,
@@ -97,7 +97,7 @@ model may know relevant facts and still need to pause because the target,
 authority, constraints, or success criteria are underspecified. Safety
 abstention and procedural abstention are outside this framework.
 
-See `docs/17_case_framework.md` for the stakes calibration table, including
+See `17_case_framework.md` for the stakes calibration table, including
 category of impact, reward guidance, multi-turn scoring, and synthetic data
 coverage.
 

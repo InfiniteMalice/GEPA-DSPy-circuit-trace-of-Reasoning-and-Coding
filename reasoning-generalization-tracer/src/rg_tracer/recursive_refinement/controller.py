@@ -187,7 +187,11 @@ class RecursiveRefinementController:
     ) -> float:
         sequence = problem.get("sequence") or problem.get("numbers") or []
         if isinstance(sequence, (list, tuple)):
-            values = [int(item) for item in sequence if isinstance(item, int)]
+            values = [
+                int(item)
+                for item in sequence
+                if isinstance(item, int) and not isinstance(item, bool)
+            ]
             model_confidence = self.model.predict(values[:8]) if values else 0.5
         else:
             model_confidence = 0.5

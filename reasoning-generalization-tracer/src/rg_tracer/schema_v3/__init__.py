@@ -23,10 +23,11 @@ from .reasoning_units import REASONING_UNIT_REGISTRY, ReasoningUnitEntry
 
 __all__ = [
     "APPENDED_AMBIGUITY_CASES",
-    "AmbiguityHandlingMode",
     "CASE_NAMES",
     "CONTROL_LOOP_REGISTRY",
+    "ORIGINAL_CASE_IDS",
     "REASONING_UNIT_REGISTRY",
+    "AmbiguityHandlingMode",
     "CaseV3Result",
     "CausalScientificOverlay",
     "ControlLoopEntry",
@@ -35,7 +36,6 @@ __all__ = [
     "GroupTheoreticOverlay",
     "MDLControlOverlay",
     "ObservabilityOverlay",
-    "ORIGINAL_CASE_IDS",
     "ReasoningOverlay",
     "ReasoningUnitEntry",
     "RewardComponents",

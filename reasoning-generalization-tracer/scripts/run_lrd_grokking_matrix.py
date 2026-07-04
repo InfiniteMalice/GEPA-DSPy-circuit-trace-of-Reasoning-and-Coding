@@ -41,6 +41,8 @@ def _regularization_configs(args: argparse.Namespace) -> list[SpectralRegulariza
     l2_weights = _floats(args.l2_weights)
     lrd_weights = _floats(args.lrd_weights)
     targets = tuple(args.target_matrices)
+    if any(weight < 0.0 for weight in (*l2_weights, *lrd_weights)):
+        raise ValueError("spectral regularization weights must be non-negative")
     configs = [SpectralRegularizationConfig(mode="none")]
     configs.extend(
         SpectralRegularizationConfig(mode="l2", l2_weight=weight, target_matrices=targets)

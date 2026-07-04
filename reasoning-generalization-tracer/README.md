@@ -9,6 +9,23 @@ verifiable reward signals, RG-Tracer falls back to an academic three-step
 pipeline culminating in a Bayesian position. All components are lightweight,
 CPU-friendly, and designed for reproducible experimentation.
 
+## Paper-Inspired Modules
+
+These optional modules are disabled by default and can be imported independently.
+
+| Module | Purpose | Reference |
+|--------|---------|-----------|
+| [Graph-native reasoning](docs/paper_integrations/graph_native_reasoning.md) | Public reasoning graphs and `graph_json` validation | Graph-PRefLexOR (Pal et al., 2026; arXiv:2607.00924) |
+| [Active-GRPO references](docs/paper_integrations/active_grpo_reference_updating.md) | Policy-agnostic reference update decisions | Active-GRPO (Liu et al., 2026; arXiv:2607.00531) |
+| [Admission control](docs/paper_integrations/agentic_transaction_processing.md) | Proposal validation and append-only transition logs | Mnemosyne/ATP (Chang et al., 2026; arXiv:2607.00269) |
+| [Open-world perturbations](docs/paper_integrations/open_world_tool_generalization.md) | Query, tool, observation, and domain shift records | OpenAgent (Lv et al., 2026; arXiv:2607.01084) |
+| [Claim validation](docs/paper_integrations/claim_drift_validation_contracts.md) | Claim-drift reports and validation contracts | XCIENTIST (Wang et al., 2026; arXiv:2606.18874) |
+| [Socratic guidance](docs/paper_integrations/socratic_guidance.md) | Assisted-attempt scoring and dependency metrics | SocraticPO (Liu et al., 2026; arXiv:2606.09887) |
+| [Hierarchical state](docs/paper_integrations/hierarchical_planning_information_folding.md) | Subgoal folding without dropping open constraints | HIPIF/HORMA (Diao et al., 2026; arXiv:2606.10507) |
+| [Skill metadata](docs/paper_integrations/skill_organization_supply_chain.md) | Skill manifests, dependencies, and risk warnings | SkillJuror (Chen et al., 2026; arXiv:2606.11543) |
+| [Active selection](docs/paper_integrations/active_test_selection.md) | Disagreement-based diagnostic task selection | ATLAS (Elteto et al., 2026; arXiv:2606.12386) |
+| [Harness notes](docs/paper_integrations/harness_interface_future_work.md) | Future observation/action projection adapter points | HarnessBridge (Wang et al., 2026; arXiv:2606.12882) |
+
 ## Recursive Reasoning Ladder
 
 Self-play keeps `sampler="trm"` as the default and adds a bounded experiment ladder:

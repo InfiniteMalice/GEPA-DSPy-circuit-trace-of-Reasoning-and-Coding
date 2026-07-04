@@ -6,9 +6,9 @@ from .signals import analyse_humanities_chain
 
 __all__ = [
     "HUMANITIES_AXES",
-    "HumanitiesScores",
     "HumanitiesProfile",
-    "load_profiles",
-    "evaluate_profile",
+    "HumanitiesScores",
     "analyse_humanities_chain",
+    "evaluate_profile",
+    "load_profiles",
 ]

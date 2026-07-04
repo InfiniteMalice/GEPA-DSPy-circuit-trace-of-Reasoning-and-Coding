@@ -8,7 +8,7 @@ from typing import Dict, Mapping
 
 try:  # pragma: no cover - optional during doc builds
     import yaml
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     yaml = None
 
 from .axes import HUMANITIES_AXES, HumanitiesScores, score_axis
@@ -101,8 +101,8 @@ def evaluate_profile(
 
 __all__ = [
     "HumanitiesProfile",
+    "evaluate_profile",
     "load_profiles",
     "score_axes",
     "weighted_geometric_mean",
-    "evaluate_profile",
 ]
