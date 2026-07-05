@@ -75,8 +75,8 @@ def isotonic_calibration(
     spans: List[Tuple[float, float]] = []
     values: List[float] = []
     start = 0
-    for weight, total, mean in blocks:
-        end = start + int(round(weight))
+    for weight, _, mean in blocks:
+        end = start + round(weight)
         spans.append((pairs[start][0], pairs[end - 1][0]))
         values.append(mean)
         start = end

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Dict, Iterable, List
 
+from ..transactions.transition_log import _file_lock, _path_lock
 from .types import ReferenceRecord
 
 
@@ -17,8 +18,11 @@ class JSONLReferenceStore:
 
     def append(self, record: ReferenceRecord) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(record.to_dict(), sort_keys=True) + "\n")
+        lock = _path_lock(self.path)
+        with lock, _file_lock(self.path):
+            with self.path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record.to_dict(), sort_keys=True) + "\n")
+                handle.flush()
 
     def load_all(self) -> List[ReferenceRecord]:
         if not self.path.exists():

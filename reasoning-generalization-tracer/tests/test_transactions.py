@@ -14,6 +14,19 @@ def test_invalid_proposal_rejected_with_reason():
     assert decision.violated_constraints
 
 
+def test_unknown_severity_is_rejected():
+    proposal = Proposal(
+        "p1",
+        "t1",
+        "answer",
+        {},
+        metadata={"contradiction_severity": "typo"},
+    )
+    decision = admit_proposal(proposal)
+    assert not decision.accepted
+    assert any("unknown severity" in reason for reason in decision.violated_constraints)
+
+
 def test_rejected_proposal_is_logged(tmp_path):
     proposal = Proposal("p1", "t1", "answer", {}, metadata={"score": 0.1})
     decision = admit_proposal(proposal, config={"score_threshold": 0.5})

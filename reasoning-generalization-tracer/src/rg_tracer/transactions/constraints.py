@@ -83,7 +83,11 @@ def _severity_allowed(
     message: str,
 ) -> tuple[bool, str | None]:
     order = {"none": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
-    if order.get(severity, 0) <= order.get(max_severity, 3):
+    if severity not in order:
+        return False, f"unknown severity: {severity}"
+    if max_severity not in order:
+        return False, f"unknown max severity: {max_severity}"
+    if order[severity] <= order[max_severity]:
         return True, None
     return False, message
 

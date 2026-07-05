@@ -31,15 +31,12 @@ class ValidationContract:
 
 
 def validate_contract(contract: ValidationContract, diagnostics: Dict[str, Any]) -> Dict[str, Any]:
-    missing_evidence = [
-        item for item in contract.required_evidence if item not in diagnostics.get("evidence", [])
-    ]
-    missing_tests = [
-        item for item in contract.required_tests if item not in diagnostics.get("tests", [])
-    ]
-    shortcut_hits = [
-        item for item in contract.forbidden_shortcuts if item in diagnostics.get("shortcuts", [])
-    ]
+    evidence = diagnostics.get("evidence") or []
+    tests = diagnostics.get("tests") or []
+    shortcuts = diagnostics.get("shortcuts") or []
+    missing_evidence = [item for item in contract.required_evidence if item not in evidence]
+    missing_tests = [item for item in contract.required_tests if item not in tests]
+    shortcut_hits = [item for item in contract.forbidden_shortcuts if item in shortcuts]
     passed = not missing_evidence and not missing_tests and not shortcut_hits
     return {
         "passed": passed,

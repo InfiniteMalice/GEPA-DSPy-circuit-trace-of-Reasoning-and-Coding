@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Mapping
 
 from .perturbations import PerturbedTask, make_task
+
+
+def replace_many_once(text: str, replacements: Mapping[str, str]) -> str:
+    active = {source: target for source, target in replacements.items() if source}
+    if not active:
+        return text
+    pattern = re.compile(
+        "|".join(re.escape(source) for source in sorted(active, key=len, reverse=True))
+    )
+    return pattern.sub(lambda match: active[match.group(0)], text)
 
 
 def add_irrelevant_detail(task: Mapping[str, Any], detail: str, seed: int = 0) -> PerturbedTask:
@@ -29,10 +40,13 @@ def introduce_ambiguity(
 
 
 def paraphrase_label(task: Mapping[str, Any], label_map: Mapping[str, str]) -> PerturbedTask:
-    prompt = str(task.get("prompt", ""))
-    for source, target in label_map.items():
-        prompt = prompt.replace(source, target)
+    prompt = replace_many_once(str(task.get("prompt", "")), label_map)
     return make_task(task, "query_paraphrase_label", prompt, 0, label_map=dict(label_map))
 
 
-__all__ = ["add_irrelevant_detail", "introduce_ambiguity", "paraphrase_label"]
+__all__ = [
+    "add_irrelevant_detail",
+    "introduce_ambiguity",
+    "paraphrase_label",
+    "replace_many_once",
+]

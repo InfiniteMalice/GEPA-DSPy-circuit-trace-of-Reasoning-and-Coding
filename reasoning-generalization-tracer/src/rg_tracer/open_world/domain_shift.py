@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from .perturbations import PerturbedTask, make_task
+from .query_shift import replace_many_once
 
 
 def swap_surface_domain(
@@ -29,9 +30,7 @@ def substitute_role_fillers(
     replacements: Mapping[str, str],
     seed: int = 0,
 ) -> PerturbedTask:
-    prompt = str(task.get("prompt", ""))
-    for source, target in replacements.items():
-        prompt = prompt.replace(source, target)
+    prompt = replace_many_once(str(task.get("prompt", "")), replacements)
     return make_task(task, "domain_role_filler", prompt, seed, replacements=dict(replacements))
 
 

@@ -51,7 +51,7 @@ def detect_cycles(graph: ReasoningGraph) -> List[List[str]]:
                 continue
             if target in path_index:
                 index = path_index[target]
-                cycles.append(path[index:] + [target])
+                cycles.append([*path[index:], target])
             elif target not in visited:
                 stack.append((target, iter(adjacency.get(target, []))))
     return cycles

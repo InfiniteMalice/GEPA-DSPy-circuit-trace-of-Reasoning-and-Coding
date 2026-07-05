@@ -194,9 +194,8 @@ For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 
 ### Beads Usage Status
 
-- Repository rules are mirrored in `.beads/instructions.md` for beads tracking. Update this file
-  first and copy changes into `.beads/instructions.md` to keep the two instruction sets
-  synchronized.
+- `.beads/instructions.md` is the edit source for repository rules. Keep `AGENTS.md`
+  synchronized with `.beads/instructions.md`.
 - Beads installer is currently blocked by network restrictions (HTTP 403 from GitHub). Continue
   logging installer status and repository checkpoints in `.beads/database.md` so the beads
   database can be seeded once connectivity is restored.

@@ -4,6 +4,8 @@ from rg_tracer.open_world import (
     add_optional_field,
     add_stale_observation,
     introduce_ambiguity,
+    paraphrase_label,
+    substitute_role_fillers,
     swap_surface_domain,
 )
 
@@ -40,3 +42,15 @@ def test_generated_records_remain_json_serializable():
     observation = {"value": 1}
     shifted = add_stale_observation(observation, "old")
     assert json.loads(json.dumps(shifted))["stale_observation"] == "old"
+
+
+def test_label_paraphrase_does_not_cascade_replacements():
+    task = {"task_id": "t1", "prompt": "alpha"}
+    shifted = paraphrase_label(task, {"alpha": "beta", "beta": "gamma"})
+    assert shifted.prompt == "beta"
+
+
+def test_role_filler_substitution_does_not_cascade_replacements():
+    task = {"task_id": "t1", "prompt": "alice"}
+    shifted = substitute_role_fillers(task, {"alice": "bob", "bob": "carol"})
+    assert shifted.prompt == "bob"

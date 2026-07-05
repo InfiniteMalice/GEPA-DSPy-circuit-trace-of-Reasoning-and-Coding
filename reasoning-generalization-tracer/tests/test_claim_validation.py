@@ -19,6 +19,25 @@ def test_missing_required_evidence_fails():
     assert result["missing_evidence"] == ["paper"]
 
 
+def test_explicit_none_diagnostics_are_treated_as_empty():
+    contract = ValidationContract(
+        "c1",
+        "t1",
+        "claim",
+        required_evidence=["paper"],
+        required_tests=["pytest"],
+        forbidden_shortcuts=["shortcut"],
+    )
+    result = validate_contract(
+        contract,
+        {"evidence": None, "tests": None, "shortcuts": None},
+    )
+    assert not result["passed"]
+    assert result["missing_evidence"] == ["paper"]
+    assert result["missing_tests"] == ["pytest"]
+    assert result["forbidden_shortcuts"] == []
+
+
 def test_unsupported_claim_emits_drift_report():
     report = check_claim_drift("t1", "claim", "artifact", {"unsupported_claims": ["claim"]})
     assert report.drift_type == "unsupported_claim"
