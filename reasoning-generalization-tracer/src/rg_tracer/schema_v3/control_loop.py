@@ -137,8 +137,8 @@ CONTROL_LOOP_REGISTRY = build_control_loop_registry()
 __all__ = [
     "CONTROL_LOOP_REGISTRY",
     "CONTROL_OPERATIONS",
-    "ControlLoopEntry",
     "MDL_COMPRESSION_CHECKS",
     "SCIENTIFIC_METHOD_CHECKS",
+    "ControlLoopEntry",
     "build_control_loop_registry",
 ]

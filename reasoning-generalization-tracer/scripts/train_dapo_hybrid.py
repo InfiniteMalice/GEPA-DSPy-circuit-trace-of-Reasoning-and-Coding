@@ -44,9 +44,12 @@ def _load_jsonl(path: Path) -> List[Mapping[str, Any]]:
             if not line:
                 continue
             try:
-                rows.append(json.loads(line))
+                row = json.loads(line)
             except json.JSONDecodeError as exc:
                 raise ValueError(f"Invalid JSON in {path} at line {line_number}: {line}") from exc
+            if not isinstance(row, Mapping):
+                raise TypeError(f"{path} line {line_number} must be a JSON object")
+            rows.append(row)
     return rows
 
 

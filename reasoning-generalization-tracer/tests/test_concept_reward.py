@@ -1,6 +1,7 @@
 import pytest
 
 from rg_tracer.concepts import ConceptSpec, compute_concept_reward
+from rg_tracer.concepts.reward import _compute_transfer
 
 
 def test_concept_reward_increases_with_semantic_matches():
@@ -151,6 +152,10 @@ def test_alignment_invalid_parameters_raise() -> None:
             alignment=0.5,
             alignment_scale=20.0,
         )
+
+
+def test_transfer_zero_supporting_tasks_returns_zero():
+    assert _compute_transfer({"concept_reuse": 1.0, "supporting_tasks": 0}) == 0.0
 
 
 def test_alignment_penalty_applies_before_multiplier():

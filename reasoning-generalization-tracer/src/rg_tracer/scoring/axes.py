@@ -63,7 +63,7 @@ from typing import Any, Mapping
 
 
 def _as_int(score: Any) -> int | None:
-    """Return the integer override when ``score`` already sits in the 0–4 range."""
+    """Return the integer override when ``score`` already sits in the 0-4 range."""
     if isinstance(score, bool):
         return None
     if isinstance(score, int) and 0 <= score <= 4:
@@ -72,7 +72,7 @@ def _as_int(score: Any) -> int | None:
 
 
 def _bounded(value: float, minimum: int = 0, maximum: int = 4) -> int:
-    return max(minimum, min(int(round(value)), maximum))
+    return max(minimum, min(round(value), maximum))
 
 
 def logical_validity(metrics: Mapping[str, Any]) -> int:
@@ -290,15 +290,15 @@ def abstraction_generalization(metrics: Mapping[str, Any]) -> int:
 
 
 __all__ = [
-    "logical_validity",
-    "conceptual_clarity",
-    "completeness",
-    "rigor",
-    "efficiency",
-    "heuristic_creativity",
-    "numerical_accuracy",
-    "cognitive_efficiency",
-    "explanatory_power",
-    "self_consistency",
     "abstraction_generalization",
+    "cognitive_efficiency",
+    "completeness",
+    "conceptual_clarity",
+    "efficiency",
+    "explanatory_power",
+    "heuristic_creativity",
+    "logical_validity",
+    "numerical_accuracy",
+    "rigor",
+    "self_consistency",
 ]

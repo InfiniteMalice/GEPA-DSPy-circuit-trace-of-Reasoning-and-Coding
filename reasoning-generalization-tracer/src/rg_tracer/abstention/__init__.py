@@ -1,15 +1,15 @@
 """Abstention helpers."""
 
-from .policy import apply_abstention, apply_abstention_tuple, ABSTENTION_THRESHOLD
+from .calibrate import isotonic_calibration, temperature_scale
+from .policy import ABSTENTION_THRESHOLD, apply_abstention, apply_abstention_tuple
 from .reward_scheme import RewardOutcome, evaluate_abstention_reward
-from .calibrate import temperature_scale, isotonic_calibration
 
 __all__ = [
+    "ABSTENTION_THRESHOLD",
+    "RewardOutcome",
     "apply_abstention",
     "apply_abstention_tuple",
-    "RewardOutcome",
     "evaluate_abstention_reward",
-    "temperature_scale",
     "isotonic_calibration",
-    "ABSTENTION_THRESHOLD",
+    "temperature_scale",
 ]

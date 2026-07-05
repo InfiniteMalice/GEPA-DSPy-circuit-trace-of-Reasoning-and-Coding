@@ -20,7 +20,7 @@ class TinyRecursionModel:
 
     def _recurse(self, seq: Sequence[int]) -> Tuple[float, List[float]]:
         if not seq:
-            return 0.0, [0.0]
+            return 0.0, [0.0] if self.trace_states else []
         head, *rest = seq
         rest_value, rest_trace = self._recurse(rest)
         activation = math.tanh(

@@ -1,4 +1,5 @@
 from rg_tracer.semantics import SemanticTag, repair_once, verify_chain
+from rg_tracer.semantics.patterns import build_token_boundary_pattern
 
 
 def test_semantics_detects_and_repairs():
@@ -55,3 +56,10 @@ def test_semantics_trims_variable_names():
     assert not any(
         SemanticTag.VARIABLE_DRIFT.value in entry.get("tags", ()) for entry in report.tags
     )
+
+
+def test_token_boundary_pattern_rejects_punctuation_token_continuations():
+    pattern = build_token_boundary_pattern("C++")
+    assert pattern is not None
+    assert pattern.search("Use C++ here")
+    assert not pattern.search("Use C++x here")

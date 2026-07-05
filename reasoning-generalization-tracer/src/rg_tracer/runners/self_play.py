@@ -1149,6 +1149,8 @@ def run_self_play(
                 candidate.base_composite + candidate.process_bonus + candidate.attr_bonus
             )
 
+    if not results:
+        raise ValueError("run_self_play requires at least one candidate")
     frontier = pareto_frontier(results)
     best = max(results, key=lambda c: c.composite)
 

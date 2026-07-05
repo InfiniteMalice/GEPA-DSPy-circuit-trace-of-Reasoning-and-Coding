@@ -1,6 +1,6 @@
 # GEPA DSPy: Circuit Trace of Reasoning and Coding
 
-This repository hosts the **Reasoning Generalisation Tracer (RG-Tracer)**, a
+This repository hosts the **Reasoning Generalization Tracer (RG-Tracer)**, a
 research toolkit for evaluating and improving reasoning systems through
 multi-axis scoring, self-play, structured reasoning traces, calibrated
 abstention, circuit-level concept rewards, and bounded recursive-refinement

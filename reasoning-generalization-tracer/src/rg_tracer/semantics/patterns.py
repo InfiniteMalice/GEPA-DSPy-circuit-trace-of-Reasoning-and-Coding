@@ -30,11 +30,9 @@ def build_token_boundary_pattern(text: str) -> Pattern[str] | None:
     if not trimmed:
         return None
     escaped = _re.escape(trimmed)
-    leading_alnum = trimmed[0].isalnum()
-    trailing_alnum = trimmed[-1].isalnum()
-    if leading_alnum and trailing_alnum:
-        return _re.compile(rf"(?<!{_LETTER_CLASS}){escaped}(?!{_LETTER_CLASS})")
-    return _re.compile(escaped)
+    prefix = rf"(?<!{_LETTER_CLASS})" if trimmed[0].isalnum() else ""
+    suffix = rf"(?!{_LETTER_CLASS})"
+    return _re.compile(f"{prefix}{escaped}{suffix}")
 
 
 def extract_letter_tokens(text: str) -> list[str]:

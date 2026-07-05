@@ -1,7 +1,7 @@
 # Beads Instructions
 
-These instructions mirror `AGENTS.md` so beads can track repository rules. Update
-`AGENTS.md` first and copy changes here to keep both files in sync.
+`.beads/instructions.md` is the edit source for repository rules. Keep `AGENTS.md`
+synchronized with `.beads/instructions.md` while preserving this compact beads layout.
 
 ## GEPA-DSPy Circuit Tracing Rules
 - Python files use a 100-character line limit. No exceptions.
@@ -30,10 +30,10 @@ These instructions mirror `AGENTS.md` so beads can track repository rules. Updat
 - Prefer aliases and shorter names over exceeding the line limit.
 
 ## Pre-Commit Checklist
-- [ ] Python lines ≤ 100 characters.
-- [ ] DSPy imports aliased and organized.
-- [ ] No unused signatures or modules.
-- [ ] Black formatted.
+- Python lines ≤ 100 characters.
+- DSPy imports aliased and organized.
+- No unused signatures or modules.
+- Black formatted.
 
 ## Common Mistakes
 - Missing `super().__init__()` in `dspy.Module` subclasses.
@@ -185,9 +185,8 @@ For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 
 ### Beads Usage Status
 
-- Repository rules are mirrored in `.beads/instructions.md` for beads tracking. Update this file
-  first and copy changes into `.beads/instructions.md` to keep the two instruction sets
-  synchronized.
+- `.beads/instructions.md` is the edit source for repository rules. Keep `AGENTS.md`
+  synchronized with `.beads/instructions.md`.
 - Beads installer is currently blocked by network restrictions (HTTP 403 from GitHub). Continue
   logging installer status and repository checkpoints in `.beads/database.md` so the beads
   database can be seeded once connectivity is restored.
