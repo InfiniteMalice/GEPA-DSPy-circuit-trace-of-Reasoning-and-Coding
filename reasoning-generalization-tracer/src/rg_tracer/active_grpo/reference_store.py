@@ -25,14 +25,18 @@ class JSONLReferenceStore:
                 handle.flush()
 
     def load_all(self) -> List[ReferenceRecord]:
-        if not self.path.exists():
-            return []
         records: List[ReferenceRecord] = []
-        with self.path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                stripped = line.strip()
-                if stripped:
-                    records.append(ReferenceRecord.from_mapping(json.loads(stripped)))
+        lock = _path_lock(self.path)
+        with lock, _file_lock(self.path):
+            try:
+                handle = self.path.open("r", encoding="utf-8")
+            except FileNotFoundError:
+                return []
+            with handle:
+                for line in handle:
+                    stripped = line.strip()
+                    if stripped:
+                        records.append(ReferenceRecord.from_mapping(json.loads(stripped)))
         return records
 
     def latest_by_task(self) -> Dict[str, ReferenceRecord]:
