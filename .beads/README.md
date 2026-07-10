@@ -38,6 +38,12 @@ Issues in Beads are:
 - **Branch-aware**: Issues can follow your branch workflow
 - **Always in sync**: Auto-syncs with your commits
 
+## Repository Workflow Note
+
+For non-trivial Beads-tracked work, use `$superpowers` before planning and use
+`$repo-quality-gate` through final verification. Record any approved fallback in the issue notes
+or closure reason when either skill is unavailable.
+
 ## Why Beads?
 
 ✨ **AI-Native Design**

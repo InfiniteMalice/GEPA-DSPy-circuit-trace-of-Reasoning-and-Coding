@@ -3,6 +3,19 @@
 `.beads/instructions.md` is the edit source for repository rules. Keep `AGENTS.md`
 synchronized with `.beads/instructions.md` while preserving this compact beads layout.
 
+## Required Skills for Agents
+
+- Use `$superpowers` before non-trivial work to select the right specialized workflow and
+  surface repository constraints before editing.
+- Use `$repo-quality-gate` for every non-trivial code change, refactor, architecture change,
+  test change, agent workflow change, reward/scoring change, or repository-maintenance task.
+- Do not skip the quality-gate sequence: task spec, design plan, implementation, tests,
+  quality gate, and final summary.
+- See `docs/REPO_STANDARDS.md` for the concise repository standards summary.
+- If either skill is unavailable in the active agent environment, state that limitation before
+  continuing and follow the closest documented fallback only when the maintainer approves or
+  the task is documentation-only and low risk.
+
 ## GEPA-DSPy Circuit Tracing Rules
 - Python files use a 100-character line limit. No exceptions.
 - Imports must be organized as:
@@ -172,6 +185,7 @@ For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 
 ### Important Rules
 
+- ✅ Use `$superpowers` and `$repo-quality-gate` for all non-trivial Beads-tracked work
 - ✅ Use bd for ALL task tracking
 - ✅ Always use `--json` flag for programmatic use
 - ✅ Link discovered work with `discovered-from` dependencies

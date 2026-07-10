@@ -2,6 +2,19 @@
 
 These rules apply to the entire repository. All code changes must follow them.
 
+## Required Skills for Agents
+
+- Use `$superpowers` before non-trivial work to select the right specialized workflow and
+  surface repository constraints before editing.
+- Use `$repo-quality-gate` for every non-trivial code change, refactor, architecture change,
+  test change, agent workflow change, reward/scoring change, or repository-maintenance task.
+- Do not skip the quality-gate sequence: task spec, design plan, implementation, tests,
+  quality gate, and final summary.
+- See `docs/REPO_STANDARDS.md` for the concise repository standards summary.
+- If either skill is unavailable in the active agent environment, state that limitation before
+  continuing and follow the closest documented fallback only when the maintainer approves or
+  the task is documentation-only and low risk.
+
 ## Critical Rules
 1. **Python files use a 100-character line limit.** No exceptions.
 2. **Import organization** must follow the pattern:
@@ -176,6 +189,7 @@ For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
 
 ### Important Rules
 
+- ✅ Use `$superpowers` and `$repo-quality-gate` for all non-trivial Beads-tracked work
 - ✅ Humans should use `bd` for ALL task tracking
 - ✅ Humans should use `bd --json` for programmatic CLI workflows
 - ✅ Link discovered work with `discovered-from` dependencies
