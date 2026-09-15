@@ -50,6 +50,13 @@ packages = [
     "rg_tracer.dapo",
     "rg_tracer.testing",
     "rg_tracer.schema_v3",
+    "rg_tracer.epistemic_cases",
+    "rg_tracer.ontology",
+    "rg_tracer.modules",
+    "rg_tracer.attribution",
+    "rg_tracer.thought_alignment",
+    "rg_tracer.utils",
+    "rg_tracer.value_decomp",
     "rg_tracer.concept_lattices",
     "rg_tracer.grokking",
     "rg_tracer.semantic_constraints",
@@ -70,3 +77,5 @@ packages = [
 "rg_tracer.scoring" = ["profiles.yaml"]
 "rg_tracer.humanities" = ["profiles.yaml"]
 "rg_tracer.schema_v3" = ["registry.yaml"]
+"rg_tracer.epistemic_cases" = ["*.yaml"]
+"rg_tracer.ontology" = ["registry.json"]

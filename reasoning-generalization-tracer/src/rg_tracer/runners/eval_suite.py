@@ -10,6 +10,7 @@ from statistics import mean
 from typing import Dict, List, Mapping
 
 from ..scoring import axes, aggregator
+from ..epistemic_cases.reporting import summarize_cases
 
 AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
 
@@ -61,6 +62,7 @@ def evaluate_dataset(
         "composite_mean": mean(composites) if composites else 0.0,
         "gate_pass_rate": gate_passes / len(records) if records else 0.0,
         "count": len(records),
+        "epistemic_cases": summarize_cases(records),
     }
 
     if output_csv is not None:

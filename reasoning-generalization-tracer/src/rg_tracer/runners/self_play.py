@@ -15,6 +15,9 @@ from ..abstention import apply_abstention, evaluate_abstention_reward
 from ..attribution import graphs as attr_graphs
 from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
+from ..epistemic_cases import contract_provenance, evaluation_identity, validate_coordinate
+from ..epistemic_cases.reporting import summarize_cases
+from ..ontology import ONTOLOGY_VERSION
 from ..recursive_refinement import (
     GRAMMDTSampler,
     LatticePTRMSampler,
@@ -97,6 +100,10 @@ class Candidate:
     perturbations: List[Dict[str, object]] = field(default_factory=list)
     ground_truth: object | None = None
     semantic_constraint_overlay: Dict[str, object] | None = None
+    stripe: str = "NONE"
+    stripe_subtype: str | None = None
+    repeat_id: int = 0
+    ontology_targets: Dict[str, object] = field(default_factory=dict)
 
 
 class TRMSampler:
@@ -225,6 +232,16 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
         "answer": candidate.ground_truth,
         "semantic_constraint_overlay": candidate.semantic_constraint_overlay,
     }
+    record.update(
+        evaluation_identity(
+            candidate.reward_case if candidate.reward_case is not None else 0,
+            candidate.stripe,
+            candidate.stripe_subtype,
+            candidate.repeat_id,
+        )
+    )
+    record["contract_provenance"] = contract_provenance()
+    record["ontology_targets"] = candidate.ontology_targets
     if candidate.value_decomp is not None:
         record.update(
             {
@@ -774,6 +791,14 @@ def run_self_play(
         process_reward_weight: Optional process-score bonus weight for candidate ranking.
     """
     problem = _load_problem(problem_path)
+    validate_coordinate(
+        0, problem.get("stripe", "NONE"), problem.get("stripe_subtype"), problem.get("repeat_id", 0)
+    )
+    ontology_targets = problem.get("ontology_targets")
+    if ontology_targets is None:
+        ontology_targets = {}
+    if not isinstance(ontology_targets, MappingABC):
+        raise ValueError("ontology_targets must be a mapping or null")
     if sampler not in {"trm", "ptrm", "lattice_trm", "lattice_ptrm", "gram_mdt"}:
         raise ValueError(f"Unsupported sampler: {sampler}")
     if refinement_config is None and sampler in {"ptrm", "lattice_trm", "lattice_ptrm"}:
@@ -1021,6 +1046,14 @@ def run_self_play(
         semantic_dict["s_match"] = s_match
         semantic_dict["s_epistemic"] = s_epistemic
         semantic_dict["reward_case"] = reward_outcome.case_id
+        identity = evaluation_identity(
+            reward_outcome.case_id,
+            problem.get("stripe", "NONE"),
+            problem.get("stripe_subtype"),
+            problem.get("repeat_id", 0),
+        )
+        semantic_dict.update(identity)
+        semantic_dict["contract_provenance"] = contract_provenance()
         semantics_logs.append(semantic_dict)
 
         base_composite = float(eval_result["composite"])
@@ -1104,6 +1137,10 @@ def run_self_play(
             ),
             ground_truth=problem.get("answer"),
             semantic_constraint_overlay=semantic_overlay,
+            stripe=identity["stripe"],
+            stripe_subtype=identity["stripe_subtype"],
+            repeat_id=identity["repeat_id"],
+            ontology_targets=dict(ontology_targets),
         )
         results.append(candidate)
 
@@ -1171,7 +1208,21 @@ def run_self_play(
         _write_ladder_artifacts(run_dir, results)
 
     summary_path = run_dir / "summary.md"
+    case_summary = summarize_cases(
+        _candidate_to_record(candidate, overwatch_settings.enabled) for candidate in results
+    )
+    (run_dir / "case_summary.json").write_text(json.dumps(case_summary, indent=2), encoding="utf8")
+    run_metadata = {
+        **contract_provenance(),
+        "ontology_version": ONTOLOGY_VERSION,
+        "overlay_version": "v3",
+    }
+    (run_dir / "run_metadata.json").write_text(json.dumps(run_metadata, indent=2), encoding="utf8")
     with summary_path.open("w", encoding="utf8") as handle:
+        handle.write("## Canonical V5 cases\n\n| Case | Count |\n| --- | --- |\n")
+        for case_id, count in case_summary["case_counts"].items():
+            handle.write(f"| {case_id} | {count} |\n")
+        handle.write(f"\nUnclassified / Case 0: {case_summary['unclassified_count']}\n\n")
         handle.write("| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n")
         handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):

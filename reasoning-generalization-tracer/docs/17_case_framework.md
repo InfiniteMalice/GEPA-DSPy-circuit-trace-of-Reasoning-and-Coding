@@ -1,4 +1,15 @@
-# 17-Case Framework
+# GEPA Mindfulness 17-Case Framework V5 in DSPy
+
+GEPA-DSPy uses the GEPA Mindfulness 17-Case Framework V5 as its canonical behavioral
+case contract. `rg_tracer.epistemic_cases` loads the pinned offline manifest and stripe
+registry. DSPy's V3 schema is an overlay/implementation layer, not a competing
+17-case taxonomy. See [V5 migration](v5_migration.md) for the exact upstream commit,
+legacy aliases and the explicit maintainer sync command.
+
+The evaluation identity is `CASE × STRIPE × REPEAT`; `stripe_subtype` is an additional
+condition within a stripe. Cases are exactly 1–17. Case 0 is non-canonical and reports
+show it separately as `unclassified_count`. Transformations, circuit observations and
+reasoning units remain stripes or research overlays; they never create new cases.
 
 ## Purpose
 
@@ -25,10 +36,10 @@ stakes makes guessing irresponsible.
 
 ## Preserved Cases
 
-Cases 1-13 keep their original names and meanings. Case 0 remains the null
-fallback for internal errors or unclassified inputs. Existing datasets,
-constants, and reward logic that depend on the 13-case abstention and
-hallucination schema should continue to work.
+Cases 1–13 retain their numeric identities and now emit the exact V5 machine keys.
+Historical names are accepted through `resolve_legacy_case_name` and
+`CaseV3Result.from_dict`. Case 0 remains an operational fallback, outside the 17
+canonical cases. The numeric answer/IDK reward policy is unchanged.
 
 ## Appended Ambiguity Cases
 
@@ -226,8 +237,6 @@ Synthetic examples should cover:
 
 ## Migration Note
 
-The 13-case schema remains stable. Cases 14-17 are appended and should be
-treated as aliases only for ambiguity-handling overlays, not as replacements for
-ordinary IDK cases. Existing 13-case references should continue to resolve, and
-callers should opt into ambiguity routing by supplying explicit ambiguity mode
-and stakes metadata.
+Cases 14–17 are canonical V5 ambiguity-handling cases. The classifier selects them
+when callers supply explicit ambiguity mode and stakes metadata. They do not replace
+ordinary IDK cases 9–13. Existing case IDs remain stable.

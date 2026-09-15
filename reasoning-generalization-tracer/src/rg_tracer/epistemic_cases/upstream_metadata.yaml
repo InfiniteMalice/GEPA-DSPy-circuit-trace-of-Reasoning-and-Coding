@@ -1,0 +1,12 @@
+framework_name: GEPA Mindfulness 17-Case Framework V5
+framework_version: 17case-v5
+stripe_registry_version: 17case-v5
+upstream_repository: InfiniteMalice/GEPA-Mindfulness-superalignment
+upstream_commit: a12d8d27134bc38b5aa43aff33b84db2f7f51bce
+sources:
+  17_case_manifest.yaml:
+    upstream_path: evaluation/cases/17_case_manifest.yaml
+    sha256: dd65edf21e951031846e1eb5717671984843d01747938a76a068d7ae256e9ffe
+  robustness_stripes.yaml:
+    upstream_path: evaluation/cases/robustness_stripes.yaml
+    sha256: 3b878df066c1d0364237de5cf4ff077ce93f18a9443a62df8067429ab8773722

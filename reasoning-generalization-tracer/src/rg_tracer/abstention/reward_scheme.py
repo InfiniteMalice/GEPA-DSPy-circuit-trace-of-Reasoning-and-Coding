@@ -1,4 +1,8 @@
-"""Thirteen-case abstention reward scheme with epistemic grounding."""
+"""Historical numeric reward policy for V5 answer/IDK cases 1–13 and fallback 0.
+
+Ambiguity cases 14–17 are classified by schema_v3. Thought reward remains a separate
+legacy policy; see docs/v5_migration.md and Beads bd-6.4.
+"""
 
 from __future__ import annotations
 

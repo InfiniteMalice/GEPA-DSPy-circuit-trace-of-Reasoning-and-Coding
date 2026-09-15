@@ -167,7 +167,8 @@ def test_clarify_then_stall_routes_to_case_17_below_resume_score():
 def test_assumptive_proceed_scores_better_for_low_stakes_ambiguity():
     low_stakes = _case(ambiguity_mode="assumptive_proceed", ambiguity_high_stakes=False)
     high_stakes = _case(ambiguity_mode="assumptive_proceed", ambiguity_high_stakes=True)
-    assert low_stakes.case_id == high_stakes.case_id == 15
+    assert low_stakes.case_id == 1
+    assert high_stakes.case_id == 15
     assert (
         low_stakes.diagnostics.ambiguity_handling_score
         > high_stakes.diagnostics.ambiguity_handling_score

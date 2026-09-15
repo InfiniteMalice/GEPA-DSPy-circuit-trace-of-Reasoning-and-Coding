@@ -13,6 +13,7 @@ def validate_case_v3(result: CaseV3Result) -> None:
 
     if result.case_id not in CASE_NAMES:
         raise ValueError(f"unknown base case ID: {result.case_id}")
+    result.validate_identity()
     assert_v3_reward_invariants(result.reward_components)
     if math.isnan(result.threshold_tau) or result.threshold_tau < 0.0 or result.threshold_tau > 1.0:
         raise ValueError("threshold_tau must be in [0, 1]")

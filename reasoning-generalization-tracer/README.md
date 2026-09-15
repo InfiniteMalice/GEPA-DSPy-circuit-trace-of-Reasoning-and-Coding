@@ -1,5 +1,11 @@
 # Reasoning Generalization Tracer
 
+GEPA-DSPy uses the GEPA Mindfulness 17-Case Framework V5 as its canonical behavioral
+case contract. DSPy's V3 schema is an overlay/implementation layer, not a competing
+17-case taxonomy. `CASE × STRIPE × REPEAT` separates behavioral cases from robustness
+conditions. Case 0 is a non-canonical fallback reported outside cases 1–17.
+See [V5 migration](docs/v5_migration.md) and the [reasoning ontology](docs/ONTOLOGY.md).
+
 Reasoning Generalization Tracer (RG-Tracer) is a research toolkit for studying
 reasoning, abstraction, and concept reuse through self-play. The project
 combines a deterministic multi-axis rubric, circuit-level concept rewards,
@@ -163,9 +169,9 @@ synthetic data guidance.
 
 ### 17-Case Schema V3: Control + Compositional Reasoning Overlay
 
-Schema V3 adds a control and compositional-reasoning overlay without replacing
-the 13+0 behavioral cases or the V2 observability/factuality tiers. The original
-case IDs, the default `τ = 0.75` threshold, and decomposed `R_token`,
+Schema V3 provides control and compositional-reasoning overlays on canonical V5
+behavioral identities and preserves V2 observability/factuality tiers. Case IDs
+1–17, the default `τ = 0.75` threshold, and decomposed `R_token`,
 `R_confidence`, `R_thought`, and `R_abstain` components are preserved.
 `R_thought` remains positive-only (`H` or `0`) and V3 does not introduce
 negative hidden-thought penalties or deception penalties into the main training

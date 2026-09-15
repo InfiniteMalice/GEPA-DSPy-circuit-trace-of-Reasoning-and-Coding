@@ -1,4 +1,6 @@
 version: schema_v3
+behavioral_contract: 17case-v5
+canonical_authority: rg_tracer.epistemic_cases
 preserves_base_cases: true
 default_threshold_tau: 0.75
 reward_invariants:
