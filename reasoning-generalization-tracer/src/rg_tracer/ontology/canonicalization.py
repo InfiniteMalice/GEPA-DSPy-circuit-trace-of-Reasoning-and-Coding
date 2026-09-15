@@ -34,14 +34,17 @@ class CanonicalIdentity:
     verification: OntologyEntity
 
     def __post_init__(self) -> None:
+        """Freeze observations and validate their shared semantic identity."""
         object.__setattr__(self, "observations", tuple(self.observations))
         _validate_identity(self.id, self.semantic_key, self.observations, self.verification)
 
     @property
     def provenance(self) -> tuple[Provenance, ...]:
+        """Return the provenance metadata for this value."""
         return tuple(item for claim in self.observations for item in claim.provenance)
 
     def to_dict(self):
+        """Serialize the value to a JSON-compatible dictionary."""
         return {
             "id": self.id,
             "semantic_key": self.semantic_key,
@@ -56,6 +59,7 @@ def _validate_identity(
     observations: tuple[Claim, ...],
     verification: OntologyEntity,
 ) -> None:
+    """Require a stable semantic key, compatible observations, and passed verification."""
     if not isinstance(canonical_id, str) or not canonical_id.strip() or len(observations) < 2:
         raise ValueError("Canonicalization requires an ID and at least two observations")
     if any(not isinstance(claim, Claim) for claim in observations):

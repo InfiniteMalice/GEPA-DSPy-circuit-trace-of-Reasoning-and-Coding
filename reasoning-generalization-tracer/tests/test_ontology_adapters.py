@@ -21,6 +21,7 @@ from rg_tracer.semantics.taxonomy import SemanticTag
 
 
 def test_reasoning_adapter_preserves_source_identity_metadata_and_unknown_relations():
+    """Verify that reasoning adapter preserves source identity metadata and unknown relations."""
     payload = {
         "task_id": "task",
         "answer_ref": "answer",
@@ -70,6 +71,7 @@ def test_reasoning_adapter_preserves_source_identity_metadata_and_unknown_relati
 
 
 def test_lattice_adapter_preserves_shadow_semantics_and_implication():
+    """Verify that lattice adapter preserves shadow semantics and implication."""
     spec = ConceptLatticeSpec(
         "shape",
         "geometry",
@@ -89,6 +91,7 @@ def test_lattice_adapter_preserves_shadow_semantics_and_implication():
 
 
 def test_attribution_adapter_preserves_mechanistic_provenance_and_extra_fields():
+    """Verify that attribution adapter preserves mechanistic provenance and extra fields."""
     payload = {
         "model_ref": "model",
         "task_id": "task",
@@ -120,6 +123,7 @@ def test_attribution_adapter_preserves_mechanistic_provenance_and_extra_fields()
 
 
 def test_semantic_tag_adapter_reuses_taxonomy_and_does_not_call_success_a_failure():
+    """Verify that semantic tag adapter reuses taxonomy and does not call success a failure."""
     for tag in SemanticTag:
         entity = adapt_semantic_tag(tag)
         assert entity.canonical_name == tag.value
@@ -133,6 +137,7 @@ def test_semantic_tag_adapter_reuses_taxonomy_and_does_not_call_success_a_failur
 
 
 def test_reasoning_registry_integrates_families_dependencies_and_unknown_partners():
+    """Verify that reasoning registry integrates families dependencies and unknown partners."""
     result = adapt_reasoning_units()
     for name, source in REASONING_UNIT_REGISTRY.items():
         assert result.graph.entities[f"reasoning-family:{name}"].type.value == "CONCEPT"
@@ -143,6 +148,7 @@ def test_reasoning_registry_integrates_families_dependencies_and_unknown_partner
 
 
 def test_v5_adapter_uses_shared_identity_and_case_zero_stays_operational():
+    """Verify that v5 adapter uses shared identity and case zero stays operational."""
     provenance = (Provenance("evaluation-log", run_id="run"),)
     graph = adapt_evaluation({"case_id": 6, "stripe": "NONE", "repeat_id": 2}, "ev", provenance)
     assert graph.entities["17case-v5:case:6"].canonical_name == get_case_title(6)
@@ -158,6 +164,7 @@ def test_v5_adapter_uses_shared_identity_and_case_zero_stays_operational():
 
 
 def test_v5_subtype_is_resolved_in_shared_stripe_namespace():
+    """Verify that v5 subtype is resolved in shared stripe namespace."""
     stripe, row = next(
         (key, row) for key, row in stripe_registry().items() if row["allowed_subtypes"]
     )
@@ -172,6 +179,7 @@ def test_v5_subtype_is_resolved_in_shared_stripe_namespace():
 
 
 def test_failure_repair_adds_history_and_regression_without_overwriting_failure():
+    """Verify that failure repair adds history and regression without overwriting failure."""
     p = (Provenance("evaluation-log"),)
     graph = adapt_evaluation({"case_id": 6}, "failed", p)
     verification = OntologyEntity("retest", "EVALUATION_RECORD", "retest", provenance=p)
@@ -192,6 +200,7 @@ def test_failure_repair_adds_history_and_regression_without_overwriting_failure(
 
 
 def test_group_overlay_transformation_records_symmetry_evidence_without_proving_equivalence():
+    """Verify group overlays record symmetry evidence without proving equivalence."""
     value = adapt_transformation(
         {
             "name": "reframing",
@@ -209,6 +218,7 @@ def test_group_overlay_transformation_records_symmetry_evidence_without_proving_
 
 
 def test_direct_stripe_entities_cannot_redefine_contract_identity():
+    """Verify that direct stripe entities cannot redefine contract identity."""
     with pytest.raises(ValueError):
         OntologyEntity("invented", "ROBUSTNESS_STRIPE", "invented", metadata={"stripe_id": "NONE"})
     with pytest.raises(ValueError):
@@ -224,6 +234,7 @@ def test_direct_stripe_entities_cannot_redefine_contract_identity():
 
 
 def test_case_zero_cannot_acquire_a_canonical_case_edge():
+    """Verify that case zero cannot acquire a canonical case edge."""
     p = (Provenance("eval"),)
     fallback = adapt_evaluation({"case_id": 0}, "fallback", p)
     canonical = adapt_evaluation({"case_id": 1}, "canonical", p)
@@ -233,6 +244,7 @@ def test_case_zero_cannot_acquire_a_canonical_case_edge():
 
 
 def test_failure_repair_is_atomic_when_retest_is_missing():
+    """Verify that failure repair is atomic when retest is missing."""
     p = (Provenance("eval"),)
     graph = adapt_evaluation({"case_id": 6}, "failed", p)
     before = graph.to_dict()
@@ -265,11 +277,13 @@ def test_failure_repair_is_atomic_when_retest_is_missing():
     ],
 )
 def test_v5_adapter_rejects_conflicting_source_identity(extra):
+    """Verify that v5 adapter rejects conflicting source identity."""
     with pytest.raises(ValueError):
         adapt_evaluation({"case_id": 1, **extra}, "evaluation", (Provenance("log"),))
 
 
 def test_v5_adapter_accepts_valid_metadata_and_explicit_legacy_absence():
+    """Verify that v5 adapter accepts valid metadata and explicit legacy absence."""
     from rg_tracer.epistemic_cases import contract_provenance, evaluation_identity
 
     payload = {**evaluation_identity(1), "contract_provenance": contract_provenance()}
@@ -280,6 +294,7 @@ def test_v5_adapter_accepts_valid_metadata_and_explicit_legacy_absence():
 
 
 def test_reasoning_adapter_contradiction_blocks_task_verification():
+    """Verify that reasoning adapter contradiction blocks task verification."""
     payload = {
         "nodes": [
             {"id": "claim", "kind": "claim", "label": "claim", "text": "x is 2"},
@@ -322,6 +337,7 @@ def test_reasoning_adapter_contradiction_blocks_task_verification():
 def test_raw_adapter_nullable_node_type_uses_fallback_and_preserves_source(
     adapter, field_name, expected_type
 ):
+    """Verify that raw adapter nullable node type uses fallback and preserves source."""
     payload = {"nodes": [{"id": "node", field_name: None}], "edges": []}
     result = adapter(payload)
     assert result.graph.entities["node"].type.value == expected_type
@@ -338,6 +354,7 @@ def test_raw_adapter_nullable_node_type_uses_fallback_and_preserves_source(
     ],
 )
 def test_raw_adapter_nullable_relation_remains_unmapped_and_preserves_source(adapter, endpoints):
+    """Verify that raw adapter nullable relation remains unmapped and preserves source."""
     payload = {
         "nodes": [
             {"id": "a", "kind": "concept", "type": "feature"},

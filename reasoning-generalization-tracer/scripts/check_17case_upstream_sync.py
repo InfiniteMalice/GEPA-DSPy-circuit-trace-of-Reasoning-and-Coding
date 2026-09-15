@@ -16,7 +16,8 @@ def check(upstream_directory: Path | None = None) -> str:
     """Return identical, local modified, upstream changed, or incompatible version.
 
     A supplied directory enables an entirely offline maintainer comparison.
-    Network mode resolves main once, then reads both files at the same commit.
+    Network mode verifies pinned bytes before resolving main once for drift checks.
+    Missing or mismatched pinned resources raise ValueError with provenance context.
     """
     root = files("rg_tracer.epistemic_cases")
     metadata = yaml.safe_load(root.joinpath("upstream_metadata.yaml").read_text(encoding="utf8"))
@@ -28,6 +29,21 @@ def check(upstream_directory: Path | None = None) -> str:
         local[name] = content
     repository = metadata["upstream_repository"]
     if upstream_directory is None:
+        pinned_commit = metadata["upstream_commit"]
+        for name, source in metadata["sources"].items():
+            path = source["upstream_path"]
+            try:
+                with urlopen(
+                    f"https://raw.githubusercontent.com/{repository}/{pinned_commit}/{path}",
+                    timeout=30,
+                ) as reply:
+                    pinned_content = reply.read()
+            except OSError as exc:
+                raise ValueError(
+                    f"Pinned upstream resource unavailable at {pinned_commit}: {path}: {exc}"
+                ) from exc
+            if pinned_content != local[name]:
+                raise ValueError(f"Pinned upstream resource mismatch at {pinned_commit}: {path}")
         with urlopen(
             f"https://api.github.com/repos/{repository}/commits/main", timeout=30
         ) as reply:
@@ -56,6 +72,7 @@ def check(upstream_directory: Path | None = None) -> str:
 
 
 def main() -> int:
+    """Print sync status; use exit 1 for drift and exit 2 for comparison failures."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream-directory", type=Path)
     args = parser.parse_args()

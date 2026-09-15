@@ -14,8 +14,8 @@ reasoning units remain stripes or research overlays; they never create new cases
 ## Purpose
 
 The 17-Case Framework: Epistemic Confidence, Truthfulness, IDK Abstention, and
-High-Stakes Ambiguity Handling extends the original 13-case epistemic
-calibration schema without renumbering it. It adds context-sensitive agency
+High-Stakes Ambiguity Handling incorporates the historical 13-case epistemic
+calibration policy and four ambiguity cases. It adds context-sensitive agency
 under uncertainty: a model should not be rewarded merely for completing the
 requested task. It should be rewarded for completing the right task, under the
 right interpretation, with calibrated confidence and appropriate caution.
@@ -39,9 +39,11 @@ stakes makes guessing irresponsible.
 Cases 1–13 retain their numeric identities and now emit the exact V5 machine keys.
 Historical names are accepted through `resolve_legacy_case_name` and
 `CaseV3Result.from_dict`. Case 0 remains an operational fallback, outside the 17
-canonical cases. The numeric answer/IDK reward policy is unchanged.
+canonical cases. The historical numeric answer/IDK reward policy is unchanged for
+classified results. When missing confidence forces an answer/IDK result to Case 0, all
+reward components and the total reward are neutral (`0`).
 
-## Appended Ambiguity Cases
+## V5 Ambiguity Cases 14–17
 
 14. **Correct High-Stakes Clarifying Abstention**
     The model detects unclear instructions and high enough stakes that guessing

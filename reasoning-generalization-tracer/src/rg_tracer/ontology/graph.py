@@ -31,6 +31,7 @@ class OntologyRelation:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Normalize relation fields and require non-empty endpoints."""
         key = _REGISTRY["relation_aliases"].get(self.relation, self.relation)
         object.__setattr__(self, "relation", RelationType(key))
         object.__setattr__(self, "evidence_ids", tuple(self.evidence_ids))
@@ -40,6 +41,7 @@ class OntologyRelation:
             raise ValueError("Ontology relations require non-empty endpoints")
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the value to a JSON-compatible dictionary."""
         return {
             "source": self.source,
             "relation": self.relation.value,
@@ -54,6 +56,7 @@ class OntologyGraph:
     """Append identities and validated relations without modifying the source graphs."""
 
     def __init__(self, view: GraphView | str, *, metadata: Mapping[str, Any] | None = None):
+        """Create an empty graph for ``view`` with immutable metadata."""
         self.view = GraphView(view)
         self.metadata = freeze(metadata or {})
         self._entities: dict[str, OntologyEntity] = {}
@@ -61,13 +64,16 @@ class OntologyGraph:
 
     @property
     def entities(self) -> Mapping[str, OntologyEntity]:
+        """Return the graph's entities."""
         return MappingProxyType(self._entities)
 
     @property
     def relations(self) -> tuple[OntologyRelation, ...]:
+        """Return the graph's relations."""
         return tuple(self._relations)
 
     def add_entity(self, entity: OntologyEntity) -> None:
+        """Add an entity while rejecting a conflicting duplicate identity."""
         previous = self._entities.get(entity.id)
         if previous is not None and previous != entity:
             raise ValueError(f"Entity identity already exists: {entity.id}")
@@ -122,6 +128,7 @@ class OntologyGraph:
         )
 
     def _validate_relation(self, relation: OntologyRelation) -> None:
+        """Require relation endpoints and evidence to satisfy registry semantics."""
         try:
             source = self._entities[relation.source]
             target = self._entities[relation.target]
@@ -173,6 +180,7 @@ class OntologyGraph:
                 raise ValueError("Causal relations require a passed, endpoint-bound causal test")
 
     def _validate_dag(self, relations: list[OntologyRelation]) -> None:
+        """Reject cycles formed by relations whose registry definition requires a DAG."""
         adjacency: dict[str, set[str]] = {identifier: set() for identifier in self._entities}
         indegrees = dict.fromkeys(self._entities, 0)
         for relation in relations:
@@ -204,6 +212,7 @@ class OntologyGraph:
         self.add_relation(OntologyRelation(evidence_id, relation, claim_id))
 
     def _task_verification(self, claim: Claim, verification_id: str) -> None:
+        """Require a passed task verification bound to this claim."""
         verification = self._entities.get(verification_id)
         if (
             verification is None
@@ -251,6 +260,7 @@ class OntologyGraph:
                     self._task_verification(entity, key)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the value to a JSON-compatible dictionary."""
         self.validate()
         return {
             "ontology_version": ONTOLOGY_VERSION,

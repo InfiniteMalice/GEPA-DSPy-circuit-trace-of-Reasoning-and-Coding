@@ -50,10 +50,13 @@ Thought bonuses only apply when reasoning is epistemically grounded; high-confid
 unaligned correct answers fall back to the low-confidence token weight. Logs include `s_match`,
 `s_epistemic`, `thought_alignment`, and `reward_case` for downstream analysis.
 
-## Appended ambiguity-handling cases
+## V5 ambiguity cases 14–17
 
-The reward function implements the 13 V5 IDK and answer cases. The V3 overlay
-classifier also implements V5 ambiguity cases 14–17:
+The historical reward function covers V5 answer/IDK cases 1–13. For answer/IDK
+classification, missing confidence makes `classify_case_v3` return non-canonical Case 0
+with neutral base and diagnostic components and a neutral total. Explicit ambiguity
+inputs remain eligible for canonical V5 cases 14–17 because their confidence is not
+applicable:
 
 14. **Correct High-Stakes Clarifying Abstention** - targeted clarification when
     ambiguity plus stakes makes guessing irresponsible.

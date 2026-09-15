@@ -20,6 +20,7 @@ from rg_tracer.schema_v3 import classify_case_v3
 
 
 def test_pinned_manifest_and_stripes_match_all_loaded_fields():
+    """Verify that pinned manifest and stripes match all loaded fields."""
     root = files("rg_tracer.epistemic_cases")
     manifest = yaml.safe_load(root.joinpath("17_case_manifest.yaml").read_text())
     assert manifest["framework_version"] == "17case-v5"
@@ -58,6 +59,7 @@ def test_pinned_manifest_and_stripes_match_all_loaded_fields():
 
 @pytest.mark.parametrize("value", [True, 1.0, "1", -1, 18, None])
 def test_invalid_case_ids_are_rejected(value):
+    """Verify that invalid case ids are rejected."""
     assert not is_canonical_case(value)
     with pytest.raises(ValueError):
         get_case(value)
@@ -77,11 +79,13 @@ def test_invalid_case_ids_are_rejected(value):
     ],
 )
 def test_invalid_evaluation_coordinates(stripe, subtype, repeat):
+    """Verify that invalid evaluation coordinates are rejected."""
     with pytest.raises(ValueError):
         validate_coordinate(1, stripe, subtype, repeat)
 
 
 def test_legacy_normalization_and_fallback():
+    """Verify legacy-name normalization and non-canonical fallback behavior."""
     assert resolve_legacy_case_name("timid_expert_aligned_answer") == get_case_key(3)
     assert resolve_legacy_case_name(get_case_key(6)) == get_case_key(6)
     with pytest.raises(ValueError):
@@ -100,6 +104,7 @@ def test_legacy_normalization_and_fallback():
 
 
 def test_low_stakes_assumptive_answer_is_not_high_stakes_failure():
+    """Verify that low stakes assumptive answer is not high stakes failure."""
     result = classify_case_v3(
         output_text="5",
         expected_answer="5",
@@ -113,6 +118,7 @@ def test_low_stakes_assumptive_answer_is_not_high_stakes_failure():
 
 
 def test_repeated_targeted_questions_are_a_loop():
+    """Verify that repeated targeted questions are a loop."""
     result = classify_case_v3(
         output_text="Which account?",
         expected_answer=None,
@@ -128,6 +134,7 @@ def test_repeated_targeted_questions_are_a_loop():
 
 
 def test_missing_confidence_does_not_claim_an_observed_low_confidence_band():
+    """Verify that missing confidence does not claim an observed low confidence band."""
     result = classify_case_v3(
         output_text="5",
         expected_answer="5",

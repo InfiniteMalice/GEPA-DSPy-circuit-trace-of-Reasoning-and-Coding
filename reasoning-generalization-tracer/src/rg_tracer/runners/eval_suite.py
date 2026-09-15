@@ -16,6 +16,7 @@ AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
 
 
 def _load_records(pattern: str) -> List[Mapping[str, object]]:
+    """Load JSONL records from files matching ``pattern`` in sorted path order."""
     paths = sorted(glob.glob(pattern))
     records: List[Mapping[str, object]] = []
     for path in paths:
@@ -32,6 +33,7 @@ def evaluate_dataset(
     *,
     output_csv: str | Path | None = None,
 ) -> Dict[str, object]:
+    """Evaluate each dataset record and return aggregate results."""
     records = _load_records(dataset_pattern)
     profiles = aggregator.load_profiles()
     profile_config = aggregator.get_last_config()

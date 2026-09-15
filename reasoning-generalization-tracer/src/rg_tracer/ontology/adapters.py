@@ -23,6 +23,7 @@ class AdapterResult:
 
 
 def _payload(value: Any) -> dict[str, Any]:
+    """Convert a mapping or serializable object to a mutable payload dictionary."""
     if isinstance(value, Mapping):
         return dict(value)
     if hasattr(value, "to_dict"):
@@ -31,6 +32,7 @@ def _payload(value: Any) -> dict[str, Any]:
 
 
 def _edge(graph, source, relation, target, original, unmapped):
+    """Add a relation, recording rejected source data in ``unmapped`` on failure."""
     try:
         graph.add_relation(OntologyRelation(source, relation, target, metadata=original))
     except ValueError as error:

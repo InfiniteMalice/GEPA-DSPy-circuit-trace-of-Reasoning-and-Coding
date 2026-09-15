@@ -20,6 +20,7 @@ from .graph import OntologyGraph, OntologyRelation
 
 
 def _validate_supplied_identity(payload: Mapping[str, Any], identity, contract) -> None:
+    """Reject supplied V5 identity fields that conflict with the resolved contract."""
     for name in (
         "framework_version",
         "canonical_case_id",

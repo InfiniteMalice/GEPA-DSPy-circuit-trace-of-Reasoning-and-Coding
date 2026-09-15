@@ -26,12 +26,18 @@ python scripts/check_17case_upstream_sync.py
 python scripts/check_17case_upstream_sync.py --upstream-directory /path/to/mindfulness
 ```
 
-Network mode resolves main once and reads both files at that commit. The offline form
-reads the supplied checkout. Neither form overwrites local files. Output is `identical`,
-`local modified`, `upstream changed`, or `incompatible version`. Exit status is 0 for
-identical, 1 for drift, and 2 for a failed read. Identity requires matching raw bytes,
-so comments or formatting changes also report upstream drift. A future framework version requires an
-explicit reviewed migration; current V5 runs retain their pinned resources.
+Network mode first reads both resources at the commit recorded in
+`upstream_metadata.yaml`. If either pinned resource differs from the local mirror, the
+command fails before comparing `main`. After the pinned check succeeds, network mode
+resolves `main` once and compares both resources at that commit.
+The offline form reads only the supplied checkout and performs no network request. Neither
+form overwrites local files. Output distinguishes a pinned-provenance failure from
+`identical`, `local modified`, `upstream changed`, and `incompatible version`. Exit status
+is 0 for identical resources, 1 for drift, and 2 for a failed comparison, including a
+pinned-provenance mismatch or a read or parse failure. Identity requires matching raw
+bytes, so comments or formatting changes also report upstream drift. A future
+framework version requires an explicit reviewed migration; current V5 runs retain their
+pinned resources.
 
 ## Identity and compatibility
 
@@ -84,8 +90,9 @@ scores and reward weights remain unchanged; identity is not selected by reward v
 Missing confidence previously selected a low-confidence case while emitting an `unknown`
 confidence band. It now yields non-canonical Case 0 for answer/IDK classification.
 Ambiguity cases remain eligible because V5 defines their confidence as not applicable.
-Legacy reward components are retained as diagnostic policy output even when the V5
-identity is unclassified; they do not establish canonical evaluation eligibility.
+When missing confidence forces an answer/IDK result to Case 0, every reward component,
+including diagnostic bonuses, and the total reward are `0`. Observed-confidence cases and
+ambiguity cases 14–17 retain their existing reward behavior.
 
 Observability, reasoning, control, causal/scientific, group-theoretic, MDL control,
 trajectory, lattice deduction, semantic constraint and diagnostic structures remain.
@@ -120,7 +127,9 @@ unclassified. Overlay metadata remains on individual records for research-specif
 ## Reward-policy drift
 
 Beads **bd-6.4** tracks a separate outcome-backed reasoning-credit migration. This task
-does not change direct thought reward, numeric weights, or optimizer admission policy.
+does not change direct thought reward, numeric weights, or optimizer admission policy for
+classified results. The missing-confidence Case 0 correction described above neutralizes
+all reward components because the result has no canonical answer/IDK identity.
 
 Direct thought-reward paths found in the source:
 

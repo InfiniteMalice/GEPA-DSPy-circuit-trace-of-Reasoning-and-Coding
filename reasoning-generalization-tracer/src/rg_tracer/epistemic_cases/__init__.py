@@ -35,6 +35,8 @@ _LEGACY_IDS = {
 
 @dataclass(frozen=True)
 class CanonicalCase:
+    """Describe one canonical V5 behavioral case loaded from the pinned manifest."""
+
     id: int
     key: str
     title: str
@@ -45,6 +47,7 @@ class CanonicalCase:
 
 @lru_cache(maxsize=1)
 def _contract():
+    """Load and validate the pinned case manifest, stripe registry, and metadata once."""
     root = files(__package__)
     metadata = yaml.safe_load(root.joinpath("upstream_metadata.yaml").read_text(encoding="utf8"))
     documents = {}
@@ -76,44 +79,54 @@ def _contract():
 
 
 def canonical_case_ids() -> tuple[int, ...]:
+    """Return the canonical V5 case IDs in manifest order."""
     return tuple(_contract()[0])
 
 
 def is_canonical_case(case_id: object) -> bool:
+    """Return whether ``case_id`` is an integer canonical V5 case ID."""
     return type(case_id) is int and case_id in _contract()[0]
 
 
 def get_case(case_id: int) -> CanonicalCase:
+    """Return the canonical case for ``case_id`` or raise ``ValueError``."""
     if not is_canonical_case(case_id):
         raise ValueError(f"Expected canonical case ID 1–17, received {case_id!r}")
     return _contract()[0][case_id]
 
 
 def get_case_key(case_id: int) -> str:
+    """Return the canonical machine key for ``case_id``."""
     return get_case(case_id).key
 
 
 def get_case_title(case_id: int) -> str:
+    """Return the canonical display title for ``case_id``."""
     return get_case(case_id).title
 
 
 def get_expected_behavior(case_id: int) -> str:
+    """Return the expected epistemic behavior for ``case_id``."""
     return get_case(case_id).expected_epistemic_behavior
 
 
 def get_confidence_semantics(case_id: int) -> str:
+    """Return the confidence semantics defined for ``case_id``."""
     return get_case(case_id).confidence_semantics
 
 
 def get_stakes_semantics(case_id: int) -> str:
+    """Return the stakes semantics defined for ``case_id``."""
     return get_case(case_id).stakes_semantics
 
 
 def legacy_case_aliases() -> dict[str, str]:
+    """Map legacy DSPy case names to canonical V5 machine keys."""
     return {name: get_case_key(case_id) for name, case_id in _LEGACY_IDS.items()}
 
 
 def resolve_legacy_case_name(name: str) -> str:
+    """Normalize a legacy or canonical case name to its canonical machine key."""
     if name in _LEGACY_IDS:
         return get_case_key(_LEGACY_IDS[name])
     if name == FALLBACK_KEY or name in {case.key for case in _contract()[0].values()}:
@@ -122,6 +135,7 @@ def resolve_legacy_case_name(name: str) -> str:
 
 
 def stripe_registry() -> dict[str, dict]:
+    """Return a defensive copy of the stripe registry keyed by stripe ID."""
     return {row["id"]: copy.deepcopy(row) for row in _contract()[1]["stripes"]}
 
 
@@ -141,6 +155,7 @@ def validate_coordinate(
 
 
 def contract_provenance() -> dict[str, str]:
+    """Return framework, source, commit, and local resource hashes for the contract."""
     metadata = _contract()[2]
     return {
         "framework_version": FRAMEWORK_VERSION,
@@ -154,6 +169,7 @@ def contract_provenance() -> dict[str, str]:
 def evaluation_identity(
     case_id: int, stripe: str = "NONE", stripe_subtype: str | None = None, repeat_id: int = 0
 ) -> dict:
+    """Validate coordinates and return their canonical evaluation identity fields."""
     validate_coordinate(case_id, stripe, stripe_subtype, repeat_id)
     canonical = is_canonical_case(case_id)
     return {

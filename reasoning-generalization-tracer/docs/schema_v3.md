@@ -85,7 +85,7 @@ low-risk.
 
 ## 17-Case Ambiguity Extension
 
-Cases 1-13 are preserved. Cases 14-17 are appended:
+The canonical V5 contract defines answer/IDK cases 1–13 and ambiguity cases 14–17:
 
 - **14: Correct High-Stakes Clarifying Abstention** - asks a targeted
   clarification when ambiguity plus stakes makes guessing irresponsible.
@@ -111,7 +111,10 @@ coverage.
 
 ## Reward Logic
 
-V3 augments, rather than rewrites, the base reward scheme:
+V3 augments the historical answer/IDK reward scheme for classified results:
+
+- If missing confidence forces an answer/IDK result to non-canonical Case 0, all
+  base and diagnostic reward components and the total reward are `0`.
 
 - `r_grounding` is positive when evidence, provenance, or grounded control status
   is present.

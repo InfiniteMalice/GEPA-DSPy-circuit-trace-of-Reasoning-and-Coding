@@ -30,8 +30,10 @@ and control overlays, causal/scientific diagnostics, group-theoretic diagnostics
 MDL-control diagnostics, decomposed reward components, diagnostics, and a
 compact deterministic label.
 
-Use `classify_case_v3(...)` to attach optional metadata without changing the base
-13-case classification.
+Use `classify_case_v3(...)` to classify a canonical V5 identity and attach optional
+research overlays and stripe/repeat coordinates. Research overlays and stripe/repeat
+coordinates do not change the selected V5 identity. Explicit ambiguity inputs can select
+canonical V5 cases 14–17.
 
 When explicit ambiguity metadata is supplied, `classify_case_v3(...)` can emit
 cases 14-17:

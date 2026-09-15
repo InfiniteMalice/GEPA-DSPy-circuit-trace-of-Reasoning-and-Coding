@@ -46,9 +46,9 @@ artifacts, limitations, and the CPU-friendly experiment matrix.
 ## Abstention, Hallucination Control, and Thought-Trace Rewards
 
 All training modes in this repo (GEPA-from-scratch, GRPO with GEPA scoring,
-PPO+GRN) share a **17-case behavioral schema plus a null fallback (case 0)**:
-the original 13-case epistemic confidence, truthfulness, and IDK abstention
-schema is preserved, and cases 14-17 append ambiguity handling across stakes.
+PPO+GRN) use the canonical **17-case V5 behavioral contract**. Cases 1–13 cover
+epistemic confidence, truthfulness, and IDK abstention. Cases 14–17 cover
+ambiguity handling across stakes. Case 0 is a non-canonical fallback.
 
 Each case describes a unique combination of:
 
@@ -73,10 +73,12 @@ Rewards are decomposed into:
 - **R_abstain** – reward/penalty for choosing `"I don't know"` when it is (or
   isn’t) the safe action.
 
-Case 0 is reserved for internal errors or unclassified situations and uses a
-neutral fallback reward.
+Case 0 is reserved for internal errors or unclassified situations. The historical
+evaluator assigns neutral base reward components to Case 0. When missing confidence
+forces a V3 answer/IDK result to final Case 0, V3 neutralizes every base and diagnostic
+component and the total reward.
 
-### 13+0 Case Schema
+### Historical Reward Policy for Cases 1–13 and Fallback 0
 
 **Answer cases (no IDK):**
 
@@ -108,7 +110,9 @@ be correct.
 
 - **Case 0 – Null / Fallback**
   - Used when inputs violate invariants or no case applies.
-  - Reward: neutral or near-neutral, with assertions/logging in debug builds.
+  - Historical evaluator reward: neutral base components.
+  - Missing-confidence V3 fallback: every base and diagnostic component and the total
+    reward are neutral (`0`).
   - Intention: catch implementation errors, *not* a real training state.
 
 ### Invariants
@@ -128,12 +132,13 @@ The implementation and this schema enforce a small set of invariants:
   - Grounded IDK (cases 10 and 12) receives the thought bonus; 12 additionally
     gets a small abstention bonus.
 
-This 13+0 schema is applied **on top of** any optimizer (PPO, GRPO, supervised)
-and is the behavioral backbone for all experiments in this repository.
+This table describes DSPy's historical answer/IDK reward policy. The canonical
+behavioral contract includes all V5 cases 1–17; the V3 classifier applies the
+ambiguity cases described below.
 
-### 17-Case Clarifying Abstention Extension
+### V5 Ambiguity Cases 14–17
 
-The 17-case framework keeps cases 1-13 stable and appends four ambiguity cases:
+The canonical V5 contract assigns cases 14–17 to ambiguity handling:
 
 - **14: Clarifying abstention** - correct high-stakes clarification before
   proceeding.
@@ -401,9 +406,9 @@ Each self-play run emits:
 * **Concept Rewards:** override weights via the `weights` parameter in
   `compute_concept_reward`.
 * **Abstention:** calibrate model confidences using `abstention/calibrate.py`.
-  Reward cases follow the preserved 13-case schema described in
-  `docs/epistemic_alignment.md`, with cases 14-17 documented in
-  `docs/17_case_framework.md` for ambiguity handling.
+  The historical reward policy for answer/IDK cases 1–13 is described in
+  `docs/epistemic_alignment.md`. The canonical V5 identities 1–17 are described
+  in `docs/17_case_framework.md`.
 * **Semantic Repair:** customise behaviour by editing `semantics/repair.py` and
   `semantics/verifier.py` heuristics.
 * **Humanities Profiles:** adjust humanities weights in

@@ -163,6 +163,8 @@ with them.
 GEPA-DSPy uses the GEPA Mindfulness 17-Case Framework V5 as its canonical behavioral
 case contract. The pinned offline mirror defines exactly **17 canonical cases (1–17)**.
 Case 0 is a non-canonical fallback and is reported separately as `unclassified_count`.
+When missing confidence forces an answer/IDK result to Case 0, every base and diagnostic
+reward component and the total reward are `0`.
 Evaluation identity is `CASE × STRIPE × REPEAT`, with an optional stripe subtype.
 DSPy's V3 schema is an overlay/implementation layer, not a competing 17-case taxonomy.
 
@@ -196,7 +198,7 @@ lazy/sandbagging abstention.
 | **DSPy V2: Observability overlay** | Research metadata | Verification tiers `O0-O5`, evidence, provenance and trace packages. |
 | **DSPy V3: Control and compositional overlay** | Implements V5 behavior with research diagnostics | Reasoning units, control, causal/scientific checks, MDL, transformations and trajectories. |
 
-### Appended Ambiguity Cases
+### Ambiguity Cases 14–17
 
 | Case | Behavior | Meaning |
 | --- | --- | --- |

@@ -3,31 +3,46 @@
 from collections import Counter
 from collections.abc import Iterable, Mapping
 
-from . import FRAMEWORK_VERSION, canonical_case_ids, validate_coordinate
+from . import FRAMEWORK_VERSION, canonical_case_ids, evaluation_identity
 
 
 def summarize_cases(records: Iterable[Mapping]) -> dict:
-    """Read current case IDs or legacy reward_case fields without relabeling provenance."""
+    """Count consistent V5 IDs without relabeling supplied identity or provenance.
+
+    Nonnull case_id, canonical_case_id and legacy reward_case must be equal integers.
+    Missing/null legacy IDs allow another supplied ID, or Case 0 if none is supplied.
+    Supplied canonical fields must match the resolved identity, including null ID,
+    key and title for fallback records. Missing canonical fields are accepted.
+    """
     counts = dict.fromkeys(canonical_case_ids(), 0)
     slices = Counter()
     fallback = 0
     for record in records:
         if record.get("framework_version", FRAMEWORK_VERSION) != FRAMEWORK_VERSION:
             raise ValueError("Cannot count another framework version as canonical V5")
-        case_id = record.get("case_id", record.get("canonical_case_id", record.get("reward_case")))
-        if case_id is None:
-            case_id = 0
+        supplied_ids = {
+            name: record[name]
+            for name in ("case_id", "canonical_case_id", "reward_case")
+            if record.get(name) is not None
+        }
+        case_id = next(iter(supplied_ids.values()), 0)
+        for name, value in supplied_ids.items():
+            if type(value) is not int or value != case_id:
+                raise ValueError(f"{name} must be an integer matching the resolved case_id")
         stripe = record.get("stripe", "NONE")
         subtype = record.get("stripe_subtype")
         repeat = record.get("repeat_id", 0)
-        validate_coordinate(case_id, stripe, subtype, repeat)
-        expected_canonical_id = case_id if case_id else None
-        if "canonical_case_id" in record:
-            value = record["canonical_case_id"]
-            if type(value) is not type(expected_canonical_id) or value != expected_canonical_id:
-                raise ValueError("canonical_case_id contradicts case_id")
-        if "canonical" in record and record["canonical"] is not (case_id != 0):
-            raise ValueError("canonical flag contradicts case_id")
+        identity = evaluation_identity(case_id, stripe, subtype, repeat)
+        for name in (
+            "canonical_case_id",
+            "canonical_case_key",
+            "canonical_case_title",
+            "canonical",
+        ):
+            if name in record:
+                value = record[name]
+                if type(value) is not type(identity[name]) or value != identity[name]:
+                    raise ValueError(f"{name} contradicts case_id")
         if case_id == 0:
             fallback += 1
             continue

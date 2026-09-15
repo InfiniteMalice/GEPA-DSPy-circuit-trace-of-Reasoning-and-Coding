@@ -12,6 +12,7 @@ from .registry import EntityType, EpistemicStatus, _REGISTRY
 
 
 def freeze(value: Any) -> Any:
+    """Convert nested mutable values to immutable equivalents."""
     if isinstance(value, Mapping):
         return MappingProxyType({key: freeze(item) for key, item in value.items()})
     if isinstance(value, (list, tuple)):
@@ -22,6 +23,7 @@ def freeze(value: Any) -> Any:
 
 
 def serialize(value: Any) -> Any:
+    """Recursively convert ontology values to JSON-compatible data."""
     if isinstance(value, Enum):
         return value.value
     if isinstance(value, Mapping):
@@ -48,10 +50,12 @@ class Provenance:
     version: str | None = None
 
     def __post_init__(self) -> None:
+        """Require a non-empty provenance source."""
         if not isinstance(self.source, str) or not self.source.strip():
             raise ValueError("Provenance requires a non-empty source")
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the value to a JSON-compatible dictionary."""
         return {item.name: getattr(self, item.name) for item in fields(self)}
 
 
@@ -67,6 +71,7 @@ class OntologyEntity:
     provenance: tuple[Provenance, ...] = ()
 
     def __post_init__(self) -> None:
+        """Validate identity fields and freeze metadata and provenance."""
         if not isinstance(self.id, str) or not self.id.strip():
             raise ValueError("Entity IDs must be non-empty strings")
         if not isinstance(self.canonical_name, str) or not self.canonical_name.strip():
@@ -94,6 +99,7 @@ class OntologyEntity:
             self._validate_stripe_identity()
 
     def _validate_stripe_identity(self) -> None:
+        """Require stripe entities to match the pinned V5 stripe registry."""
         from ..epistemic_cases import FRAMEWORK_VERSION, stripe_registry, validate_coordinate
 
         stripe = self.metadata.get("stripe_id")
@@ -111,6 +117,7 @@ class OntologyEntity:
             raise ValueError("Stripe identity must resolve through the V5 contract")
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the value to a JSON-compatible dictionary."""
         return {item.name: serialize(getattr(self, item.name)) for item in fields(self)}
 
 
@@ -134,6 +141,7 @@ class Claim(OntologyEntity):
     status_history: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        """Validate claim fields and freeze epistemic status history."""
         super().__post_init__()
         object.__setattr__(self, "epistemic_status", EpistemicStatus(self.epistemic_status))
         for name in ("subject", "object", "content", "constraints"):
@@ -172,6 +180,7 @@ class Transformation(OntologyEntity):
     composition_parent: str | None = None
 
     def __post_init__(self) -> None:
+        """Validate transformation semantics and freeze transformation metadata."""
         super().__post_init__()
         if self.kind not in _REGISTRY["transformation_kinds"]:
             raise ValueError(f"Unregistered transformation kind: {self.kind}")

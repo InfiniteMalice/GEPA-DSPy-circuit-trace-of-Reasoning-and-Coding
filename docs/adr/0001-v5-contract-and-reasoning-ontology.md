@@ -16,8 +16,11 @@ commit and SHA-256 hashes, and derive Python identities through one loader. Expl
 maintainer synchronization remains separate from runtime and unit tests.
 
 Retain `CaseV3Result` and all V3 overlays. V5 controls behavioral identity, while DSPy
-continues to implement its historical numeric reward policy. Correct two demonstrated
-ambiguity routing mismatches: low-stakes assumptive proceeding and repeated questions.
+continues to implement its historical numeric reward policy for classified results. When
+missing confidence forces an answer/IDK result to non-canonical Case 0, the classifier
+sets every base and diagnostic reward component and the total reward to `0`. The migration
+also corrects two demonstrated ambiguity-routing mismatches: low-stakes assumptive
+proceeding and repeated questions.
 
 Introduce `rg-ontology-v1` as a registry of typed entities and relations with adapters.
 Separate semantic, execution/provenance, evaluation/failure and mechanistic graph views.

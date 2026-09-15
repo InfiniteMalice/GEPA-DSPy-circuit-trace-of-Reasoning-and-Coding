@@ -20,18 +20,22 @@ from rg_tracer.ontology import (
 
 
 def provenance(source="test", **kwargs):
+    """Build test provenance for ``source``."""
     return (Provenance(source=source, **kwargs),)
 
 
 def entity(identifier, kind, **kwargs):
+    """Build a typed test entity with provenance."""
     return OntologyEntity(identifier, kind, identifier, provenance=provenance(), **kwargs)
 
 
 def claim(identifier="claim", **kwargs):
+    """Build a test claim with caller-supplied overrides."""
     return Claim(id=identifier, canonical_name=identifier, provenance=provenance(), **kwargs)
 
 
 def test_registry_is_versioned_and_relation_semantics_are_complete():
+    """Verify that registry is versioned and relation semantics are complete."""
     registry = load_registry()
     assert registry["ontology_version"] == "rg-ontology-v1"
     for relation in registry["relations"].values():
@@ -41,6 +45,7 @@ def test_registry_is_versioned_and_relation_semantics_are_complete():
 
 
 def test_invalid_entities_and_missing_provenance_are_rejected():
+    """Verify that invalid entities and missing provenance are rejected."""
     for identifier, kind in [("", "CONCEPT"), ("x", "INVENTED")]:
         with pytest.raises(ValueError):
             entity(identifier, kind)
@@ -55,6 +60,7 @@ def test_invalid_entities_and_missing_provenance_are_rejected():
 
 
 def test_semantic_cycles_allowed_but_mixed_provenance_cycle_rejected_atomically():
+    """Verify that semantic cycles allowed but mixed provenance cycle rejected atomically."""
     semantic = OntologyGraph(GraphView.SEMANTIC)
     for identifier in ("a", "b"):
         semantic.add_entity(claim(identifier))
@@ -74,6 +80,7 @@ def test_semantic_cycles_allowed_but_mixed_provenance_cycle_rejected_atomically(
 
 
 def test_relation_domain_range_and_view_are_enforced():
+    """Verify that relation domain range and view are enforced."""
     graph = OntologyGraph("semantic")
     graph.add_entity(claim())
     graph.add_entity(entity("concept", "CONCEPT"))
@@ -84,6 +91,7 @@ def test_relation_domain_range_and_view_are_enforced():
 
 
 def test_conflicting_evidence_and_status_history_are_non_destructive():
+    """Verify that conflicting evidence and status history are non destructive."""
     graph = OntologyGraph("semantic")
     graph.add_entity(claim())
     graph.add_entity(entity("positive", "EVIDENCE"))
@@ -100,6 +108,7 @@ def test_conflicting_evidence_and_status_history_are_non_destructive():
 
 
 def test_mechanistic_observations_cannot_certify_claims_or_equate_features():
+    """Verify that mechanistic observations cannot certify claims or equate features."""
     graph = OntologyGraph("mechanistic")
     graph.add_entity(entity("feature", "CIRCUIT_FEATURE"))
     graph.add_entity(entity("concept", "CONCEPT"))
@@ -131,6 +140,7 @@ def test_mechanistic_observations_cannot_certify_claims_or_equate_features():
 
 
 def test_claim_promotion_requires_task_verification_and_support():
+    """Verify that claim promotion requires task verification and support."""
     graph = OntologyGraph("semantic")
     graph.add_entity(claim())
     graph.add_entity(entity("observation", "MECHANISTIC_OBSERVATION"))
@@ -154,6 +164,7 @@ def test_claim_promotion_requires_task_verification_and_support():
 
 
 def test_canonicalization_retains_observations_and_rejects_constraint_changes():
+    """Verify that canonicalization retains observations and rejects constraint changes."""
     texts = ("parity remains unchanged", "the parity is invariant", "parity is preserved")
     claims = tuple(
         Claim(
@@ -186,12 +197,14 @@ def test_canonicalization_retains_observations_and_rejects_constraint_changes():
 
 
 def test_authorization_difference_prevents_surface_equivalence():
+    """Verify that authorization difference prevents surface equivalence."""
     defensive = claim("defensive", semantic_key="network_action", constraints={"authorized": True})
     harmful = claim("harmful", semantic_key="network_action", constraints={"authorized": False})
     assert candidate_equivalences((defensive, harmful)) == ()
 
 
 def test_transformations_record_invariants_symmetry_breaks_and_composition():
+    """Verify that transformations record invariants symmetry breaks and composition."""
     transformation = Transformation(
         id="rename",
         canonical_name="Variable rename",
@@ -212,6 +225,7 @@ def test_transformations_record_invariants_symmetry_breaks_and_composition():
 
 
 def test_stable_identity_and_nested_metadata_are_immutable():
+    """Verify that stable identity and nested metadata are immutable."""
     original = {"nested": [1]}
     value = entity("x", "CONCEPT", metadata=original)
     original["nested"].append(2)
@@ -223,6 +237,7 @@ def test_stable_identity_and_nested_metadata_are_immutable():
 
 
 def test_strong_claim_cannot_bypass_verification_by_direct_construction():
+    """Verify that strong claim cannot bypass verification by direct construction."""
     graph = OntologyGraph("semantic")
     graph.add_entity(claim(epistemic_status="VERIFIED", verification_ids=("missing",)))
     with pytest.raises(ValueError):
@@ -230,6 +245,7 @@ def test_strong_claim_cannot_bypass_verification_by_direct_construction():
 
 
 def test_causal_test_for_different_endpoints_does_not_authorize_edge():
+    """Verify that causal test for different endpoints does not authorize edge."""
     graph = OntologyGraph("mechanistic")
     for identifier, kind in (("f", "MODEL_FEATURE"), ("c", "CONCEPT")):
         graph.add_entity(entity(identifier, kind))
@@ -252,6 +268,7 @@ def test_causal_test_for_different_endpoints_does_not_authorize_edge():
 
 
 def test_canonicalization_retains_conflicting_epistemic_observations():
+    """Verify that canonicalization retains conflicting epistemic observations."""
     first = claim("a", semantic_key="parity")
     second = claim("b", semantic_key="parity", epistemic_status="CONTRADICTED")
     test = entity(
@@ -269,6 +286,7 @@ def test_canonicalization_retains_conflicting_epistemic_observations():
 
 
 def test_relation_definition_cannot_mutate_registry_boundary():
+    """Verify that relation definition cannot mutate registry boundary."""
     from rg_tracer.ontology.registry import relation_definition
 
     definition = relation_definition("CAUSALLY_CONTRIBUTES_TO")
@@ -280,6 +298,7 @@ def test_relation_definition_cannot_mutate_registry_boundary():
 
 
 def supported_graph():
+    """Build a graph containing a claim with direct supporting evidence."""
     graph = OntologyGraph("semantic")
     graph.add_entity(claim())
     graph.add_entity(entity("support", "EVIDENCE"))
@@ -300,6 +319,7 @@ def supported_graph():
 
 
 def test_direct_support_edge_enables_promotion_without_duplicate_bookkeeping():
+    """Verify that direct support edge enables promotion without duplicate bookkeeping."""
     graph = supported_graph()
     assert graph.entities["claim"].supporting_evidence == ("support",)
     graph.record_evidence("claim", "support")
@@ -310,6 +330,7 @@ def test_direct_support_edge_enables_promotion_without_duplicate_bookkeeping():
 
 
 def test_direct_contradiction_before_promotion_blocks_promotion_atomically():
+    """Verify that direct contradiction before promotion blocks promotion atomically."""
     graph = supported_graph()
     original = graph.entities["claim"]
     graph.add_relation(OntologyRelation("counter", "CONTRADICTS", "claim"))
@@ -326,6 +347,7 @@ def test_direct_contradiction_before_promotion_blocks_promotion_atomically():
 
 
 def test_direct_contradiction_after_promotion_preserves_verification_history():
+    """Verify that direct contradiction after promotion preserves verification history."""
     graph = supported_graph()
     graph.record_evidence("claim", "support")
     graph.promote_claim("claim", "check")
@@ -342,6 +364,7 @@ def test_direct_contradiction_after_promotion_preserves_verification_history():
 
 @pytest.mark.parametrize("reverse", [False, True])
 def test_claim_contradiction_disputes_both_claims_without_using_claim_as_evidence(reverse):
+    """Verify that claim contradiction disputes both claims without using claim as evidence."""
     graph = supported_graph()
     graph.record_evidence("claim", "support")
     graph.promote_claim("claim", "check")
@@ -358,6 +381,7 @@ def test_claim_contradiction_disputes_both_claims_without_using_claim_as_evidenc
 
 
 def test_export_rejects_stale_verified_status_when_contradiction_edge_exists():
+    """Verify that export rejects stale verified status when contradiction edge exists."""
     graph = supported_graph()
     graph.record_evidence("claim", "support")
     graph.promote_claim("claim", "check")
@@ -373,6 +397,7 @@ def test_export_rejects_stale_verified_status_when_contradiction_edge_exists():
 
 
 def test_malformed_contradiction_does_not_modify_claim_or_relations():
+    """Verify that malformed contradiction does not modify claim or relations."""
     graph = supported_graph()
     before = graph.to_dict()
     with pytest.raises(ValueError):
@@ -396,6 +421,7 @@ def test_malformed_contradiction_does_not_modify_claim_or_relations():
     ],
 )
 def test_direct_canonical_identity_constructor_enforces_factory_invariants(invalid):
+    """Verify that direct canonical identity constructor enforces factory invariants."""
     first = claim("a", semantic_key="parity", constraints={"authorized": True})
     second = claim("b", semantic_key="parity", constraints={"authorized": True})
     observations = (first, second)
@@ -432,6 +458,7 @@ def test_direct_canonical_identity_constructor_enforces_factory_invariants(inval
 
 
 def test_direct_canonical_identity_freezes_observation_sequence_and_preserves_provenance():
+    """Verify direct identity freezes observations and preserves provenance."""
     observations = [claim("a", semantic_key="parity"), claim("b", semantic_key="parity")]
     verification = entity(
         "check",
