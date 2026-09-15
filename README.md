@@ -160,10 +160,19 @@ with them.
 
 ## Thought-Trace Rewards and the 17-Case Schema
 
-All training modes in this repository share a behavioral schema for epistemic
-confidence, truthfulness, abstention, and high-stakes ambiguity handling. The
-schema preserves the original **13 cases plus a null fallback (`case 0`)**, then
-adds four ambiguity-handling cases.
+GEPA-DSPy uses the GEPA Mindfulness 17-Case Framework V5 as its canonical behavioral
+case contract. The pinned offline mirror defines exactly **17 canonical cases (1–17)**.
+Case 0 is a non-canonical fallback and is reported separately as `unclassified_count`.
+When missing confidence forces an answer/IDK result to Case 0, every base and diagnostic
+reward component and the total reward are `0`.
+Evaluation identity is `CASE × STRIPE × REPEAT`, with an optional stripe subtype.
+DSPy's V3 schema is an overlay/implementation layer, not a competing 17-case taxonomy.
+
+The [reasoning ontology](reasoning-generalization-tracer/docs/ONTOLOGY.md)
+(`rg-ontology-v1`) connects reasoning graphs, concept lattices and attribution graphs
+without conflating semantic claims with mechanistic observations. See the
+[V5 migration guide](reasoning-generalization-tracer/docs/v5_migration.md) for provenance,
+legacy aliases, classifier corrections, and the separate thought-reward follow-up.
 
 The core reward decomposition remains:
 
@@ -184,11 +193,12 @@ lazy/sandbagging abstention.
 
 | Version | Scope | What it adds |
 | --- | --- | --- |
-| **V1: Behavioral cases** | Cases `0-13` | Answer vs. IDK, correctness, confidence, thought alignment, grounded uncertainty, hallucination control, and lazy/sandbagging IDK detection. |
-| **V2: Observability and factuality overlay** | Preserves `0-13` | Verification tiers `O0-O5`, evidence, provenance, trace packages, repair routes, semantic robustness, and factuality-certification metadata. |
-| **V3: Control and compositional-reasoning overlay** | Preserves `0-13`, appends `14-17` | Clarifying abstention, assumptive proceed, multi-turn ambiguity handling, public reasoning units, control operations, causal/scientific checks, MDL-control gates, group-theoretic diagnostics, and recursive-trajectory metadata. |
+| **V5: Canonical behavioral contract** | `17case-v5`, cases `1-17` | Mindfulness defines identities and semantics; fallback 0 is non-canonical. |
+| **DSPy V1: Historical reward implementation** | Answer/IDK cases `1-13`, fallback `0` | Correctness, confidence, thought alignment and abstention rewards. |
+| **DSPy V2: Observability overlay** | Research metadata | Verification tiers `O0-O5`, evidence, provenance and trace packages. |
+| **DSPy V3: Control and compositional overlay** | Implements V5 behavior with research diagnostics | Reasoning units, control, causal/scientific checks, MDL, transformations and trajectories. |
 
-### Appended Ambiguity Cases
+### Ambiguity Cases 14–17
 
 | Case | Behavior | Meaning |
 | --- | --- | --- |
@@ -450,7 +460,9 @@ Important components include:
 - `src/rg_tracer/runners/` - self-play and evaluation orchestration;
 - `src/rg_tracer/concepts/` - concept specifications and circuit-reward logic;
 - `src/rg_tracer/abstention/` - confidence calibration and abstention policy;
-- `src/rg_tracer/schema_v3/` - 17-case V3 overlay and structured diagnostics;
+- `src/rg_tracer/schema_v3/` - DSPy V3 overlays on the V5 behavioral contract;
+- `src/rg_tracer/epistemic_cases/` - pinned V5 identities, stripes and provenance;
+- `src/rg_tracer/ontology/` - shared semantic identities and specialized graph adapters;
 - `src/rg_tracer/fallback/` - academic-to-Bayesian fallback for non-verifiable
   domains;
 - `src/rg_tracer/recursive_refinement/` - bounded GRAM-inspired and MDT-inspired

@@ -1,10 +1,11 @@
-# 17-Case Schema V3: Control + Compositional Reasoning Overlay
+# DSPy V3 Overlays on the Mindfulness V5 Behavioral Contract
 
-Schema V3 is an additive overlay on the existing 13+0 abstention,
-hallucination, and thought-trace reward schema. It does not replace the base
-case identity and does not alter the default confidence threshold `τ = 0.75`.
+Schema V3 is DSPy's research overlay implementation. Canonical behavior comes from
+the pinned Mindfulness `17case-v5` contract in `rg_tracer.epistemic_cases`: exactly
+cases 1–17, with Case 0 separately marked non-canonical. Evaluation identity is
+`CASE × STRIPE × REPEAT`. The default confidence threshold remains `τ = 0.75`.
 
-Cases 14-17 append ambiguity handling for clarifying abstention, assumptive
+V5 cases 14–17 specify ambiguity handling for clarifying abstention, assumptive
 proceed, calibrated stakes estimation, category of impact, and multi-turn
 clarify-then-resume behavior.
 
@@ -29,8 +30,10 @@ and control overlays, causal/scientific diagnostics, group-theoretic diagnostics
 MDL-control diagnostics, decomposed reward components, diagnostics, and a
 compact deterministic label.
 
-Use `classify_case_v3(...)` to attach optional metadata without changing the base
-13-case classification.
+Use `classify_case_v3(...)` to classify a canonical V5 identity and attach optional
+research overlays and stripe/repeat coordinates. Research overlays and stripe/repeat
+coordinates do not change the selected V5 identity. Explicit ambiguity inputs can select
+canonical V5 cases 14–17.
 
 When explicit ambiguity metadata is supplied, `classify_case_v3(...)` can emit
 cases 14-17:

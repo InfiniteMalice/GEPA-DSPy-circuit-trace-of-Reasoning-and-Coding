@@ -1,4 +1,8 @@
-"""Thirteen-case abstention reward scheme with epistemic grounding."""
+"""Historical numeric reward policy for V5 answer/IDK cases 1–13 and fallback 0.
+
+Ambiguity cases 14–17 are classified by schema_v3. Thought reward remains a separate
+legacy policy; see docs/v5_migration.md and Beads bd-6.4.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +21,8 @@ ELIGIBLE_FOR_THOUGHT = {1, 3, 5, 7, 10, 12}
 
 @dataclass
 class RewardOutcome:
+    """Store a selected reward case, its total reward, and decomposed components."""
+
     case_id: int
     reward: float
     components: Dict[str, float]
@@ -29,6 +35,7 @@ class RewardOutcome:
 
 
 def _normalise_answer(value: Any) -> str | None:
+    """Return a stripped answer string, or ``None`` for an absent or empty value."""
     if value is None:
         return None
     text = str(value).strip()
@@ -36,6 +43,7 @@ def _normalise_answer(value: Any) -> str | None:
 
 
 def _extract_prediction(prediction: Any, text: str | None) -> str | None:
+    """Return a normalized prediction from the explicit value or response text."""
     normalised = _normalise_answer(prediction)
     if normalised:
         return normalised
@@ -54,6 +62,7 @@ def _extract_prediction(prediction: Any, text: str | None) -> str | None:
 def _load_config(
     config: Mapping[str, object] | None = None,
 ) -> tuple[float, Mapping[str, float]]:
+    """Return the abstention threshold and numeric reward weights from configuration."""
     cfg = dict(config) if config is not None else aggregator.get_last_config()
     abst_cfg = cfg.get("abstention", {}) if isinstance(cfg, Mapping) else {}
     if not isinstance(abst_cfg, Mapping):
@@ -94,6 +103,7 @@ def _score_non_abstain(
     aligned: bool,
     weights: Mapping[str, float],
 ) -> tuple[int, Dict[str, float]]:
+    """Select an answer case and compute its token, confidence, and abstention rewards."""
     components: Dict[str, float] = {"token": 0.0, "confidence": 0.0, "abstain": 0.0}
 
     if correct is True:
@@ -147,6 +157,7 @@ def _score_abstain(
     supports_true_answer: bool,
     weights: Mapping[str, float],
 ) -> tuple[int, Dict[str, float]]:
+    """Select an IDK case and compute its token, confidence, and abstention rewards."""
     components: Dict[str, float] = {"token": 0.0, "confidence": 0.0, "abstain": 0.0}
     if not has_expected_answer:
         # Case 0: Cannot determine correctness (missing prediction or expected answer)

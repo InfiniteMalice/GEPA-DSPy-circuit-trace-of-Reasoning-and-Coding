@@ -1,15 +1,17 @@
-# 17-Case Schema V3: Control + Compositional Reasoning Overlay
+# DSPy Schema V3: Research Overlays on the Canonical V5 Contract
 
-Schema V3 extends the existing 13+0 abstention / hallucination / thought-trace
-reward schema with four appended ambiguity-handling cases plus public
-control-loop and compositional-reasoning diagnostics.
-It is an overlay, not a replacement: cases 0–13 keep their original meanings,
-cases 14-17 add clarifying abstention and assumptive proceed behavior, and
-`epistemic_alignment.md` remains the V1/V2 reward foundation.
+GEPA-DSPy uses the GEPA Mindfulness 17-Case Framework V5 as its canonical behavioral
+case contract. DSPy's V3 schema is an overlay/implementation layer, not a competing
+17-case taxonomy. `CaseV3Result` and `classify_case_v3` retain their import paths.
+New results include `framework_version`, canonical ID/key/title, `canonical`, `stripe`,
+`stripe_subtype`, `repeat_id` and pinned `contract_provenance` when serialized.
+Case 0 has `canonical=false` and null canonical ID/key/title. Canonical reports count
+only 1–17. Evaluation identity is `CASE × STRIPE × REPEAT`.
+See [V5 migration](v5_migration.md) and [ontology](ONTOLOGY.md).
 
 ## V1 / V2 / V3 Relationship
 
-- **V1 behavioral case identity:** answer versus IDK, correctness, confidence,
+- **V1 historical behavioral/reward implementation:** answer versus IDK, correctness, confidence,
   and thought alignment.
 - **V2 observability and factuality overlay:** verification tier O0–O5,
   evidence, provenance, trace packages, repair routes, semantic robustness, and
@@ -17,6 +19,12 @@ cases 14-17 add clarifying abstention and assumptive proceed behavior, and
 - **V3 control + compositional reasoning overlay:** reasoning-unit requirements,
   control operations, causal/scientific checks, MDL-control gates, and
   group-theoretic transformation diagnostics.
+
+The behavioral version is `17case-v5`; the ontology version is `rg-ontology-v1`;
+the DSPy overlay implementation remains `v3`. These are independent version dimensions.
+Low-stakes assumptive answers follow the answer classifier (Cases 1–8 or fallback 0);
+Case 15 requires high-stakes ambiguity. Repeated questioning routes to Case 17,
+including repeated questions whose wording is targeted.
 
 V3 does not introduce negative hidden-thought penalties. `R_thought` remains
 positive-only (`H` or `0`), and hidden/internal thought traces are never directly
@@ -77,7 +85,7 @@ low-risk.
 
 ## 17-Case Ambiguity Extension
 
-Cases 1-13 are preserved. Cases 14-17 are appended:
+The canonical V5 contract defines answer/IDK cases 1–13 and ambiguity cases 14–17:
 
 - **14: Correct High-Stakes Clarifying Abstention** - asks a targeted
   clarification when ambiguity plus stakes makes guessing irresponsible.
@@ -103,7 +111,10 @@ coverage.
 
 ## Reward Logic
 
-V3 augments, rather than rewrites, the base reward scheme:
+V3 augments the historical answer/IDK reward scheme for classified results:
+
+- If missing confidence forces an answer/IDK result to non-canonical Case 0, all
+  base and diagnostic reward components and the total reward are `0`.
 
 - `r_grounding` is positive when evidence, provenance, or grounded control status
   is present.

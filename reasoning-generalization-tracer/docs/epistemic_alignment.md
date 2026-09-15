@@ -1,7 +1,15 @@
 # Epistemic-Grounded Thought Alignment and Abstention Rewards
 
-This tracer uses an epistemic alignment layer to ensure that confidence and honesty are backed by
-reasoned traces rather than surface overlap.
+GEPA-DSPy uses the GEPA Mindfulness 17-Case Framework V5 as its canonical behavioral
+case contract. DSPy's V3 schema is an overlay/implementation layer, not a competing
+17-case taxonomy. Evaluation identity is `CASE × STRIPE × REPEAT`; Case 0 is a
+non-canonical fallback counted separately from cases 1–17.
+
+This document describes DSPy's historical reward implementation, independently of
+the V5 identity contract. Trace-alignment heuristics are diagnostic signals, not proof
+of faithful internal reasoning. Direct positive thought reward remains unchanged;
+[V5 migration](v5_migration.md#reward-policy-drift) records the mismatch with upstream's
+outcome-backed reasoning-credit direction and the scoped Beads follow-up.
 
 ## Thought Alignment
 
@@ -42,10 +50,13 @@ Thought bonuses only apply when reasoning is epistemically grounded; high-confid
 unaligned correct answers fall back to the low-confidence token weight. Logs include `s_match`,
 `s_epistemic`, `thought_alignment`, and `reward_case` for downstream analysis.
 
-## Appended ambiguity-handling cases
+## V5 ambiguity cases 14–17
 
-The original 13 IDK and answer cases are preserved. Schema V3 appends four
-ambiguity-handling cases for context-sensitive agency under uncertainty:
+The historical reward function covers V5 answer/IDK cases 1–13. For answer/IDK
+classification, missing confidence makes `classify_case_v3` return non-canonical Case 0
+with neutral base and diagnostic components and a neutral total. Explicit ambiguity
+inputs remain eligible for canonical V5 cases 14–17 because their confidence is not
+applicable:
 
 14. **Correct High-Stakes Clarifying Abstention** - targeted clarification when
     ambiguity plus stakes makes guessing irresponsible.

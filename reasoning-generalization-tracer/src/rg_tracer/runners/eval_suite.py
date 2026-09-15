@@ -10,11 +10,13 @@ from statistics import mean
 from typing import Dict, List, Mapping
 
 from ..scoring import axes, aggregator
+from ..epistemic_cases.reporting import summarize_cases
 
 AXIS_FUNCTIONS = {name: getattr(axes, name) for name in axes.__all__}
 
 
 def _load_records(pattern: str) -> List[Mapping[str, object]]:
+    """Load JSONL records from files matching ``pattern`` in sorted path order."""
     paths = sorted(glob.glob(pattern))
     records: List[Mapping[str, object]] = []
     for path in paths:
@@ -31,6 +33,7 @@ def evaluate_dataset(
     *,
     output_csv: str | Path | None = None,
 ) -> Dict[str, object]:
+    """Evaluate each dataset record and return aggregate results."""
     records = _load_records(dataset_pattern)
     profiles = aggregator.load_profiles()
     profile_config = aggregator.get_last_config()
@@ -61,6 +64,7 @@ def evaluate_dataset(
         "composite_mean": mean(composites) if composites else 0.0,
         "gate_pass_rate": gate_passes / len(records) if records else 0.0,
         "count": len(records),
+        "epistemic_cases": summarize_cases(records),
     }
 
     if output_csv is not None:

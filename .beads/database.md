@@ -27,3 +27,10 @@ access is restored.
 - Expand the snapshot with dataset coverage and configuration defaults once beads tooling is live.
 - Add bd issues to `.beads/issues.jsonl` once installation succeeds to capture open tasks, blockers,
   and discovered-from links for RG-Tracer work.
+
+## V5 and ontology migration checkpoint
+2026-09-15: bd CLI and MCP unavailable; no bd process/watcher running. Used documented direct JSONL fallback for bd-6; explicit import/sync remains pending until bd is available. This fresh clone has no active database to conflict with JSONL.
+
+2026-09-15: Closed bd-6/6.1/6.2/6.3 after final tests, scoped review, and offline wheel verification. Separate drift and baseline follow-ups bd-6.4 through bd-6.8 remain open. Used the same JSONL fallback; future bd import remains pending.
+2026-09-15: Started bd-7 for user-approved PR 160 review fixes. Same direct JSONL fallback; no bd CLI/MCP or watcher available.
+2026-09-15: Closed bd-7 after 466 passing tests, installed-wheel checks and independent scoped review. Publication targets existing PR 160; no merge is authorized.

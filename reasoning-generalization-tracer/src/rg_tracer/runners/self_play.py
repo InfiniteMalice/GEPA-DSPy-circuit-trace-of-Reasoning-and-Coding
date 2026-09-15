@@ -15,6 +15,9 @@ from ..abstention import apply_abstention, evaluate_abstention_reward
 from ..attribution import graphs as attr_graphs
 from ..attribution import metrics as attr_metrics
 from ..concepts import ConceptSpec, compute_concept_reward, trace_model
+from ..epistemic_cases import contract_provenance, evaluation_identity, validate_coordinate
+from ..epistemic_cases.reporting import summarize_cases
+from ..ontology import ONTOLOGY_VERSION
 from ..recursive_refinement import (
     GRAMMDTSampler,
     LatticePTRMSampler,
@@ -56,6 +59,8 @@ DEFAULT_ATTR_BONUSES = {
 
 @dataclass
 class Candidate:
+    """Store a generated candidate and its scores, traces, and optional diagnostics."""
+
     text: str
     confidence: float
     metrics: Dict[str, Mapping[str, object]]
@@ -97,15 +102,21 @@ class Candidate:
     perturbations: List[Dict[str, object]] = field(default_factory=list)
     ground_truth: object | None = None
     semantic_constraint_overlay: Dict[str, object] | None = None
+    stripe: str = "NONE"
+    stripe_subtype: str | None = None
+    repeat_id: int = 0
+    ontology_targets: Dict[str, object] = field(default_factory=dict)
 
 
 class TRMSampler:
     """Lightweight sampler using the Tiny Recursion Model for toy tasks."""
 
     def __init__(self) -> None:
+        """Initialize the toy Tiny Recursion Model sampler."""
         self.model = TinyRecursionModel()
 
     def generate(self, problem: Mapping[str, object], k: int) -> List[Dict[str, object]]:
+        """Return ``k`` toy candidates with confidence, rubric metrics, prediction, and trace."""
         numbers = problem.get("numbers", [])
         answer = problem.get("answer")
         parity_task = problem.get("task") == "parity"
@@ -158,6 +169,7 @@ class TRMSampler:
 def _compute_axis_scores(
     metrics: Mapping[str, Mapping[str, object]],
 ) -> Dict[str, float]:
+    """Compute every registered rubric-axis score from candidate metrics."""
     scores = {}
     for axis_name, func in AXIS_FUNCTIONS.items():
         axis_metrics = metrics.get(axis_name, {})
@@ -166,12 +178,14 @@ def _compute_axis_scores(
 
 
 def _dominates(a: Mapping[str, float], b: Mapping[str, float]) -> bool:
+    """Return whether ``a`` is no worse on every axis and better on at least one."""
     ge_all = all(a.get(axis, 0) >= b.get(axis, 0) for axis in AXIS_FUNCTIONS)
     gt_any = any(a.get(axis, 0) > b.get(axis, 0) for axis in AXIS_FUNCTIONS)
     return ge_all and gt_any
 
 
 def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
+    """Return candidates that are not dominated on the scoring axes."""
     frontier: List[Candidate] = []
     for candidate in candidates:
         if any(
@@ -185,6 +199,7 @@ def pareto_frontier(candidates: Sequence[Candidate]) -> List[Candidate]:
 
 
 def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[str, object]:
+    """Serialize a candidate and include optional Overwatch and ontology metadata."""
     record: Dict[str, object] = {
         "text": candidate.text,
         "confidence": candidate.confidence,
@@ -225,6 +240,16 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
         "answer": candidate.ground_truth,
         "semantic_constraint_overlay": candidate.semantic_constraint_overlay,
     }
+    record.update(
+        evaluation_identity(
+            candidate.reward_case if candidate.reward_case is not None else 0,
+            candidate.stripe,
+            candidate.stripe_subtype,
+            candidate.repeat_id,
+        )
+    )
+    record["contract_provenance"] = contract_provenance()
+    record["ontology_targets"] = candidate.ontology_targets
     if candidate.value_decomp is not None:
         record.update(
             {
@@ -240,6 +265,7 @@ def _candidate_to_record(candidate: Candidate, overwatch_enabled: bool) -> Dict[
 
 
 def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
+    """Create and return a unique timestamped run directory."""
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
     base = Path(base_dir or Path.cwd() / "runs") / timestamp
     base.mkdir(parents=True, exist_ok=True)
@@ -247,6 +273,7 @@ def _prepare_output_dir(base_dir: str | Path | None = None) -> Path:
 
 
 def _process_metadata_for_overwatch(raw: Mapping[str, object]) -> Mapping[str, object] | None:
+    """Return normalized trajectory metadata for Overwatch, if present and valid."""
     metadata = raw.get("trajectory_metadata")
     if not isinstance(metadata, MappingABC):
         return None
@@ -268,6 +295,7 @@ def _write_recursive_refinement_artifacts(
     run_dir: Path,
     candidates: Sequence[Candidate],
 ) -> None:
+    """Write available recursive-refinement run and candidate artifacts."""
     run_payload = next(
         (candidate.refinement_run for candidate in candidates if candidate.refinement_run),
         None,
@@ -335,6 +363,7 @@ def _write_recursive_refinement_artifacts(
 
 
 def _write_ladder_artifacts(run_dir: Path, candidates: Sequence[Candidate]) -> None:
+    """Write available lattice, semantic-constraint, and ladder diagnostics."""
     lattice_rows = [
         candidate.lattice_diagnostics
         for candidate in candidates
@@ -388,12 +417,14 @@ def _build_probe_inputs(
     problem: Mapping[str, object],
     probe_size: int,
 ) -> List[Dict[str, object]]:
+    """Build up to ``probe_size`` attribution inputs from problem sequences or numbers."""
     if probe_size <= 0:
         return []
     sequence = problem.get("sequence")
     numbers = problem.get("numbers")
 
     def _as_list(value: object) -> List[object]:
+        """Copy list-like input to a list, or return an empty list."""
         if isinstance(value, (list, tuple)):
             return list(value)
         return []
@@ -461,6 +492,7 @@ def _resolve_attr_param(
     *,
     coerce: Callable[[object], int] = int,
 ) -> int:
+    """Coerce a configured attribution parameter or return its default value."""
     raw_value = config.get(key)
     if raw_value is None:
         return default
@@ -511,6 +543,7 @@ def _apply_attribution_rewards(
     attr_config: Mapping[str, object],
     concept: ConceptSpec | None,
 ) -> None:
+    """Compute attribution diagnostics and add configured bonuses to candidates."""
     if not candidates:
         return
     probe_size = _resolve_attr_param(
@@ -607,6 +640,7 @@ def _apply_attribution_rewards(
 
 
 def _load_problem(path: str | Path) -> Mapping[str, object]:
+    """Load the first JSON object from a problem file."""
     with open(path, "r", encoding="utf8") as handle:
         first_line = handle.readline()
         if not first_line:
@@ -618,6 +652,7 @@ def _map_semantics_to_features(
     trace: Mapping[str, object] | object,
     report: Mapping[str, object],
 ) -> Dict[str, List[str]]:
+    """Map semantic-report matches to entailed and contradictory trace feature IDs."""
     if not isinstance(trace, MappingABC):
         return {"entailed_feature_ids": [], "contradictory_feature_ids": []}
     raw_features = trace.get("features", []) or []
@@ -687,6 +722,7 @@ def _resolve_grn_flag(
     profile_config: Mapping[str, object] | None,
     config_key: str,
 ) -> bool:
+    """Return an explicit GRN flag or its profile-configured default."""
     if explicit_value is not None:
         return bool(explicit_value)
     return bool((profile_config or {}).get(config_key, False))
@@ -696,6 +732,7 @@ def _semantic_constraint_mode(
     problem: Mapping[str, object],
     refinement_config: RecursiveRefinementConfig | None,
 ) -> str:
+    """Select semantic-constraint mode for compatible toy tasks and refinement settings."""
     if problem.get("task") != "semantic_constraint_toy":
         return "off"
     lattice_mode = refinement_config.lattice.mode if refinement_config is not None else "off"
@@ -709,6 +746,7 @@ def _semantic_constraint_mode(
 
 
 def _semantic_constraint_overlay(payload: Mapping[str, object]) -> Dict[str, object]:
+    """Build a compact semantic-constraint overlay from compilation diagnostics."""
     compilation = payload.get("compilation")
     if not isinstance(compilation, MappingABC):
         return {"mode": payload.get("mode", "off")}
@@ -774,6 +812,14 @@ def run_self_play(
         process_reward_weight: Optional process-score bonus weight for candidate ranking.
     """
     problem = _load_problem(problem_path)
+    validate_coordinate(
+        0, problem.get("stripe", "NONE"), problem.get("stripe_subtype"), problem.get("repeat_id", 0)
+    )
+    ontology_targets = problem.get("ontology_targets")
+    if ontology_targets is None:
+        ontology_targets = {}
+    if not isinstance(ontology_targets, MappingABC):
+        raise ValueError("ontology_targets must be a mapping or null")
     if sampler not in {"trm", "ptrm", "lattice_trm", "lattice_ptrm", "gram_mdt"}:
         raise ValueError(f"Unsupported sampler: {sampler}")
     if refinement_config is None and sampler in {"ptrm", "lattice_trm", "lattice_ptrm"}:
@@ -1021,6 +1067,14 @@ def run_self_play(
         semantic_dict["s_match"] = s_match
         semantic_dict["s_epistemic"] = s_epistemic
         semantic_dict["reward_case"] = reward_outcome.case_id
+        identity = evaluation_identity(
+            reward_outcome.case_id,
+            problem.get("stripe", "NONE"),
+            problem.get("stripe_subtype"),
+            problem.get("repeat_id", 0),
+        )
+        semantic_dict.update(identity)
+        semantic_dict["contract_provenance"] = contract_provenance()
         semantics_logs.append(semantic_dict)
 
         base_composite = float(eval_result["composite"])
@@ -1104,6 +1158,10 @@ def run_self_play(
             ),
             ground_truth=problem.get("answer"),
             semantic_constraint_overlay=semantic_overlay,
+            stripe=identity["stripe"],
+            stripe_subtype=identity["stripe_subtype"],
+            repeat_id=identity["repeat_id"],
+            ontology_targets=dict(ontology_targets),
         )
         results.append(candidate)
 
@@ -1171,7 +1229,21 @@ def run_self_play(
         _write_ladder_artifacts(run_dir, results)
 
     summary_path = run_dir / "summary.md"
+    case_summary = summarize_cases(
+        _candidate_to_record(candidate, overwatch_settings.enabled) for candidate in results
+    )
+    (run_dir / "case_summary.json").write_text(json.dumps(case_summary, indent=2), encoding="utf8")
+    run_metadata = {
+        **contract_provenance(),
+        "ontology_version": ONTOLOGY_VERSION,
+        "overlay_version": "v3",
+    }
+    (run_dir / "run_metadata.json").write_text(json.dumps(run_metadata, indent=2), encoding="utf8")
     with summary_path.open("w", encoding="utf8") as handle:
+        handle.write("## Canonical V5 cases\n\n| Case | Count |\n| --- | --- |\n")
+        for case_id, count in case_summary["case_counts"].items():
+            handle.write(f"| {case_id} | {count} |\n")
+        handle.write(f"\nUnclassified / Case 0: {case_summary['unclassified_count']}\n\n")
         handle.write("| # | Composite | Gates | Concept | Abstained | Semantic Score | Repairs |\n")
         handle.write("| - | --------- | ----- | ------- | --------- | ------------- | ------- |\n")
         for idx, candidate in enumerate(results, start=1):

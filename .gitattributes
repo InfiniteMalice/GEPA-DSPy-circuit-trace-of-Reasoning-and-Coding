@@ -1,3 +1,7 @@
 
 # Use bd merge for beads JSONL files
 .beads/issues.jsonl merge=beads
+
+# Contract hashes cover the exact upstream bytes, including LF line endings.
+reasoning-generalization-tracer/src/rg_tracer/epistemic_cases/17_case_manifest.yaml text eol=lf
+reasoning-generalization-tracer/src/rg_tracer/epistemic_cases/robustness_stripes.yaml text eol=lf
